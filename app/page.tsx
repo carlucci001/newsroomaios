@@ -111,7 +111,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero Section with Background Image */}
       <section ref={heroRef} className="relative pt-24 pb-32 md:pt-32 md:pb-48 overflow-hidden">
         {/* Hero Background Image */}
         <div className="absolute inset-0 z-0">
