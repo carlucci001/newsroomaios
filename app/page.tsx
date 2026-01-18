@@ -112,8 +112,17 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section ref={heroRef} className="relative pt-24 pb-32 md:pt-32 md:pb-48">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />
+      <section ref={heroRef} className="relative pt-24 pb-32 md:pt-32 md:pb-48 overflow-hidden">
+        {/* Hero Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1920&h=1080&fit=crop&q=80"
+            alt="Modern newsroom"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/90 to-background" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/70 to-background/80" />
+        </div>
 
         <div className={`relative max-w-7xl mx-auto px-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="text-center max-w-5xl mx-auto">
@@ -196,6 +205,25 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Platform Preview */}
+      <section className="relative py-20 -mt-32">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="relative max-w-6xl mx-auto">
+            <div className="absolute -inset-4 bg-gradient-to-r from-brand-blue-500/20 to-brand-blue-600/20 rounded-3xl blur-3xl" />
+            <div className="relative rounded-2xl overflow-hidden border-4 border-border shadow-2xl bg-background">
+              <img
+                src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=675&fit=crop&q=80"
+                alt="Newsroom AIOS Platform Dashboard"
+                className="w-full h-auto"
+              />
+            </div>
+            <p className="text-center text-sm text-muted-foreground mt-6 italic">
+              Complete dashboard showing revenue analytics, content management, and subscriber growth
+            </p>
           </div>
         </div>
       </section>
