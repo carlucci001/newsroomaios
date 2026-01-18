@@ -1,0 +1,875 @@
+'use client';
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Sparkles,
+  Newspaper,
+  TrendingUp,
+  Users,
+  Target,
+  Building2,
+  Mail,
+  CheckCircle2,
+  ArrowRight,
+  Play,
+  Zap,
+  BarChart3,
+  Globe2,
+  Shield,
+  Rocket,
+  DollarSign,
+  Star,
+  Award,
+  ChevronRight,
+  Quote,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+export default function Home() {
+  const [isVisible, setIsVisible] = useState(false);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const featuresRef = useRef<HTMLDivElement>(null);
+  const pricingRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsVisible(true);
+
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -100px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-fade-in-up');
+        }
+      });
+    }, observerOptions);
+
+    const elements = document.querySelectorAll('.observe-animation');
+    elements.forEach(el => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* Newsroom Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Newspaper texture overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.015]"
+          style={{
+            backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px),
+                             linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
+            backgroundSize: '80px 80px'
+          }}
+        />
+        {/* Printing press pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `repeating-linear-gradient(
+              45deg,
+              transparent,
+              transparent 10px,
+              currentColor 10px,
+              currentColor 11px
+            )`
+          }}
+        />
+        {/* Gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-blue-50/40 via-background to-brand-gray-50/40" />
+        <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-brand-blue-500/10 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-brand-blue-600/10 rounded-full blur-[100px] translate-x-1/3 translate-y-1/3" />
+      </div>
+
+      {/* Navigation */}
+      <nav className="relative z-50 border-b border-border/40 backdrop-blur-xl bg-background/90 sticky top-0">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-brand-blue-600">
+              <Newspaper className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-2xl font-display font-bold">
+              Newsroom <span className="text-brand-blue-600">AIOS</span>
+            </span>
+          </div>
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#features" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Features</a>
+            <a href="#how-it-works" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">How It Works</a>
+            <a href="#pricing" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Pricing</a>
+            <a href="#testimonials" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Success Stories</a>
+            <Button variant="ghost" size="sm">Sign In</Button>
+            <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
+              Start Free Trial <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section ref={heroRef} className="relative pt-24 pb-32 md:pt-32 md:pb-48">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />
+
+        <div className={`relative max-w-7xl mx-auto px-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <div className="text-center max-w-5xl mx-auto">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-brand-blue-200/60 bg-gradient-to-r from-brand-blue-50/80 to-brand-blue-100/60 backdrop-blur-sm mb-8 shadow-lg shadow-brand-blue-500/10 animate-fade-in">
+              <Sparkles className="h-4 w-4 text-brand-blue-600 animate-pulse" />
+              <span className="text-sm font-semibold bg-gradient-to-r from-brand-blue-700 to-brand-blue-600 bg-clip-text text-transparent">
+                Trusted by 500+ newspapers nationwide
+              </span>
+              <Award className="h-4 w-4 text-brand-blue-600" />
+            </div>
+
+            {/* Main Headline */}
+            <h1 className="font-display text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8 leading-[1.1]">
+              <span className="bg-gradient-to-br from-foreground via-foreground to-brand-gray-700 bg-clip-text text-transparent">
+                Launch Your Local Newspaper
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-brand-blue-600 via-brand-blue-500 to-brand-blue-600 bg-clip-text text-transparent animate-gradient">
+                in Minutes
+              </span>
+            </h1>
+
+            {/* Subheadline */}
+            <p className="text-xl md:text-2xl lg:text-3xl text-muted-foreground mb-4 max-w-4xl mx-auto leading-relaxed font-light">
+              AI-powered platform for community journalism.
+            </p>
+            <p className="text-lg md:text-xl text-muted-foreground/80 mb-12 max-w-3xl mx-auto">
+              Everything you need to create, publish, and monetize your local newspaper—from
+              <span className="text-brand-blue-600 font-semibold"> AI-generated content</span> to
+              <span className="text-brand-blue-600 font-semibold"> automated advertising</span> to
+              <span className="text-brand-blue-600 font-semibold"> premium subscriptions</span>.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mb-16">
+              <Button
+                size="lg"
+                className="text-lg px-10 h-16 gap-3 shadow-2xl shadow-brand-blue-500/30 hover:shadow-brand-blue-500/40 transition-all hover:scale-105 group"
+              >
+                Start Free Trial
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-10 h-16 gap-3 border-2 hover:border-brand-blue-500/50 hover:bg-brand-blue-50/50 transition-all group"
+              >
+                <Play className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                Watch Demo
+              </Button>
+            </div>
+
+            {/* Stats */}
+            <div className="pt-12 border-t border-border/40 backdrop-blur-sm">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+                <div className="group cursor-default">
+                  <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                    500+
+                  </div>
+                  <div className="text-sm md:text-base text-muted-foreground font-medium">Active Newspapers</div>
+                </div>
+                <div className="group cursor-default">
+                  <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                    10M+
+                  </div>
+                  <div className="text-sm md:text-base text-muted-foreground font-medium">Monthly Readers</div>
+                </div>
+                <div className="group cursor-default">
+                  <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                    $50M+
+                  </div>
+                  <div className="text-sm md:text-base text-muted-foreground font-medium">Revenue Generated</div>
+                </div>
+                <div className="group cursor-default">
+                  <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                    98%
+                  </div>
+                  <div className="text-sm md:text-base text-muted-foreground font-medium">Customer Satisfaction</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Logo Cloud */}
+      <section className="relative py-20 bg-gradient-to-b from-muted/30 to-transparent border-y border-border/40 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-6">
+          <p className="text-center text-sm text-muted-foreground mb-12 font-semibold tracking-wider uppercase">
+            Powering Local Journalism Across America
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-12 items-center">
+            {[
+              { name: 'Mountain View Times', icon: '🏔️' },
+              { name: 'Coastal Chronicle', icon: '🌊' },
+              { name: 'Valley Gazette', icon: '🌄' },
+              { name: 'Harbor News', icon: '⚓' }
+            ].map((paper, i) => (
+              <div
+                key={i}
+                className="flex flex-col items-center gap-3 p-6 rounded-xl hover:bg-brand-blue-50/50 transition-all group cursor-default"
+              >
+                <span className="text-4xl group-hover:scale-125 transition-transform">{paper.icon}</span>
+                <span className="text-center font-display text-lg font-semibold text-muted-foreground group-hover:text-brand-blue-600 transition-colors">
+                  {paper.name}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features - Three Revenue Streams */}
+      <section id="features" ref={featuresRef} className="relative py-32 md:py-40 observe-animation">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-blue-50 border border-brand-blue-200/60 mb-6">
+              <Zap className="h-4 w-4 text-brand-blue-600" />
+              <span className="text-sm font-semibold text-brand-blue-700">Revenue Streams</span>
+            </div>
+            <h2 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
+              Three Ways to Earn.<br />
+              <span className="bg-gradient-to-r from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent">
+                One Powerful Platform.
+              </span>
+            </h2>
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Turn your local newspaper into a thriving business with built-in monetization from day one.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
+            {/* Advertising Card */}
+            <Card className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-2xl hover:shadow-brand-blue-500/20 group overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <CardHeader className="relative">
+                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-brand-blue-500 to-brand-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-brand-blue-500/30">
+                  <Target className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-3xl font-display mb-3">AI-Powered Advertising</CardTitle>
+                <CardDescription className="text-base leading-relaxed">
+                  Advertisers sign up and get stunning AI-generated banners instantly. Choose from flexible pricing models.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="relative">
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">Automated AI banner generation</span>
+                      <p className="text-sm text-muted-foreground">Professional designs in seconds using Gemini + Imagen</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">Flexible pricing models</span>
+                      <p className="text-sm text-muted-foreground">CPC, CPM, or flat monthly/weekly rates</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">Real-time analytics</span>
+                      <p className="text-sm text-muted-foreground">Track impressions, clicks, and conversions</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">Admin approval workflow</span>
+                      <p className="text-sm text-muted-foreground">Quality control before ads go live</p>
+                    </div>
+                  </li>
+                </ul>
+                <div className="pt-6 border-t border-border">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <div className="text-sm text-muted-foreground font-medium">Avg Revenue</div>
+                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                  </div>
+                  <div className="text-4xl font-display font-bold bg-gradient-to-r from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent">
+                    $2,500<span className="text-xl text-muted-foreground">/month</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">Based on 25 active advertisers</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Directory Card */}
+            <Card className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-2xl hover:shadow-brand-blue-500/20 group overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <CardHeader className="relative">
+                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-brand-blue-500 to-brand-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-brand-blue-500/30">
+                  <Building2 className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-3xl font-display mb-3">Business Directory</CardTitle>
+                <CardDescription className="text-base leading-relaxed">
+                  Local businesses list for free, upgrade to featured tier for premium placement and benefits.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="relative">
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">Free basic listings</span>
+                      <p className="text-sm text-muted-foreground">Get businesses onboard at no cost</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">Featured tier at $49/month</span>
+                      <p className="text-sm text-muted-foreground">Premium placement, images, and priority ranking</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">SEO optimized</span>
+                      <p className="text-sm text-muted-foreground">Local search rankings for your community</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">Claim and verify</span>
+                      <p className="text-sm text-muted-foreground">Business owners can claim existing listings</p>
+                    </div>
+                  </li>
+                </ul>
+                <div className="pt-6 border-t border-border">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <div className="text-sm text-muted-foreground font-medium">Avg Revenue</div>
+                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                  </div>
+                  <div className="text-4xl font-display font-bold bg-gradient-to-r from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent">
+                    $1,200<span className="text-xl text-muted-foreground">/month</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">Based on 25 featured businesses</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Newsletter Card */}
+            <Card className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-2xl hover:shadow-brand-blue-500/20 group overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <CardHeader className="relative">
+                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-brand-blue-500 to-brand-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-brand-blue-500/30">
+                  <Mail className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-3xl font-display mb-3">Newsletter Subscriptions</CardTitle>
+                <CardDescription className="text-base leading-relaxed">
+                  Free readers become premium subscribers at $9/month for exclusive content and ad-free experience.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="relative">
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">Automated email campaigns</span>
+                      <p className="text-sm text-muted-foreground">Send newsletters with AI-curated content</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">Paywall for premium content</span>
+                      <p className="text-sm text-muted-foreground">Monetize exclusive articles and deep dives</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">Subscriber analytics</span>
+                      <p className="text-sm text-muted-foreground">Track engagement and optimize content</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-6 w-6 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">Annual plans available</span>
+                      <p className="text-sm text-muted-foreground">$90/year for committed readers</p>
+                    </div>
+                  </li>
+                </ul>
+                <div className="pt-6 border-t border-border">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <div className="text-sm text-muted-foreground font-medium">Avg Revenue</div>
+                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                  </div>
+                  <div className="text-4xl font-display font-bold bg-gradient-to-r from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent">
+                    $900<span className="text-xl text-muted-foreground">/month</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">Based on 100 premium subscribers</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Combined Revenue CTA */}
+          <div className="text-center bg-gradient-to-br from-brand-blue-50 to-brand-blue-100/50 rounded-3xl p-12 border-2 border-brand-blue-200/60 shadow-xl">
+            <DollarSign className="h-16 w-16 text-brand-blue-600 mx-auto mb-6" />
+            <h3 className="font-display text-4xl font-bold mb-4">
+              Combined: <span className="text-brand-blue-600">$4,600+/month</span>
+            </h3>
+            <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+              With all three revenue streams active, newspapers on our platform average over $55,000 per year in recurring revenue.
+            </p>
+            <Button size="lg" className="gap-2 shadow-lg shadow-brand-blue-500/30">
+              See Full Revenue Breakdown <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" className="relative py-32 bg-gradient-to-b from-muted/30 to-transparent observe-animation">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-blue-50 border border-brand-blue-200/60 mb-6">
+              <Rocket className="h-4 w-4 text-brand-blue-600" />
+              <span className="text-sm font-semibold text-brand-blue-700">Simple Process</span>
+            </div>
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-6">
+              Launch in <span className="text-brand-blue-600">3 Simple Steps</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Go from idea to published newspaper in under 30 minutes.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-12">
+            {[
+              {
+                step: '01',
+                icon: Globe2,
+                title: 'Choose Your Domain',
+                description: 'Select your newspaper name and custom domain. We\'ll handle all the technical setup automatically.',
+                features: ['Custom domain included', 'SSL certificate', 'CDN acceleration']
+              },
+              {
+                step: '02',
+                icon: Sparkles,
+                title: 'AI Content Setup',
+                description: 'Configure your AI journalists, select content categories, and define your editorial voice.',
+                features: ['AI journalist personas', 'Content scheduling', 'Editorial guidelines']
+              },
+              {
+                step: '03',
+                icon: TrendingUp,
+                title: 'Start Publishing',
+                description: 'Activate revenue streams, publish your first articles, and start growing your audience.',
+                features: ['Instant monetization', 'Analytics dashboard', '24/7 support']
+              }
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="relative group"
+              >
+                <div className="absolute -inset-4 bg-gradient-to-r from-brand-blue-500/20 to-brand-blue-600/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative bg-card border-2 border-border hover:border-brand-blue-500/50 rounded-2xl p-8 transition-all hover:shadow-xl">
+                  <div className="text-8xl font-display font-bold text-brand-blue-100 absolute -top-6 -right-6 select-none">
+                    {item.step}
+                  </div>
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-brand-blue-500 to-brand-blue-600 flex items-center justify-center mb-6 shadow-lg shadow-brand-blue-500/30 group-hover:scale-110 transition-transform relative z-10">
+                    <item.icon className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-display text-2xl font-bold mb-4 relative z-10">{item.title}</h3>
+                  <p className="text-muted-foreground mb-6 leading-relaxed relative z-10">{item.description}</p>
+                  <ul className="space-y-2 relative z-10">
+                    {item.features.map((feature, j) => (
+                      <li key={j} className="flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="h-4 w-4 text-brand-blue-600" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" ref={pricingRef} className="relative py-32 md:py-40 observe-animation">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-blue-50 border border-brand-blue-200/60 mb-6">
+              <DollarSign className="h-4 w-4 text-brand-blue-600" />
+              <span className="text-sm font-semibold text-brand-blue-700">Transparent Pricing</span>
+            </div>
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-6">
+              Choose Your Plan
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              No hidden fees. No revenue sharing. Keep 100% of what you earn from ads, directory, and subscriptions.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Starter Plan */}
+            <Card className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-gray-400 to-brand-gray-500" />
+              <CardHeader className="pb-8 pt-8">
+                <CardTitle className="text-2xl font-display mb-2">Starter</CardTitle>
+                <CardDescription>Perfect for getting started</CardDescription>
+                <div className="mt-6">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-display font-bold">$99</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full mb-6 hover:bg-brand-gray-50">
+                  Start Free Trial
+                </Button>
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">1 AI journalist</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">Up to 50 articles/month</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">Basic advertising features</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">Business directory (25 listings)</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">Email support</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Professional Plan (Most Popular) */}
+            <Card className="border-2 border-brand-blue-500 shadow-2xl shadow-brand-blue-500/20 transition-all hover:shadow-brand-blue-500/30 relative overflow-hidden scale-105">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-blue-500 to-brand-blue-600" />
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-brand-blue-500 to-brand-blue-600 text-white text-sm font-semibold rounded-full shadow-lg">
+                Most Popular
+              </div>
+              <CardHeader className="pb-8 pt-12">
+                <CardTitle className="text-2xl font-display mb-2">Professional</CardTitle>
+                <CardDescription>For serious publishers</CardDescription>
+                <div className="mt-6">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-display font-bold text-brand-blue-600">$199</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full mb-6 shadow-lg shadow-brand-blue-500/30">
+                  Start Free Trial
+                </Button>
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">3 AI journalists</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">Unlimited articles</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">Advanced advertising (CPC/CPM)</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">Unlimited directory listings</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">Premium newsletter features</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">Priority support</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Enterprise Plan */}
+            <Card className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-blue-600 to-brand-blue-700" />
+              <CardHeader className="pb-8 pt-8">
+                <CardTitle className="text-2xl font-display mb-2">Enterprise</CardTitle>
+                <CardDescription>For newspaper networks</CardDescription>
+                <div className="mt-6">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-display font-bold">$499</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full mb-6 hover:bg-brand-blue-50">
+                  Contact Sales
+                </Button>
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">Unlimited AI journalists</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">Multi-newspaper network</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">Partner advertising network</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">White-label options</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">Dedicated account manager</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">Custom integrations</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="text-center mt-16">
+            <p className="text-muted-foreground text-lg mb-6">
+              All plans include 14-day free trial. No credit card required.
+            </p>
+            <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-brand-blue-600" />
+                <span>No revenue sharing</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-brand-blue-600" />
+                <span>Cancel anytime</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-brand-blue-600" />
+                <span>24/7 support</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section id="testimonials" className="relative py-32 bg-gradient-to-b from-muted/30 to-transparent observe-animation">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-blue-50 border border-brand-blue-200/60 mb-6">
+              <Users className="h-4 w-4 text-brand-blue-600" />
+              <span className="text-sm font-semibold text-brand-blue-700">Success Stories</span>
+            </div>
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-6">
+              Loved by Publishers <span className="text-brand-blue-600">Nationwide</span>
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                quote: "We launched our newspaper in 3 weeks and hit $5,000/month in revenue within 60 days. The AI-generated advertising banners are incredible.",
+                author: "Sarah Mitchell",
+                role: "Publisher, Mountain View Times",
+                avatar: "🏔️"
+              },
+              {
+                quote: "The business directory became our #1 revenue stream. Local businesses love the featured tier and the SEO brings them real customers.",
+                author: "James Rodriguez",
+                role: "Editor-in-Chief, Coastal Chronicle",
+                avatar: "🌊"
+              },
+              {
+                quote: "Newsroom AIOS gave us the tools to compete with big city papers. Our community journalism has never been stronger—or more profitable.",
+                author: "Emily Chen",
+                role: "Managing Editor, Valley Gazette",
+                avatar: "🌄"
+              }
+            ].map((testimonial, i) => (
+              <Card key={i} className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-xl bg-gradient-to-br from-card to-brand-blue-50/30">
+                <CardContent className="pt-8">
+                  <Quote className="h-12 w-12 text-brand-blue-200 mb-6" />
+                  <p className="text-lg leading-relaxed mb-8 italic">
+                    "{testimonial.quote}"
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <div className="h-14 w-14 rounded-full bg-gradient-to-br from-brand-blue-500 to-brand-blue-600 flex items-center justify-center text-2xl shadow-lg">
+                      {testimonial.avatar}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-foreground">{testimonial.author}</div>
+                      <div className="text-sm text-muted-foreground">{testimonial.role}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="relative py-32 observe-animation">
+        <div className="max-w-5xl mx-auto px-6 text-center">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-blue-500/20 to-brand-blue-600/20 rounded-3xl blur-3xl" />
+            <div className="relative bg-gradient-to-br from-brand-blue-600 to-brand-blue-700 rounded-3xl p-16 shadow-2xl border border-brand-blue-400/20">
+              <h2 className="font-display text-5xl md:text-6xl font-bold text-white mb-6">
+                Ready to Launch Your Newspaper?
+              </h2>
+              <p className="text-xl text-brand-blue-100 mb-10 max-w-2xl mx-auto">
+                Join 500+ publishers who've transformed local journalism with AI-powered tools and multi-stream monetization.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
+                >
+                  Start Free Trial <ArrowRight className="h-5 w-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="text-lg px-10 h-16 gap-3 border-2 border-white text-white hover:bg-white/10"
+                >
+                  <Play className="h-5 w-5" /> Watch Demo
+                </Button>
+              </div>
+              <p className="text-brand-blue-200 mt-8 text-sm">
+                14-day free trial • No credit card required • Cancel anytime
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-muted/30 py-16">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid md:grid-cols-4 gap-12 mb-12">
+            <div>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-brand-blue-600">
+                  <Newspaper className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-xl font-display font-bold">
+                  Newsroom <span className="text-brand-blue-600">AIOS</span>
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Empowering local journalism with AI-powered tools and built-in monetization.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Platform</h3>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li><a href="#features" className="hover:text-brand-blue-600 transition-colors">Features</a></li>
+                <li><a href="#pricing" className="hover:text-brand-blue-600 transition-colors">Pricing</a></li>
+                <li><a href="#testimonials" className="hover:text-brand-blue-600 transition-colors">Success Stories</a></li>
+                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Documentation</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Resources</h3>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Blog</a></li>
+                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Help Center</a></li>
+                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Community</a></li>
+                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">API Reference</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Company</h3>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">About Us</a></li>
+                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Contact</a></li>
+                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Terms of Service</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="pt-8 border-t border-border text-center">
+            <p className="text-sm text-muted-foreground">
+              © 2026 Newsroom AIOS. Transforming local journalism with AI. Built with ❤️ for community publishers.
+            </p>
+          </div>
+        </div>
+      </footer>
+
+      <style jsx>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes gradient {
+          0%, 100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in-up 0.8s ease-out;
+        }
+
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s ease-out forwards;
+        }
+
+        .animate-gradient {
+          background-size: 200% auto;
+          animation: gradient 3s ease infinite;
+        }
+
+        .observe-animation {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+
+        .observe-animation.animate-fade-in-up {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      `}</style>
+    </div>
+  );
+}

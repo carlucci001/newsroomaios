@@ -1,0 +1,132 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return getUserData().role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+
+    // ============================================
+    // TENANTS (Newspaper Clients)
+    // ============================================
+    match /tenants/{tenantId} {
+      // Allow read if user owns the tenant
+      allow read: if isAuthenticated() &&
+        (resource.data.ownerId == request.auth.uid || isAdmin());
+
+      // Only authenticated users can create tenants (via signup flow)
+      allow create: if isAuthenticated();
+
+      // Tenant owners can update their own tenant
+      allow update: if isAuthenticated() &&
+        (resource.data.ownerId == request.auth.uid || isAdmin());
+
+      // Only admins can delete tenants
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // USERS
+    // ============================================
+    match /users/{userId} {
+      // Users can read their own data
+      allow read: if isAuthenticated() &&
+        (request.auth.uid == userId || isAdmin());
+
+      // Users can create their own profile
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+
+      // Users can update their own profile (except role)
+      allow update: if isAuthenticated() &&
+        (request.auth.uid == userId || isAdmin());
+
+      // Only admins can delete users
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // ADVERTISERS
+    // ============================================
+    match /advertisers/{advertiserId} {
+      // Advertisers can read their own data
+      // Tenant owners can read their tenant's advertisers
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Authenticated users can create advertiser accounts
+      allow create: if isAuthenticated();
+
+      // Advertisers can update their own account
+      allow update: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Only admins can delete
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // BUSINESSES (Directory Listings)
+    // ============================================
+    match /businesses/{businessId} {
+      // Anyone can read active businesses
+      allow read: if true;
+
+      // Authenticated users can create businesses
+      allow create: if isAuthenticated();
+
+      // Business owners can update their own
+      allow update: if isAuthenticated() &&
+        (resource.data.ownerId == request.auth.uid || isAdmin());
+
+      // Only admins can delete
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // NEWSLETTER SUBSCRIPTIONS
+    // ============================================
+    match /newsletterSubscriptions/{subscriptionId} {
+      // Subscribers can read their own
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Anyone can subscribe (public signup)
+      allow create: if true;
+
+      // Subscribers can update their own preferences
+      allow update: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Users can unsubscribe
+      allow delete: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // ============================================
+    // REVENUE TRANSACTIONS (Server-side only)
+    // ============================================
+    match /revenueTransactions/{transactionId} {
+      // Only admins can read transactions
+      allow read: if isAdmin();
+
+      // Only server-side (Firebase Admin SDK) can write
+      allow write: if false;
+    }
+  }
+}
