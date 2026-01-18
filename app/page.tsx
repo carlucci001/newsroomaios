@@ -120,8 +120,8 @@ export default function Home() {
             alt="Modern newsroom"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/90 to-background" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/70 to-background/80" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/80" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/30 via-transparent to-background/30" />
         </div>
 
         <div className={`relative max-w-7xl mx-auto px-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
