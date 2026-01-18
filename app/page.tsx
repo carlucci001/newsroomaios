@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Quote,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 export default function Home() {
@@ -56,11 +57,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Newsroom Background */}
+      {/* Newsroom Background - VISIBLE at 25% opacity */}
       <div className="fixed inset-0 pointer-events-none">
         {/* Newspaper texture overlay */}
         <div
-          className="absolute inset-0 opacity-[0.015]"
+          className="absolute inset-0 opacity-25"
           style={{
             backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px),
                              linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
@@ -69,7 +70,7 @@ export default function Home() {
         />
         {/* Printing press pattern */}
         <div
-          className="absolute inset-0 opacity-[0.02]"
+          className="absolute inset-0 opacity-20"
           style={{
             backgroundImage: `repeating-linear-gradient(
               45deg,
@@ -89,19 +90,19 @@ export default function Home() {
       {/* Navigation */}
       <nav className="relative z-50 border-b border-border/40 backdrop-blur-xl bg-background/90 sticky top-0">
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-brand-blue-600">
               <Newspaper className="h-6 w-6 text-white" />
             </div>
             <span className="text-2xl font-display font-bold">
               Newsroom <span className="text-brand-blue-600">AIOS</span>
             </span>
-          </div>
+          </Link>
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Features</a>
-            <a href="#how-it-works" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">How It Works</a>
-            <a href="#pricing" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Pricing</a>
-            <a href="#testimonials" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Success Stories</a>
+            <Link href="/features" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Features</Link>
+            <Link href="/how-it-works" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">How It Works</Link>
+            <Link href="/pricing" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Pricing</Link>
+            <Link href="/testimonials" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Success Stories</Link>
             <Button variant="ghost" size="sm">Sign In</Button>
             <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
               Start Free Trial <ArrowRight className="h-4 w-4" />
@@ -424,9 +425,11 @@ export default function Home() {
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
               With all three revenue streams active, newspapers on our platform average over $55,000 per year in recurring revenue.
             </p>
-            <Button size="lg" className="gap-2 shadow-lg shadow-brand-blue-500/30">
-              See Full Revenue Breakdown <ChevronRight className="h-5 w-5" />
-            </Button>
+            <Link href="/features">
+              <Button size="lg" className="gap-2 shadow-lg shadow-brand-blue-500/30">
+                See Full Revenue Breakdown <ChevronRight className="h-5 w-5" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -790,9 +793,9 @@ export default function Home() {
             <div>
               <h3 className="font-semibold mb-4">Platform</h3>
               <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><a href="#features" className="hover:text-brand-blue-600 transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-brand-blue-600 transition-colors">Pricing</a></li>
-                <li><a href="#testimonials" className="hover:text-brand-blue-600 transition-colors">Success Stories</a></li>
+                <li><Link href="/features" className="hover:text-brand-blue-600 transition-colors">Features</Link></li>
+                <li><Link href="/pricing" className="hover:text-brand-blue-600 transition-colors">Pricing</Link></li>
+                <li><Link href="/testimonials" className="hover:text-brand-blue-600 transition-colors">Success Stories</Link></li>
                 <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Documentation</a></li>
               </ul>
             </div>
