@@ -801,7 +801,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-muted/30 py-16">
+      <footer className="relative border-t border-border bg-gradient-to-b from-muted/50 to-muted/80 py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
@@ -813,14 +813,14 @@ export default function Home() {
                   Newsroom <span className="text-brand-blue-600">AIOS</span>
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm text-foreground/80 leading-relaxed">
                 Empowering local journalism with AI-powered tools and built-in monetization.
               </p>
             </div>
 
             <div>
-              <h3 className="font-semibold mb-4">Platform</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
+              <h3 className="font-semibold mb-4 text-foreground">Platform</h3>
+              <ul className="space-y-3 text-sm text-foreground/70">
                 <li><Link href="/features" className="hover:text-brand-blue-600 transition-colors">Features</Link></li>
                 <li><Link href="/pricing" className="hover:text-brand-blue-600 transition-colors">Pricing</Link></li>
                 <li><Link href="/testimonials" className="hover:text-brand-blue-600 transition-colors">Success Stories</Link></li>
@@ -829,8 +829,8 @@ export default function Home() {
             </div>
 
             <div>
-              <h3 className="font-semibold mb-4">Resources</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
+              <h3 className="font-semibold mb-4 text-foreground">Resources</h3>
+              <ul className="space-y-3 text-sm text-foreground/70">
                 <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Blog</a></li>
                 <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Help Center</a></li>
                 <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Community</a></li>
@@ -839,8 +839,8 @@ export default function Home() {
             </div>
 
             <div>
-              <h3 className="font-semibold mb-4">Company</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
+              <h3 className="font-semibold mb-4 text-foreground">Company</h3>
+              <ul className="space-y-3 text-sm text-foreground/70">
                 <li><a href="#" className="hover:text-brand-blue-600 transition-colors">About Us</a></li>
                 <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Contact</a></li>
                 <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Privacy Policy</a></li>
@@ -850,7 +850,7 @@ export default function Home() {
           </div>
 
           <div className="pt-8 border-t border-border text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-foreground/60">
               © 2026 Newsroom AIOS. Transforming local journalism with AI. Built with ❤️ for community publishers.
             </p>
           </div>

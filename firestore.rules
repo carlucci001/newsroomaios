@@ -23,15 +23,25 @@ service cloud.firestore {
     }
 
     // ============================================
+    // ONBOARDING PROGRESS (Temporary session data)
+    // ============================================
+    match /onboardingProgress/{progressId} {
+      // Allow anyone to create/read/update their onboarding session
+      // TODO: Add authentication in Phase 4
+      allow read, write: if true;
+    }
+
+    // ============================================
     // TENANTS (Newspaper Clients)
     // ============================================
     match /tenants/{tenantId} {
-      // Allow read if user owns the tenant
-      allow read: if isAuthenticated() &&
-        (resource.data.ownerId == request.auth.uid || isAdmin());
+      // TEMPORARY: Allow read for domain checking during onboarding
+      // TODO: Restrict to authenticated users in Phase 4
+      allow read: if true;
 
-      // Only authenticated users can create tenants (via signup flow)
-      allow create: if isAuthenticated();
+      // TEMPORARY: Allow unauthenticated tenant creation for Phase 1 onboarding
+      // TODO: Require authentication in Phase 4
+      allow create: if true;
 
       // Tenant owners can update their own tenant
       allow update: if isAuthenticated() &&
