@@ -46,6 +46,9 @@ export interface Tenant {
   ownerEmail: string;
   ownerId?: string;              // Firebase Auth UID (after signup)
 
+  // API Access
+  apiKey: string;                // For credit API authentication
+
   // Service Area
   serviceArea: ServiceArea;
 
@@ -66,4 +69,7 @@ export interface Tenant {
     logo?: string;
     tagline?: string;
   };
+
+  // Platform connection
+  platformUrl?: string;          // e.g., "https://newsroomaios.com"
 }
