@@ -71,9 +71,29 @@ export async function GET(request: NextRequest) {
         articlesGenerated: 0,
         creditsUsed: 0,
         errors: [] as string[],
+        seeded: false,
       };
 
       try {
+        // SEEDING: New tenants get 36 seed articles (6 per category)
+        if (tenant.status === 'provisioning') {
+          console.log(`[Seeding] Starting seed for ${tenant.businessName}`);
+          const seedResult = await seedTenantArticles(tenant, db);
+          tenantResult.articlesGenerated = seedResult.articlesCreated;
+          tenantResult.seeded = true;
+
+          // Update tenant status to active
+          await updateDoc(doc(db, 'tenants', tenant.id), {
+            status: 'active',
+            seededAt: new Date(),
+          });
+
+          console.log(`[Seeding] Completed for ${tenant.businessName}: ${seedResult.articlesCreated} articles`);
+          results.push(tenantResult);
+          continue; // Skip regular journalist run for seeding pass
+        }
+
+        // REGULAR RUN: Active tenants run scheduled journalists
         // Get AI journalists for this tenant
         const journalistsQuery = query(
           collection(db, 'aiJournalists'),
@@ -328,4 +348,100 @@ function slugify(text: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
+}
+
+/**
+ * Seed a new tenant with 36 articles (6 per category)
+ * This is covered by the setup fee, not monthly credits
+ */
+async function seedTenantArticles(
+  tenant: Tenant,
+  db: ReturnType<typeof getDb>
+): Promise<{ articlesCreated: number; errors: string[] }> {
+  const ARTICLES_PER_CATEGORY = 6;
+  let articlesCreated = 0;
+  const errors: string[] = [];
+
+  // Article templates for variety
+  const articleTemplates = [
+    { prefix: 'Breaking:', suffix: 'Story Develops' },
+    { prefix: 'Update:', suffix: 'What You Need to Know' },
+    { prefix: 'Local', suffix: 'News Roundup' },
+    { prefix: 'Community', suffix: 'Spotlight' },
+    { prefix: 'Weekly', suffix: 'Report' },
+    { prefix: 'Feature:', suffix: 'In Focus' },
+  ];
+
+  for (const category of tenant.categories) {
+    for (let i = 0; i < ARTICLES_PER_CATEGORY; i++) {
+      try {
+        const template = articleTemplates[i % articleTemplates.length];
+        const title = `${template.prefix} ${tenant.serviceArea.city} ${category.name} ${template.suffix}`;
+        const slug = slugify(title) + `-${Date.now().toString(36).slice(-4)}`;
+
+        // Create seed article
+        const articleData = {
+          tenantId: tenant.id,
+          title,
+          slug,
+          excerpt: `${category.name} coverage for ${tenant.serviceArea.city}, ${tenant.serviceArea.state}. Stay informed with the latest updates from your local ${category.name.toLowerCase()} beat.`,
+          content: generateSeedArticleContent(
+            tenant.businessName,
+            tenant.serviceArea.city,
+            tenant.serviceArea.state,
+            category.name,
+            category.directive
+          ),
+          categoryId: category.id,
+          categoryName: category.name,
+          categorySlug: category.slug,
+          status: 'published',
+          publishedAt: new Date(Date.now() - i * 3600000), // Stagger publish times
+          createdAt: new Date(),
+          author: `${category.name} Reporter`,
+          isAIGenerated: true,
+          isSeedArticle: true,
+        };
+
+        await addDoc(collection(db, `tenants/${tenant.id}/articles`), articleData);
+        articlesCreated++;
+      } catch (error: any) {
+        errors.push(`${category.name} article ${i + 1}: ${error.message}`);
+      }
+    }
+  }
+
+  return { articlesCreated, errors };
+}
+
+/**
+ * Generate placeholder content for seed articles
+ * In production, this would call Gemini for real AI-generated content
+ */
+function generateSeedArticleContent(
+  businessName: string,
+  city: string,
+  state: string,
+  categoryName: string,
+  directive: string
+): string {
+  return `
+<p>${businessName} brings you the latest ${categoryName.toLowerCase()} news from ${city}, ${state}.</p>
+
+<p>Our dedicated team of journalists is committed to keeping you informed about what matters most in your community. ${directive}</p>
+
+<h2>What to Expect</h2>
+
+<p>As your trusted local news source, we cover:</p>
+<ul>
+<li>Breaking developments in ${city}</li>
+<li>In-depth analysis of local ${categoryName.toLowerCase()} stories</li>
+<li>Community voices and perspectives</li>
+<li>Updates that affect your daily life</li>
+</ul>
+
+<p>Stay connected with ${businessName} for comprehensive ${categoryName.toLowerCase()} coverage that keeps you informed and engaged with your community.</p>
+
+<p><em>This article was generated as part of your newspaper's initial content. Our AI journalists will continue to provide fresh, relevant content daily.</em></p>
+`.trim();
 }
