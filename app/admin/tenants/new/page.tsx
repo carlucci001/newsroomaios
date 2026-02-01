@@ -58,12 +58,16 @@ export default function NewTenantPage() {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
 
+      // Generate unique API key
+      const apiKey = `${slug}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
       // Create tenant
       const tenantData: Omit<Tenant, 'id'> = {
         businessName: form.businessName,
         slug,
         domain: form.domain,
         ownerEmail: form.ownerEmail,
+        apiKey,
         serviceArea: {
           city: form.city,
           state: form.state,
