@@ -31,7 +31,7 @@ async function seedWNCTenant() {
     businessName: 'WNC Times',
     slug: 'wnct-times',
     domain: 'wnctimes.com',
-    ownerEmail: 'admin@wnctimes.com',
+    ownerEmail: 'carlfarring@gmail.com',
     apiKey: 'wnct-api-key-2024',
     serviceArea: {
       city: 'Asheville',
