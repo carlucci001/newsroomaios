@@ -74,7 +74,7 @@ export default function HowItWorksPage() {
             </Link>
             <Button variant="ghost" size="sm">Sign In</Button>
             <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-              Start Free Trial <ArrowRight className="h-4 w-4" />
+              Get Started <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -555,7 +555,7 @@ export default function HowItWorksPage() {
                 Ready to Get Started?
               </h2>
               <p className="text-xl text-brand-blue-100 mb-10 max-w-2xl mx-auto">
-                Join 500+ publishers who've launched successful newspapers with our platform. 14-day free trial, no credit card required.
+                Join 500+ publishers who've launched successful newspapers with our platform. $199 one-time setup. Keep 100% of revenue.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
                 <Button
@@ -563,7 +563,7 @@ export default function HowItWorksPage() {
                   variant="secondary"
                   className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
                 >
-                  Start Free Trial <ArrowRight className="h-5 w-5" />
+                  Launch Your Paper <ArrowRight className="h-5 w-5" />
                 </Button>
                 <Link href="/pricing">
                   <Button

@@ -105,7 +105,7 @@ export default function Home() {
             <Link href="/testimonials" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Success Stories</Link>
             <Button variant="ghost" size="sm">Sign In</Button>
             <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-              Start Free Trial <ArrowRight className="h-4 w-4" />
+              Get Started <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -163,7 +163,7 @@ export default function Home() {
                 size="lg"
                 className="text-lg px-10 h-16 gap-3 shadow-2xl shadow-brand-blue-500/30 hover:shadow-brand-blue-500/40 transition-all hover:scale-105 group"
               >
-                Start Free Trial
+                Launch Your Paper
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button
@@ -563,7 +563,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <Button variant="outline" className="w-full mb-6 hover:bg-brand-gray-50">
-                  Start Free Trial
+                  Get Started
                 </Button>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
@@ -608,7 +608,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <Button className="w-full mb-6 shadow-lg shadow-brand-blue-500/30">
-                  Start Free Trial
+                  Get Started
                 </Button>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
@@ -647,8 +647,7 @@ export default function Home() {
                 <CardDescription>For newspaper networks</CardDescription>
                 <div className="mt-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-display font-bold">$499</span>
-                    <span className="text-muted-foreground">/month</span>
+                    <span className="text-5xl font-display font-bold">Custom</span>
                   </div>
                 </div>
               </CardHeader>
@@ -688,7 +687,7 @@ export default function Home() {
 
           <div className="text-center mt-16">
             <p className="text-muted-foreground text-lg mb-6">
-              All plans include 14-day free trial. No credit card required.
+              $199 one-time setup fee. Keep 100% of all revenue you generate.
             </p>
             <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
@@ -782,7 +781,7 @@ export default function Home() {
                   variant="secondary"
                   className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
                 >
-                  Start Free Trial <ArrowRight className="h-5 w-5" />
+                  Launch Your Paper <ArrowRight className="h-5 w-5" />
                 </Button>
                 <Button
                   size="lg"
@@ -793,7 +792,7 @@ export default function Home() {
                 </Button>
               </div>
               <p className="text-brand-blue-200 mt-8 text-sm">
-                14-day free trial • No credit card required • Cancel anytime
+                $199 setup fee • Keep 100% of revenue • Cancel anytime
               </p>
             </div>
           </div>

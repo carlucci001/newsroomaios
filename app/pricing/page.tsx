@@ -69,7 +69,7 @@ export default function PricingPage() {
             </Link>
             <Button variant="ghost" size="sm">Sign In</Button>
             <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-              Start Free Trial <ArrowRight className="h-4 w-4" />
+              Get Started <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -100,11 +100,11 @@ export default function PricingPage() {
           <div className="flex items-center justify-center gap-8 mb-16 flex-wrap">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Shield className="h-5 w-5 text-brand-blue-600" />
-              <span className="text-sm font-medium">14-day free trial</span>
+              <span className="text-sm font-medium">$199 one-time setup</span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Shield className="h-5 w-5 text-brand-blue-600" />
-              <span className="text-sm font-medium">No credit card required</span>
+              <span className="text-sm font-medium">Keep 100% of revenue</span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Shield className="h-5 w-5 text-brand-blue-600" />
@@ -134,7 +134,7 @@ export default function PricingPage() {
               </CardHeader>
               <CardContent>
                 <Button variant="outline" className="w-full mb-6 hover:bg-brand-gray-50">
-                  Start Free Trial
+                  Get Started
                 </Button>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
@@ -188,7 +188,7 @@ export default function PricingPage() {
               </CardHeader>
               <CardContent>
                 <Button className="w-full mb-6 shadow-lg shadow-brand-blue-500/30">
-                  Start Free Trial
+                  Get Started
                 </Button>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
@@ -235,10 +235,9 @@ export default function PricingPage() {
                 <CardDescription>For newspaper networks</CardDescription>
                 <div className="mt-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-display font-bold">$499</span>
-                    <span className="text-muted-foreground">/month</span>
+                    <span className="text-5xl font-display font-bold">Custom</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">Platform fee only</p>
+                  <p className="text-sm text-muted-foreground mt-2">Contact us for pricing</p>
                 </div>
               </CardHeader>
               <CardContent>
@@ -299,8 +298,8 @@ export default function PricingPage() {
             </p>
             <div className="grid md:grid-cols-3 gap-8">
               <div>
-                <div className="text-4xl font-display font-bold text-brand-blue-600 mb-2">$0</div>
-                <div className="text-sm text-muted-foreground">Setup Fees</div>
+                <div className="text-4xl font-display font-bold text-brand-blue-600 mb-2">$199</div>
+                <div className="text-sm text-muted-foreground">One-Time Setup</div>
               </div>
               <div>
                 <div className="text-4xl font-display font-bold text-brand-blue-600 mb-2">0%</div>
@@ -481,10 +480,10 @@ export default function PricingPage() {
             <div className="relative bg-gradient-to-br from-brand-blue-600 to-brand-blue-700 rounded-3xl p-16 shadow-2xl border border-brand-blue-400/20">
               <Star className="h-16 w-16 text-white mx-auto mb-6 fill-white" />
               <h2 className="font-display text-5xl md:text-6xl font-bold text-white mb-6">
-                Start Your Free Trial
+                Launch Your Paper Today
               </h2>
               <p className="text-xl text-brand-blue-100 mb-10 max-w-2xl mx-auto">
-                14 days to test everything. No credit card required. If you're not making money within 30 days, we'll refund your first month.
+                $199 one-time setup. Keep 100% of all revenue you generate from ads, directory, and subscriptions.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
                 <Button
@@ -492,7 +491,7 @@ export default function PricingPage() {
                   variant="secondary"
                   className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
                 >
-                  Start Free Trial <ArrowRight className="h-5 w-5" />
+                  Get Started <ArrowRight className="h-5 w-5" />
                 </Button>
                 <Link href="/testimonials">
                   <Button
@@ -505,7 +504,7 @@ export default function PricingPage() {
                 </Link>
               </div>
               <p className="text-brand-blue-200 mt-8 text-sm">
-                Join 500+ publishers already earning with Newsroom AIOS
+                $199 setup • Keep 100% of revenue • Cancel anytime
               </p>
             </div>
           </div>

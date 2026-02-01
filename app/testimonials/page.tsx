@@ -71,7 +71,7 @@ export default function TestimonialsPage() {
             </Link>
             <Button variant="ghost" size="sm">Sign In</Button>
             <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-              Start Free Trial <ArrowRight className="h-4 w-4" />
+              Get Started <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -483,14 +483,14 @@ export default function TestimonialsPage() {
                 Join 500+ Publishers
               </h2>
               <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-                Start your 14-day free trial today. No credit card required. Launch your newspaper and start earning within 30 days.
+                $199 one-time setup. Keep 100% of all revenue you generate. Launch your newspaper and start earning.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
                 <Button
                   size="lg"
                   className="text-lg px-10 h-16 gap-3 shadow-xl shadow-brand-blue-500/30"
                 >
-                  Start Free Trial <ArrowRight className="h-5 w-5" />
+                  Launch Your Paper <ArrowRight className="h-5 w-5" />
                 </Button>
                 <Link href="/pricing">
                   <Button

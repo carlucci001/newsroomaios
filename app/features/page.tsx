@@ -74,7 +74,7 @@ export default function FeaturesPage() {
             </Link>
             <Button variant="ghost" size="sm">Sign In</Button>
             <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-              Start Free Trial <ArrowRight className="h-4 w-4" />
+              Get Started <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
