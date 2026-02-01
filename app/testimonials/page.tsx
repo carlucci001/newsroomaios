@@ -70,9 +70,11 @@ export default function TestimonialsPage() {
               Success Stories
             </Link>
             <Button variant="ghost" size="sm">Sign In</Button>
-            <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-              Get Started <ArrowRight className="h-4 w-4" />
-            </Button>
+            <Link href="/onboarding">
+              <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
+                Get Started <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -486,12 +488,14 @@ export default function TestimonialsPage() {
                 $199 one-time setup. Keep 100% of all revenue you generate. Launch your newspaper and start earning.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-                <Button
-                  size="lg"
-                  className="text-lg px-10 h-16 gap-3 shadow-xl shadow-brand-blue-500/30"
-                >
-                  Launch Your Paper <ArrowRight className="h-5 w-5" />
-                </Button>
+                <Link href="/onboarding">
+                  <Button
+                    size="lg"
+                    className="text-lg px-10 h-16 gap-3 shadow-xl shadow-brand-blue-500/30"
+                  >
+                    Launch Your Paper <ArrowRight className="h-5 w-5" />
+                  </Button>
+                </Link>
                 <Link href="/pricing">
                   <Button
                     size="lg"

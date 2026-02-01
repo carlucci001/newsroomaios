@@ -68,9 +68,11 @@ export default function PricingPage() {
               Success Stories
             </Link>
             <Button variant="ghost" size="sm">Sign In</Button>
-            <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-              Get Started <ArrowRight className="h-4 w-4" />
-            </Button>
+            <Link href="/onboarding">
+              <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
+                Get Started <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -133,9 +135,11 @@ export default function PricingPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full mb-6 hover:bg-brand-gray-50">
-                  Get Started
-                </Button>
+                <Link href="/onboarding" className="block">
+                  <Button variant="outline" className="w-full mb-6 hover:bg-brand-gray-50">
+                    Get Started
+                  </Button>
+                </Link>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -187,9 +191,11 @@ export default function PricingPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Button className="w-full mb-6 shadow-lg shadow-brand-blue-500/30">
-                  Get Started
-                </Button>
+                <Link href="/onboarding" className="block">
+                  <Button className="w-full mb-6 shadow-lg shadow-brand-blue-500/30">
+                    Get Started
+                  </Button>
+                </Link>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -486,13 +492,15 @@ export default function PricingPage() {
                 $199 one-time setup. Keep 100% of all revenue you generate from ads, directory, and subscriptions.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
-                >
-                  Get Started <ArrowRight className="h-5 w-5" />
-                </Button>
+                <Link href="/onboarding">
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
+                  >
+                    Get Started <ArrowRight className="h-5 w-5" />
+                  </Button>
+                </Link>
                 <Link href="/testimonials">
                   <Button
                     size="lg"

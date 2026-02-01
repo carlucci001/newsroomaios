@@ -104,9 +104,11 @@ export default function Home() {
             <Link href="/pricing" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Pricing</Link>
             <Link href="/testimonials" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Success Stories</Link>
             <Button variant="ghost" size="sm">Sign In</Button>
-            <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-              Get Started <ArrowRight className="h-4 w-4" />
-            </Button>
+            <Link href="/onboarding">
+              <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
+                Get Started <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -159,13 +161,15 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mb-16">
-              <Button
-                size="lg"
-                className="text-lg px-10 h-16 gap-3 shadow-2xl shadow-brand-blue-500/30 hover:shadow-brand-blue-500/40 transition-all hover:scale-105 group"
-              >
-                Launch Your Paper
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
+              <Link href="/onboarding">
+                <Button
+                  size="lg"
+                  className="text-lg px-10 h-16 gap-3 shadow-2xl shadow-brand-blue-500/30 hover:shadow-brand-blue-500/40 transition-all hover:scale-105 group"
+                >
+                  Launch Your Paper
+                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
               <Button
                 size="lg"
                 variant="outline"
@@ -562,9 +566,11 @@ export default function Home() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full mb-6 hover:bg-brand-gray-50">
-                  Get Started
-                </Button>
+                <Link href="/onboarding" className="block">
+                  <Button variant="outline" className="w-full mb-6 hover:bg-brand-gray-50">
+                    Get Started
+                  </Button>
+                </Link>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -607,9 +613,11 @@ export default function Home() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Button className="w-full mb-6 shadow-lg shadow-brand-blue-500/30">
-                  Get Started
-                </Button>
+                <Link href="/onboarding" className="block">
+                  <Button className="w-full mb-6 shadow-lg shadow-brand-blue-500/30">
+                    Get Started
+                  </Button>
+                </Link>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -776,13 +784,15 @@ export default function Home() {
                 Join 500+ publishers who've transformed local journalism with AI-powered tools and multi-stream monetization.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
-                >
-                  Launch Your Paper <ArrowRight className="h-5 w-5" />
-                </Button>
+                <Link href="/onboarding">
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
+                  >
+                    Launch Your Paper <ArrowRight className="h-5 w-5" />
+                  </Button>
+                </Link>
                 <Button
                   size="lg"
                   variant="outline"

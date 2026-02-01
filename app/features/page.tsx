@@ -73,9 +73,11 @@ export default function FeaturesPage() {
               Success Stories
             </Link>
             <Button variant="ghost" size="sm">Sign In</Button>
-            <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-              Get Started <ArrowRight className="h-4 w-4" />
-            </Button>
+            <Link href="/onboarding">
+              <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
+                Get Started <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </nav>

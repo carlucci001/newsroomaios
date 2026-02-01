@@ -73,9 +73,11 @@ export default function HowItWorksPage() {
               Success Stories
             </Link>
             <Button variant="ghost" size="sm">Sign In</Button>
-            <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-              Get Started <ArrowRight className="h-4 w-4" />
-            </Button>
+            <Link href="/onboarding">
+              <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
+                Get Started <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -558,13 +560,15 @@ export default function HowItWorksPage() {
                 Join 500+ publishers who've launched successful newspapers with our platform. $199 one-time setup. Keep 100% of revenue.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
-                >
-                  Launch Your Paper <ArrowRight className="h-5 w-5" />
-                </Button>
+                <Link href="/onboarding">
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
+                  >
+                    Launch Your Paper <ArrowRight className="h-5 w-5" />
+                  </Button>
+                </Link>
                 <Link href="/pricing">
                   <Button
                     size="lg"
