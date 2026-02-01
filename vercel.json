@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/scheduled/run-all-tenants",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}

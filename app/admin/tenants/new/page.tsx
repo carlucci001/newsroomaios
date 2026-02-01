@@ -6,6 +6,7 @@ import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
 import { DEFAULT_PLANS } from '@/types/credits';
+import { createDefaultJournalists, createDefaultContentSources } from '@/types/aiJournalist';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -100,6 +101,22 @@ export default function NewTenantPage() {
         status: 'active',
         softLimitWarned: false,
       });
+
+      // Auto-provision AI journalists (one per category)
+      const journalists = createDefaultJournalists(
+        tenantRef.id,
+        form.businessName,
+        DEFAULT_CATEGORIES
+      );
+      for (const journalist of journalists) {
+        await addDoc(collection(db, 'aiJournalists'), journalist);
+      }
+
+      // Auto-provision content sources (local news feeds)
+      const sources = createDefaultContentSources(tenantRef.id, form.city, form.state);
+      for (const source of sources) {
+        await addDoc(collection(db, 'contentSources'), source);
+      }
 
       // Redirect to tenant detail page
       router.push(`/admin/tenants/${tenantRef.id}`);
@@ -264,12 +281,12 @@ export default function NewTenantPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div>
-            <p className="text-sm font-medium text-blue-800">What happens next?</p>
+            <p className="text-sm font-medium text-blue-800">What happens automatically?</p>
             <ul className="text-sm text-blue-700 mt-1 list-disc list-inside">
-              <li>The tenant will be created with "provisioning" status</li>
-              <li>Credits will be allocated based on the selected plan</li>
-              <li>You can deploy their site from the Updates page</li>
-              <li>Once deployed, change status to "active"</li>
+              <li>Tenant created with credits allocated</li>
+              <li>6 AI journalists auto-provisioned (one per category)</li>
+              <li>Content sources configured for their location</li>
+              <li>Master cron will start generating articles immediately</li>
             </ul>
           </div>
         </div>
