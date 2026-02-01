@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
     // Create tenant record
     const slug = generateSlug(businessName);
     const tenantId = `tenant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const apiKey = `${slug}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
     const tenantData: Tenant = {
       id: tenantId,
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
       slug,
       domain,
       ownerEmail,
+      apiKey,
       serviceArea,
       categories: selectedCategories,
       status: 'provisioning',
