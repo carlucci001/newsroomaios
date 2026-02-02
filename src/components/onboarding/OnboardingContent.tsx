@@ -546,9 +546,9 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
                   </div>
                 </div>
                 <div className="text-center py-6">
-                  <Button onClick={handleSubmit} size="lg" disabled={loading}>
+                  <Button onClick={handleSubmit} size="lg">
                     <Rocket className="h-4 w-4 mr-2" />
-                    {loading ? 'Launching...' : 'Launch Newspaper'}
+                    Launch Newspaper
                   </Button>
                 </div>
               </div>
