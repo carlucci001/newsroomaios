@@ -29,26 +29,34 @@ async function getTenantBySlug(slug: string): Promise<Tenant | null> {
 
 async function getArticles(tenantId: string): Promise<Article[]> {
   const db = getDb();
+  // Simple query without composite index requirement
   const articlesQuery = query(
     collection(db, `tenants/${tenantId}/articles`),
-    where('status', '==', 'published'),
-    orderBy('publishedAt', 'desc'),
-    limit(20)
+    limit(50)
   );
   const snap = await getDocs(articlesQuery);
-  return snap.docs.map((doc) => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      title: data.title,
-      slug: data.slug,
-      excerpt: data.excerpt,
-      categoryName: data.categoryName,
-      categorySlug: data.categorySlug,
-      publishedAt: data.publishedAt?.toDate?.() || new Date(),
-      author: data.author,
-    } as Article;
-  });
+
+  // Filter and sort in memory
+  const articles = snap.docs
+    .map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title,
+        slug: data.slug,
+        excerpt: data.excerpt,
+        categoryName: data.categoryName,
+        categorySlug: data.categorySlug,
+        publishedAt: data.publishedAt?.toDate?.() || new Date(),
+        author: data.author,
+        status: data.status,
+      };
+    })
+    .filter(a => a.status === 'published')
+    .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())
+    .slice(0, 20);
+
+  return articles as Article[];
 }
 
 export default async function TenantPage({
