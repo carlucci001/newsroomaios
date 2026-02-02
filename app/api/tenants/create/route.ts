@@ -3,7 +3,7 @@ import { collection, doc, setDoc, getDocs, query, where, addDoc } from 'firebase
 import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
 import { SetupProgress } from '@/types/setupStatus';
-import { AIJournalist } from '@/types/aiJournalist';
+import { createDefaultJournalists } from '@/types/aiJournalist';
 
 function generateSlug(businessName: string): string {
   return businessName
@@ -98,27 +98,8 @@ export async function POST(request: NextRequest) {
     await setDoc(doc(db, 'tenants', tenantId, 'meta', 'setupStatus'), progressData);
 
     // Create 6 AI journalists (one per category)
-    const journalistNames = [
-      'Alex Rivera', 'Jordan Chen', 'Sam Martinez',
-      'Taylor Brooks', 'Morgan Lee', 'Casey Kim'
-    ];
-
-    for (let i = 0; i < selectedCategories.length; i++) {
-      const cat = selectedCategories[i];
-      const journalist: Omit<AIJournalist, 'id'> = {
-        tenantId,
-        name: journalistNames[i],
-        categoryId: cat.id,
-        categoryName: cat.name,
-        status: 'active',
-        schedule: {
-          frequency: 'daily',
-          hour: 6 + i, // Stagger: 6AM, 7AM, 8AM, etc.
-          timezone: 'America/New_York',
-        },
-        articlesGenerated: 0,
-        createdAt: new Date(),
-      };
+    const journalists = createDefaultJournalists(tenantId, businessName, selectedCategories);
+    for (const journalist of journalists) {
       await addDoc(collection(db, 'aiJournalists'), journalist);
     }
 
