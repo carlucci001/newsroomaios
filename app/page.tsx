@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Sparkles,
-  Newspaper,
   TrendingUp,
   Users,
   Target,
@@ -14,7 +13,6 @@ import {
   ArrowRight,
   Play,
   Zap,
-  BarChart3,
   Globe2,
   Shield,
   Rocket,
@@ -26,15 +24,59 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { OnboardingContent } from "@/components/onboarding/OnboardingContent";
+import { StatusContent } from "@/components/status/StatusContent";
+
+type PageView = 'home' | 'onboarding' | 'status';
 
 export default function Home() {
   const [isVisible, setIsVisible] = useState(false);
+  const [pageView, setPageView] = useState<PageView>('home');
+  const [tenantId, setTenantId] = useState<string | null>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
   const pricingRef = useRef<HTMLDivElement>(null);
 
+  // Handle onboarding success - transition to status view
+  const handleOnboardingSuccess = (newTenantId: string) => {
+    setTenantId(newTenantId);
+    setPageView('status');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Go back to home
+  const goHome = () => {
+    setPageView('home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Open onboarding
+  const openOnboarding = () => {
+    setPageView('onboarding');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   useEffect(() => {
     setIsVisible(true);
+
+    // Check URL params for deep linking
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view');
+    const idParam = params.get('id');
+
+    if (viewParam === 'onboarding') {
+      setPageView('onboarding');
+    } else if (viewParam === 'status' && idParam) {
+      setTenantId(idParam);
+      setPageView('status');
+    }
+
+    // Clear URL params after reading them
+    if (viewParam) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
 
     const observerOptions = {
       threshold: 0.1,
@@ -56,7 +98,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background overflow-x-hidden flex flex-col">
       {/* Newsroom Background - VISIBLE at 25% opacity */}
       <div className="fixed inset-0 pointer-events-none">
         {/* Newspaper texture overlay */}
@@ -88,31 +130,25 @@ export default function Home() {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-50 border-b border-border/40 backdrop-blur-xl bg-background/90 sticky top-0">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-brand-blue-600">
-              <Newspaper className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-2xl font-display font-bold">
-              Newsroom <span className="text-brand-blue-600">AIOS</span>
-            </span>
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/features" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Features</Link>
-            <Link href="/how-it-works" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">How It Works</Link>
-            <Link href="/pricing" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Pricing</Link>
-            <Link href="/testimonials" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Success Stories</Link>
-            <Button variant="ghost" size="sm">Sign In</Button>
-            <Link href="/onboarding">
-              <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-                Get Started <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <SiteHeader onGetStarted={openOnboarding} />
 
+      {/* Conditional Content: Home Page OR Onboarding OR Status */}
+      {pageView === 'onboarding' && (
+        <OnboardingContent
+          onSuccess={handleOnboardingSuccess}
+          onBack={goHome}
+        />
+      )}
+
+      {pageView === 'status' && tenantId && (
+        <StatusContent
+          tenantId={tenantId}
+          onBack={goHome}
+        />
+      )}
+
+      {pageView === 'home' && (
+        <>
       {/* Hero Section with Background Image */}
       <section ref={heroRef} className="relative pt-24 pb-32 md:pt-32 md:pb-48 overflow-hidden">
         {/* Hero Background Image */}
@@ -161,15 +197,14 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mb-16">
-              <Link href="/onboarding">
-                <Button
-                  size="lg"
-                  className="text-lg px-10 h-16 gap-3 shadow-2xl shadow-brand-blue-500/30 hover:shadow-brand-blue-500/40 transition-all hover:scale-105 group"
-                >
-                  Launch Your Paper
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                onClick={openOnboarding}
+                className="text-lg px-10 h-16 gap-3 shadow-2xl shadow-brand-blue-500/30 hover:shadow-brand-blue-500/40 transition-all hover:scale-105 group"
+              >
+                Launch Your Paper
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
               <Button
                 size="lg"
                 variant="outline"
@@ -566,11 +601,9 @@ export default function Home() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Link href="/onboarding" className="block">
-                  <Button variant="outline" className="w-full mb-6 hover:bg-brand-gray-50">
-                    Get Started
-                  </Button>
-                </Link>
+                <Button variant="outline" onClick={openOnboarding} className="w-full mb-6 hover:bg-brand-gray-50">
+                  Get Started
+                </Button>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -613,11 +646,9 @@ export default function Home() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Link href="/onboarding" className="block">
-                  <Button className="w-full mb-6 shadow-lg shadow-brand-blue-500/30">
-                    Get Started
-                  </Button>
-                </Link>
+                <Button onClick={openOnboarding} className="w-full mb-6 shadow-lg shadow-brand-blue-500/30">
+                  Get Started
+                </Button>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -784,15 +815,14 @@ export default function Home() {
                 Join 500+ publishers who've transformed local journalism with AI-powered tools and multi-stream monetization.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-                <Link href="/onboarding">
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
-                  >
-                    Launch Your Paper <ArrowRight className="h-5 w-5" />
-                  </Button>
-                </Link>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  onClick={openOnboarding}
+                  className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
+                >
+                  Launch Your Paper <ArrowRight className="h-5 w-5" />
+                </Button>
                 <Button
                   size="lg"
                   variant="outline"
@@ -809,62 +839,11 @@ export default function Home() {
         </div>
       </section>
 
+        </>
+      )}
+
       {/* Footer */}
-      <footer className="relative border-t border-border bg-gradient-to-b from-muted/50 to-muted/80 py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-12 mb-12">
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-brand-blue-600">
-                  <Newspaper className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xl font-display font-bold">
-                  Newsroom <span className="text-brand-blue-600">AIOS</span>
-                </span>
-              </div>
-              <p className="text-sm text-foreground/80 leading-relaxed">
-                Empowering local journalism with AI-powered tools and built-in monetization.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4 text-foreground">Platform</h3>
-              <ul className="space-y-3 text-sm text-foreground/70">
-                <li><Link href="/features" className="hover:text-brand-blue-600 transition-colors">Features</Link></li>
-                <li><Link href="/pricing" className="hover:text-brand-blue-600 transition-colors">Pricing</Link></li>
-                <li><Link href="/testimonials" className="hover:text-brand-blue-600 transition-colors">Success Stories</Link></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Documentation</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4 text-foreground">Resources</h3>
-              <ul className="space-y-3 text-sm text-foreground/70">
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Community</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">API Reference</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4 text-foreground">Company</h3>
-              <ul className="space-y-3 text-sm text-foreground/70">
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Terms of Service</a></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-8 border-t border-border text-center">
-            <p className="text-sm text-foreground/60">
-              © 2026 Newsroom AIOS. Transforming local journalism with AI. Built with ❤️ for community publishers.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
 
       <style jsx>{`
         @keyframes fade-in-up {

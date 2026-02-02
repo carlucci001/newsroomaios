@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-05-28.basil',
-});
-
 // Pricing tiers in cents
 const PRICING = {
   setup: 19900, // $199 one-time setup fee
@@ -15,6 +11,20 @@ const PRICING = {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify Stripe is configured
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey) {
+      return NextResponse.json(
+        { error: 'Stripe is not configured. Please contact support.' },
+        { status: 500 }
+      );
+    }
+
+    // Initialize Stripe client inside function to ensure env var is available
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: '2025-12-15.clover',
+    });
+
     const body = await request.json();
     const { plan, email, newspaperName } = body;
 
@@ -86,8 +96,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Stripe error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to create payment intent' },
+      { error: `Failed to create payment intent: ${errorMessage}` },
       { status: 500 }
     );
   }
