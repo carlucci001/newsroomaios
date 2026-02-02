@@ -99,16 +99,11 @@ class VercelService {
           type: 'github',
           repo: gitRepo,
         },
-        buildCommand: 'npm run build',
-        outputDirectory: '.next',
-        installCommand: 'npm install',
-        devCommand: 'npm run dev',
-        rootDirectory: null,
       });
 
       if (!response.ok) {
         const error = await response.json();
-        console.error('Failed to create Vercel project:', error);
+        console.error('Failed to create Vercel project:', JSON.stringify(error));
         return null;
       }
 
