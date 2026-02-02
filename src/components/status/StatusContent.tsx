@@ -7,14 +7,56 @@ import { SetupProgress, getProgressPercentage } from '@/types/setupStatus';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home } from 'lucide-react';
 
+// Comprehensive category metadata for all 34 categories
 const categoryMeta: Record<string, { icon: string; color: string; bgColor: string }> = {
+  // Core News
   'local-news': { icon: '🏛️', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
-  'sports': { icon: '🏈', color: 'text-green-400', bgColor: 'bg-green-500/20' },
+  'breaking-news': { icon: '🚨', color: 'text-red-400', bgColor: 'bg-red-500/20' },
+  'politics': { icon: '🏛️', color: 'text-indigo-400', bgColor: 'bg-indigo-500/20' },
+  'crime': { icon: '🚔', color: 'text-red-400', bgColor: 'bg-red-500/20' },
+  // Business & Economy
   'business': { icon: '💼', color: 'text-amber-400', bgColor: 'bg-amber-500/20' },
-  'weather': { icon: '🌤️', color: 'text-cyan-400', bgColor: 'bg-cyan-500/20' },
+  'real-estate': { icon: '🏠', color: 'text-emerald-400', bgColor: 'bg-emerald-500/20' },
+  'jobs': { icon: '💼', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
+  'agriculture': { icon: '🌾', color: 'text-green-400', bgColor: 'bg-green-500/20' },
+  // Sports & Recreation
+  'sports': { icon: '🏈', color: 'text-green-400', bgColor: 'bg-green-500/20' },
+  'high-school-sports': { icon: '🏆', color: 'text-orange-400', bgColor: 'bg-orange-500/20' },
+  'college-sports': { icon: '🎓', color: 'text-purple-400', bgColor: 'bg-purple-500/20' },
+  'outdoors': { icon: '🏕️', color: 'text-green-400', bgColor: 'bg-green-500/20' },
+  // Lifestyle & Culture
+  'entertainment': { icon: '🎭', color: 'text-purple-400', bgColor: 'bg-purple-500/20' },
+  'food-dining': { icon: '🍽️', color: 'text-orange-400', bgColor: 'bg-orange-500/20' },
+  'lifestyle': { icon: '✨', color: 'text-pink-400', bgColor: 'bg-pink-500/20' },
+  'faith': { icon: '⛪', color: 'text-indigo-400', bgColor: 'bg-indigo-500/20' },
+  'pets-animals': { icon: '🐾', color: 'text-amber-400', bgColor: 'bg-amber-500/20' },
+  // Community & People
   'community': { icon: '🤝', color: 'text-purple-400', bgColor: 'bg-purple-500/20' },
+  'obituaries': { icon: '🕯️', color: 'text-gray-400', bgColor: 'bg-gray-500/20' },
+  'events': { icon: '📅', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
+  'seniors': { icon: '👴', color: 'text-teal-400', bgColor: 'bg-teal-500/20' },
+  'veterans': { icon: '🎖️', color: 'text-red-400', bgColor: 'bg-red-500/20' },
+  // Education & Youth
+  'education': { icon: '📚', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
+  'youth': { icon: '👦', color: 'text-cyan-400', bgColor: 'bg-cyan-500/20' },
+  // Health & Environment
+  'health': { icon: '🏥', color: 'text-red-400', bgColor: 'bg-red-500/20' },
+  'environment': { icon: '🌱', color: 'text-green-400', bgColor: 'bg-green-500/20' },
+  'weather': { icon: '🌤️', color: 'text-cyan-400', bgColor: 'bg-cyan-500/20' },
+  // Transportation & Infrastructure
+  'transportation': { icon: '🚗', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
+  'development': { icon: '🏗️', color: 'text-orange-400', bgColor: 'bg-orange-500/20' },
+  // Special Interest
+  'technology': { icon: '💻', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
+  'tourism': { icon: '✈️', color: 'text-cyan-400', bgColor: 'bg-cyan-500/20' },
+  'history': { icon: '📜', color: 'text-amber-400', bgColor: 'bg-amber-500/20' },
+  // Opinion & Editorial
   'opinion': { icon: '💭', color: 'text-pink-400', bgColor: 'bg-pink-500/20' },
+  'letters': { icon: '✉️', color: 'text-gray-400', bgColor: 'bg-gray-500/20' },
 };
+
+// Default metadata for any category not in the list
+const defaultCategoryMeta = { icon: '📰', color: 'text-blue-400', bgColor: 'bg-blue-500/20' };
 
 const activityTemplates = [
   { action: 'Scanning RSS feeds', icon: '📡' },
@@ -69,14 +111,18 @@ export function StatusContent({ tenantId, onBack }: StatusContentProps) {
   useEffect(() => {
     const interval = setInterval(() => {
       const template = activityTemplates[Math.floor(Math.random() * activityTemplates.length)];
-      const categories = Object.keys(categoryMeta);
+      // Use actual user categories if available, otherwise fall back to generic
+      const categories = progress?.categoryProgress
+        ? Object.keys(progress.categoryProgress)
+        : ['local-news', 'sports', 'business'];
       const randomCat = categories[Math.floor(Math.random() * categories.length)];
+      const catName = progress?.categoryProgress?.[randomCat]?.name || randomCat.replace(/-/g, ' ');
       setActivities((prev) => {
         const newActivity: ActivityItem = {
           id: `${Date.now()}-${Math.random()}`,
           message: template.action,
           icon: template.icon,
-          category: randomCat,
+          category: catName,
           timestamp: new Date(),
           type: 'info',
         };
@@ -84,7 +130,7 @@ export function StatusContent({ tenantId, onBack }: StatusContentProps) {
       });
     }, 2500);
     return () => clearInterval(interval);
-  }, []);
+  }, [progress]);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -285,12 +331,13 @@ export function StatusContent({ tenantId, onBack }: StatusContentProps) {
           {/* Category Progress */}
           <h3 className="text-base font-semibold mb-4 flex items-center gap-2"><span>📊</span> Category Progress</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {Object.entries(categoryMeta).map(([catId, meta], index) => {
-              const catProgress = progress?.categoryProgress?.[catId];
+            {Object.entries(progress?.categoryProgress || {}).map(([catId, catProgress], index) => {
+              const meta = categoryMeta[catId] || defaultCategoryMeta;
               const generated = catProgress?.generated || 0;
               const total = catProgress?.total || 6;
-              const status = catProgress?.status || (index === 0 ? 'in_progress' : 'pending');
+              const status = catProgress?.status || 'pending';
               const percent = (generated / total) * 100;
+              const displayName = catProgress?.name || catId.replace(/-/g, ' ');
 
               return (
                 <motion.div
@@ -306,7 +353,7 @@ export function StatusContent({ tenantId, onBack }: StatusContentProps) {
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-xl">{meta.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm capitalize truncate">{catId.replace('-', ' ')}</p>
+                      <p className="font-semibold text-sm truncate">{displayName}</p>
                       <p className="text-xs text-muted-foreground">{generated}/{total} articles</p>
                     </div>
                     {status === 'in_progress' && (
@@ -346,7 +393,7 @@ export function StatusContent({ tenantId, onBack }: StatusContentProps) {
                 >
                   <span>{activity.icon}</span>
                   <span>{activity.message}</span>
-                  {activity.category && <span className="text-muted-foreground/60 capitalize">({activity.category.replace('-', ' ')})</span>}
+                  {activity.category && <span className="text-muted-foreground/60">({activity.category})</span>}
                 </motion.div>
               ))}
             </AnimatePresence>
