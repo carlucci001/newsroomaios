@@ -8,7 +8,9 @@ import {
   doc,
   updateDoc,
   addDoc,
+  setDoc,
 } from 'firebase/firestore';
+import { SetupProgress } from '@/types/setupStatus';
 import { Tenant } from '@/types/tenant';
 import { AIJournalist } from '@/types/aiJournalist';
 import { CREDIT_COSTS } from '@/types/credits';
@@ -271,7 +273,7 @@ function isJournalistDue(
 
 /**
  * Generate an article for a tenant using their AI journalist
- * (Placeholder implementation - actual AI generation would be more complex)
+ * Calls the centralized AI generation API
  */
 async function generateArticleForTenant(
   tenant: Tenant,
@@ -286,14 +288,78 @@ async function generateArticleForTenant(
       return null;
     }
 
-    // Generate article title based on category and location
+    // Check if we have Gemini API key configured
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (!geminiApiKey) {
+      console.warn(`[${tenant.businessName}] No Gemini API key - using placeholder content`);
+      return generatePlaceholderArticle(tenant, journalist, category, db);
+    }
+
+    // Call the AI generation API
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const platformSecret = process.env.PLATFORM_SECRET || 'paper-partner-2024';
+
+    // Use web search to find current news for this category
+    const response = await fetch(`${baseUrl}/api/ai/generate-article`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Platform-Secret': platformSecret,
+        'X-Tenant-ID': tenant.id,
+      },
+      body: JSON.stringify({
+        tenantId: tenant.id,
+        categoryId: category.id,
+        useWebSearch: tenant.aiSettings?.enableWebSearch ?? true,
+        journalistId: journalist.id,
+        journalistName: journalist.name,
+        generateSEO: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'AI generation failed');
+    }
+
+    const result = await response.json();
+
+    if (!result.success || !result.article) {
+      throw new Error(result.error || 'No article generated');
+    }
+
+    console.log(`[${tenant.businessName}] Generated AI article: ${result.article.title}`);
+
+    // Article is already saved by the API, return the info
+    // Note: The API saves to tenants/{id}/articles, we need to get the ID
+    // For now, we'll create a reference since the API handles storage
+    return {
+      id: result.article.slug, // Use slug as temporary ID reference
+      title: result.article.title,
+    };
+  } catch (error) {
+    console.error(`[${tenant.businessName}] Article generation failed:`, error);
+    // Fallback to placeholder on error
+    return generatePlaceholderArticle(tenant, journalist, tenant.categories.find(c => c.id === journalist.categoryId)!, db);
+  }
+}
+
+/**
+ * Generate a placeholder article when AI is not available
+ */
+async function generatePlaceholderArticle(
+  tenant: Tenant,
+  journalist: AIJournalist,
+  category: { id: string; name: string; slug: string; directive: string },
+  db: ReturnType<typeof getDb>
+): Promise<{ id: string; title: string } | null> {
+  try {
     const title = generatePlaceholderTitle(
       category.name,
       tenant.serviceArea.city,
       tenant.serviceArea.state
     );
 
-    // Create article document
     const articleData = {
       tenantId: tenant.id,
       title,
@@ -310,6 +376,7 @@ async function generateArticleForTenant(
       createdAt: new Date(),
       author: journalist.name,
       isAIGenerated: true,
+      isPlaceholder: true,
     };
 
     const articleRef = await addDoc(
@@ -317,11 +384,10 @@ async function generateArticleForTenant(
       articleData
     );
 
-    console.log(`[${tenant.businessName}] Generated article: ${title}`);
-
+    console.log(`[${tenant.businessName}] Generated placeholder article: ${title}`);
     return { id: articleRef.id, title };
   } catch (error) {
-    console.error(`[${tenant.businessName}] Article generation failed:`, error);
+    console.error(`[${tenant.businessName}] Placeholder article failed:`, error);
     return null;
   }
 }
@@ -353,6 +419,8 @@ function slugify(text: string): string {
 /**
  * Seed a new tenant with 36 articles (6 per category)
  * This is covered by the setup fee, not monthly credits
+ * Uses same AI generation as regular articles for consistent quality
+ * Tracks progress in real-time for status page
  */
 async function seedTenantArticles(
   tenant: Tenant,
@@ -361,25 +429,95 @@ async function seedTenantArticles(
   const ARTICLES_PER_CATEGORY = 6;
   let articlesCreated = 0;
   const errors: string[] = [];
+  const totalArticles = tenant.categories.length * ARTICLES_PER_CATEGORY;
 
-  // Article templates for variety
-  const articleTemplates = [
-    { prefix: 'Breaking:', suffix: 'Story Develops' },
-    { prefix: 'Update:', suffix: 'What You Need to Know' },
-    { prefix: 'Local', suffix: 'News Roundup' },
-    { prefix: 'Community', suffix: 'Spotlight' },
-    { prefix: 'Weekly', suffix: 'Report' },
-    { prefix: 'Feature:', suffix: 'In Focus' },
-  ];
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const platformSecret = process.env.PLATFORM_SECRET || 'paper-partner-2024';
 
-  for (const category of tenant.categories) {
+  // Initialize category progress tracking
+  const categoryProgress: SetupProgress['categoryProgress'] = {};
+  for (const cat of tenant.categories) {
+    categoryProgress[cat.id] = {
+      name: cat.name,
+      generated: 0,
+      total: ARTICLES_PER_CATEGORY,
+      status: 'pending',
+    };
+  }
+
+  // Initialize setup status in Firestore
+  const statusRef = doc(db, `tenants/${tenant.id}/meta`, 'setupStatus');
+  await setDoc(statusRef, {
+    currentStep: 'journalists_created',
+    completedSteps: ['account_created', 'payment_received', 'journalists_created'],
+    articlesGenerated: 0,
+    totalArticles,
+    categoryProgress,
+    startedAt: new Date(),
+    lastUpdatedAt: new Date(),
+    errors: [],
+  });
+
+  // Process each category
+  for (let catIndex = 0; catIndex < tenant.categories.length; catIndex++) {
+    const category = tenant.categories[catIndex];
+    const stepName = `generating_${category.slug || category.id}`;
+
+    // Update status: starting this category
+    categoryProgress[category.id].status = 'in_progress';
+    await setDoc(statusRef, {
+      currentStep: stepName,
+      currentCategory: category.name,
+      categoryProgress,
+      articlesGenerated: articlesCreated,
+      lastUpdatedAt: new Date(),
+    }, { merge: true });
+
     for (let i = 0; i < ARTICLES_PER_CATEGORY; i++) {
       try {
+        // If Gemini is configured, use real AI generation
+        if (geminiApiKey) {
+          const response = await fetch(`${baseUrl}/api/ai/generate-article`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Platform-Secret': platformSecret,
+              'X-Tenant-ID': tenant.id,
+            },
+            body: JSON.stringify({
+              tenantId: tenant.id,
+              categoryId: category.id,
+              useWebSearch: true,
+              journalistName: `${category.name} Reporter`,
+              generateSEO: true,
+            }),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              articlesCreated++;
+              categoryProgress[category.id].generated++;
+
+              // Update progress in real-time
+              await setDoc(statusRef, {
+                articlesGenerated: articlesCreated,
+                categoryProgress,
+                lastUpdatedAt: new Date(),
+              }, { merge: true });
+
+              console.log(`[Seed] ${tenant.businessName} - Created AI article ${articlesCreated}/${totalArticles} for ${category.name}`);
+              continue;
+            }
+          }
+        }
+
+        // Fallback: Create placeholder seed article
         const template = articleTemplates[i % articleTemplates.length];
         const title = `${template.prefix} ${tenant.serviceArea.city} ${category.name} ${template.suffix}`;
         const slug = slugify(title) + `-${Date.now().toString(36).slice(-4)}`;
 
-        // Create seed article
         const articleData = {
           tenantId: tenant.id,
           title,
@@ -396,23 +534,61 @@ async function seedTenantArticles(
           categoryName: category.name,
           categorySlug: category.slug,
           status: 'published',
-          publishedAt: new Date(Date.now() - i * 3600000), // Stagger publish times
+          publishedAt: new Date(Date.now() - i * 3600000),
           createdAt: new Date(),
           author: `${category.name} Reporter`,
           isAIGenerated: true,
           isSeedArticle: true,
+          isPlaceholder: true,
         };
 
         await addDoc(collection(db, `tenants/${tenant.id}/articles`), articleData);
         articlesCreated++;
+        categoryProgress[category.id].generated++;
+
+        // Update progress
+        await setDoc(statusRef, {
+          articlesGenerated: articlesCreated,
+          categoryProgress,
+          lastUpdatedAt: new Date(),
+        }, { merge: true });
+
       } catch (error: any) {
         errors.push(`${category.name} article ${i + 1}: ${error.message}`);
       }
     }
+
+    // Mark category complete
+    categoryProgress[category.id].status = 'complete';
+    await setDoc(statusRef, {
+      categoryProgress,
+      lastUpdatedAt: new Date(),
+    }, { merge: true });
   }
+
+  // Mark seeding complete
+  await setDoc(statusRef, {
+    currentStep: 'complete',
+    completedSteps: ['account_created', 'payment_received', 'journalists_created', 'generating_local_news', 'generating_sports', 'generating_business', 'generating_weather', 'generating_community', 'generating_opinion', 'deploying_site', 'complete'],
+    articlesGenerated: articlesCreated,
+    categoryProgress,
+    lastUpdatedAt: new Date(),
+    errors,
+    siteUrl: `https://${tenant.id}.newsroomaios.com`, // Placeholder URL
+  }, { merge: true });
 
   return { articlesCreated, errors };
 }
+
+// Article templates for seed variety (used when AI is unavailable)
+const articleTemplates = [
+  { prefix: 'Breaking:', suffix: 'Story Develops' },
+  { prefix: 'Update:', suffix: 'What You Need to Know' },
+  { prefix: 'Local', suffix: 'News Roundup' },
+  { prefix: 'Community', suffix: 'Spotlight' },
+  { prefix: 'Weekly', suffix: 'Report' },
+  { prefix: 'Feature:', suffix: 'In Focus' },
+];
 
 /**
  * Generate placeholder content for seed articles

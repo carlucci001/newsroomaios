@@ -80,6 +80,38 @@ export async function POST(request: NextRequest) {
 
     await db.collection('tenants').doc(tenantId).set(tenantData);
 
+    // Create categories subcollection for template compatibility
+    const categoryColors: Record<string, string> = {
+      'local-news': '#1d4ed8',
+      'sports': '#dc2626',
+      'business': '#059669',
+      'politics': '#6366f1',
+      'entertainment': '#7c3aed',
+      'weather': '#0ea5e9',
+      'lifestyle': '#db2777',
+      'outdoors': '#16a34a',
+      'community': '#f59e0b',
+    };
+
+    const catBatch = db.batch();
+    for (let i = 0; i < selectedCategories.length; i++) {
+      const cat = selectedCategories[i];
+      const catRef = db.collection(`tenants/${tenantId}/categories`).doc(cat.id || cat.slug);
+      catBatch.set(catRef, {
+        name: cat.name,
+        slug: cat.slug || cat.id,
+        color: categoryColors[cat.slug] || categoryColors[cat.id] || '#1d4ed8',
+        description: cat.directive || '',
+        editorialDirective: cat.directive || '',
+        isActive: cat.enabled !== false,
+        sortOrder: i,
+        articleCount: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+    await catBatch.commit();
+
     // Create setup progress document for status tracking
     const now = new Date();
     const progressData: SetupProgress = {

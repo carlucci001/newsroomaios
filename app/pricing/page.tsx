@@ -7,17 +7,17 @@ import {
   ArrowRight,
   Shield,
   Zap,
-  Globe2,
   Star,
   Award,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Newsroom Background - VISIBLE at 25% opacity */}
       <div className="fixed inset-0 pointer-events-none">
         <div
@@ -44,38 +44,7 @@ export default function PricingPage() {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-50 border-b border-border/40 backdrop-blur-xl bg-background/90 sticky top-0">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-brand-blue-600">
-              <Globe2 className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-2xl font-display font-bold">
-              Newsroom <span className="text-brand-blue-600">AIOS</span>
-            </span>
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/features" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">
-              Features
-            </Link>
-            <Link href="/how-it-works" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">
-              How It Works
-            </Link>
-            <Link href="/pricing" className="text-sm font-medium text-brand-blue-600 border-b-2 border-brand-blue-600">
-              Pricing
-            </Link>
-            <Link href="/testimonials" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">
-              Success Stories
-            </Link>
-            <Button variant="ghost" size="sm">Sign In</Button>
-            <Link href="/onboarding">
-              <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-                Get Started <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <SiteHeader />
 
       {/* Hero Section */}
       <section className="relative pt-24 pb-16">
@@ -520,61 +489,7 @@ export default function PricingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-muted/30 py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-12 mb-12">
-            <div>
-              <Link href="/" className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-brand-blue-600">
-                  <Globe2 className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xl font-display font-bold">
-                  Newsroom <span className="text-brand-blue-600">AIOS</span>
-                </span>
-              </Link>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Empowering local journalism with AI-powered tools and built-in monetization.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Platform</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><Link href="/features" className="hover:text-brand-blue-600 transition-colors">Features</Link></li>
-                <li><Link href="/pricing" className="hover:text-brand-blue-600 transition-colors">Pricing</Link></li>
-                <li><Link href="/testimonials" className="hover:text-brand-blue-600 transition-colors">Success Stories</Link></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Documentation</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Resources</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Community</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">API Reference</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Company</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Terms of Service</a></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-8 border-t border-border text-center">
-            <p className="text-sm text-muted-foreground">
-              © 2026 Newsroom AIOS. Transforming local journalism with AI.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

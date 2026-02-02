@@ -29,6 +29,20 @@ service cloud.firestore {
     match /tenants/{tenantId} {
       allow read: if true;
       allow write: if true;  // Allow server-side tenant management
+
+      // Tenant subcollections (meta, articles, etc.)
+      match /{subcollection}/{docId} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+
+    // ============================================
+    // AI JOURNALISTS
+    // ============================================
+    match /aiJournalists/{journalistId} {
+      allow read: if true;
+      allow write: if true;  // Allow server-side journalist management
     }
 
     // ============================================

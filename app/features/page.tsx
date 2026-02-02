@@ -562,19 +562,22 @@ export default function FeaturesPage() {
             </div>
 
             <div>
-              <h3 className="font-semibold mb-4">Company</h3>
+              <h3 className="font-semibold mb-4">Legal</h3>
               <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Terms of Service</a></li>
+                <li><Link href="/privacy" className="hover:text-brand-blue-600 transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="hover:text-brand-blue-600 transition-colors">Terms of Use</Link></li>
+                <li><Link href="/refund-policy" className="hover:text-brand-blue-600 transition-colors">Refund Policy</Link></li>
+                <li><a href="mailto:support@newsroomaios.com" className="hover:text-brand-blue-600 transition-colors">Contact Us</a></li>
               </ul>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-border text-center">
+          <div className="pt-8 border-t border-border text-center space-y-2">
             <p className="text-sm text-muted-foreground">
-              © 2026 Newsroom AIOS. Transforming local journalism with AI.
+              © 2026 Newsroom AIOS. A service of <strong>Farrington Development LLC</strong>. All rights reserved.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              <Link href="/refund-policy" className="underline hover:text-brand-blue-600">No refunds once your paper is live.</Link> Cancel anytime.
             </p>
           </div>
         </div>
