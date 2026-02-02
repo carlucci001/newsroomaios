@@ -20,8 +20,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize Stripe client inside function to ensure env var is available
-    const stripe = new Stripe(stripeKey);
+    // Log key prefix for debugging (safe - only shows test/live mode)
+    console.log('Stripe key type:', stripeKey.startsWith('sk_test_') ? 'TEST' : stripeKey.startsWith('sk_live_') ? 'LIVE' : 'UNKNOWN');
+    console.log('Stripe key length:', stripeKey.length);
+
+    // Initialize Stripe client with explicit API version
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: '2024-06-20',
+    });
 
     const body = await request.json();
     const { plan, email, newspaperName } = body;
@@ -92,8 +98,11 @@ export async function POST(request: NextRequest) {
         total: totalAmount / 100,
       },
     });
-  } catch (error) {
-    console.error('Stripe error:', error);
+  } catch (error: any) {
+    console.error('Stripe error full:', JSON.stringify(error, null, 2));
+    console.error('Stripe error type:', error?.type);
+    console.error('Stripe error code:', error?.code);
+    console.error('Stripe error message:', error?.message);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
       { error: `Failed to create payment intent: ${errorMessage}` },
