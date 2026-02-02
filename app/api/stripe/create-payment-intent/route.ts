@@ -21,9 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize Stripe client inside function to ensure env var is available
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: '2025-12-15.clover',
-    });
+    const stripe = new Stripe(stripeKey);
 
     const body = await request.json();
     const { plan, email, newspaperName } = body;
