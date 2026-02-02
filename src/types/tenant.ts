@@ -72,4 +72,12 @@ export interface Tenant {
 
   // Platform connection
   platformUrl?: string;          // e.g., "https://newsroomaios.com"
+
+  // AI Configuration
+  editorInChiefDirective?: string;  // Global editorial voice/style guide
+  aiSettings?: {
+    defaultModel?: string;          // e.g., 'gemini-2.0-flash'
+    defaultTemperature?: number;    // 0.1 - 1.0
+    enableWebSearch?: boolean;      // Use Perplexity for research
+  };
 }
