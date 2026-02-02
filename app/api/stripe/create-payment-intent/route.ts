@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       console.log('Created new customer:', customerId);
     }
 
-    // Create payment intent using REST API
+    // Create payment intent using REST API (card only, no Apple Pay)
     const paymentIntent = await stripeAPI('/payment_intents', 'POST', {
       amount: totalAmount.toString(),
       currency: 'usd',
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       'metadata[plan]': plan,
       'metadata[setupFee]': setupFee.toString(),
       'metadata[monthlyFee]': monthlyFee.toString(),
-      'automatic_payment_methods[enabled]': 'true',
+      'payment_method_types[0]': 'card',
       description: `${newspaperName} - ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan Setup`,
     });
 

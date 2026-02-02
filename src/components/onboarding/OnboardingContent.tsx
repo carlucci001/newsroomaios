@@ -509,7 +509,14 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
                   </div>
                 </div>
                 {clientSecret ? (
-                  <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#2563eb' } } }}>
+                  <Elements
+                    stripe={stripePromise}
+                    options={{
+                      clientSecret,
+                      appearance: { theme: 'stripe', variables: { colorPrimary: '#2563eb' } },
+                      paymentMethodCreation: 'manual',
+                    }}
+                  >
                     <PaymentForm onSuccess={handlePaymentSuccess} onError={setError} loading={loading} setLoading={setLoading} />
                   </Elements>
                 ) : (
