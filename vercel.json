@@ -3,6 +3,10 @@
     {
       "path": "/api/scheduled/run-all-tenants",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/scheduled/backup-tenants",
+      "schedule": "0 3 * * *"
     }
   ]
 }
