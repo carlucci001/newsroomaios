@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, doc, setDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs, query, where, addDoc } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
+import { SetupProgress } from '@/types/setupStatus';
+import { AIJournalist } from '@/types/aiJournalist';
 
 function generateSlug(businessName: string): string {
   return businessName
@@ -70,8 +72,61 @@ export async function POST(request: NextRequest) {
 
     await setDoc(doc(tenantsRef, tenantId), tenantData);
 
+    // Create setup progress document for status tracking
+    const progressData: SetupProgress = {
+      tenantId,
+      currentStep: 'creating_journalists',
+      articlesGenerated: 0,
+      totalArticles: 36,
+      categoryProgress: {},
+      startedAt: new Date(),
+    };
+
+    // Initialize category progress
+    for (const cat of selectedCategories) {
+      progressData.categoryProgress[cat.id] = {
+        generated: 0,
+        total: 6,
+        status: 'pending',
+      };
+    }
+
+    await setDoc(doc(db, 'tenants', tenantId, 'meta', 'setupStatus'), progressData);
+
+    // Create 6 AI journalists (one per category)
+    const journalistNames = [
+      'Alex Rivera', 'Jordan Chen', 'Sam Martinez',
+      'Taylor Brooks', 'Morgan Lee', 'Casey Kim'
+    ];
+
+    for (let i = 0; i < selectedCategories.length; i++) {
+      const cat = selectedCategories[i];
+      const journalist: Omit<AIJournalist, 'id'> = {
+        tenantId,
+        name: journalistNames[i],
+        categoryId: cat.id,
+        categoryName: cat.name,
+        status: 'active',
+        schedule: {
+          frequency: 'daily',
+          hour: 6 + i, // Stagger: 6AM, 7AM, 8AM, etc.
+          timezone: 'America/New_York',
+        },
+        articlesGenerated: 0,
+        createdAt: new Date(),
+      };
+      await addDoc(collection(db, 'aiJournalists'), journalist);
+    }
+
+    // Trigger seeding in background (don't await - let it run async)
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://newsroomaios.vercel.app';
+    fetch(`${baseUrl}/api/scheduled/run-all-tenants`, {
+      method: 'GET',
+      headers: { 'X-Trigger-Source': 'tenant-creation' },
+    }).catch(err => console.error('Failed to trigger seeding:', err));
+
     // Generate path-based URL
-    const newspaperUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://newsroomaios.vercel.app'}/${slug}`;
+    const newspaperUrl = `${baseUrl}/${slug}`;
 
     return NextResponse.json({
       success: true,
