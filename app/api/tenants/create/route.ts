@@ -73,18 +73,22 @@ export async function POST(request: NextRequest) {
     await setDoc(doc(tenantsRef, tenantId), tenantData);
 
     // Create setup progress document for status tracking
+    const now = new Date();
     const progressData: SetupProgress = {
-      tenantId,
-      currentStep: 'creating_journalists',
+      currentStep: 'journalists_created',
+      completedSteps: ['account_created', 'payment_received'],
       articlesGenerated: 0,
       totalArticles: 36,
       categoryProgress: {},
-      startedAt: new Date(),
+      startedAt: now,
+      lastUpdatedAt: now,
+      errors: [],
     };
 
     // Initialize category progress
     for (const cat of selectedCategories) {
       progressData.categoryProgress[cat.id] = {
+        name: cat.name,
         generated: 0,
         total: 6,
         status: 'pending',
