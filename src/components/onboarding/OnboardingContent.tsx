@@ -63,9 +63,9 @@ function PaymentForm({
       redirect: 'if_required',
     });
 
+    setLoading(false);
     if (error) {
       onError(error.message || 'Payment failed');
-      setLoading(false);
     } else {
       onSuccess();
     }
