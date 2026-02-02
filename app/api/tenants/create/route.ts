@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, doc, setDoc, getDocs, query, where, addDoc } from 'firebase/firestore';
-import { getDb } from '@/lib/firebase';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 import { Tenant } from '@/types/tenant';
 import { SetupProgress } from '@/types/setupStatus';
 import { createDefaultJournalists } from '@/types/aiJournalist';
@@ -37,11 +36,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get Admin Firestore (bypasses security rules)
+    const db = getAdminDb();
+    if (!db) {
+      console.error('Firebase Admin not configured');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
     // Check if domain already exists
-    const db = getDb();
-    const tenantsRef = collection(db, 'tenants');
-    const domainQuery = query(tenantsRef, where('domain', '==', domain));
-    const existingTenants = await getDocs(domainQuery);
+    const existingTenants = await db.collection('tenants')
+      .where('domain', '==', domain)
+      .get();
 
     if (!existingTenants.empty) {
       return NextResponse.json(
@@ -70,7 +78,7 @@ export async function POST(request: NextRequest) {
       trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
     };
 
-    await setDoc(doc(tenantsRef, tenantId), tenantData);
+    await db.collection('tenants').doc(tenantId).set(tenantData);
 
     // Create setup progress document for status tracking
     const now = new Date();
@@ -95,13 +103,16 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    await setDoc(doc(db, 'tenants', tenantId, 'meta', 'setupStatus'), progressData);
+    await db.collection('tenants').doc(tenantId).collection('meta').doc('setupStatus').set(progressData);
 
     // Create 6 AI journalists (one per category)
     const journalists = createDefaultJournalists(tenantId, businessName, selectedCategories);
+    const batch = db.batch();
     for (const journalist of journalists) {
-      await addDoc(collection(db, 'aiJournalists'), journalist);
+      const journalistRef = db.collection('aiJournalists').doc();
+      batch.set(journalistRef, journalist);
     }
+    await batch.commit();
 
     // Trigger seeding in background (don't await - let it run async)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://newsroomaios.vercel.app';
@@ -110,8 +121,19 @@ export async function POST(request: NextRequest) {
       headers: { 'X-Trigger-Source': 'tenant-creation' },
     }).catch(err => console.error('Failed to trigger seeding:', err));
 
-    // Generate path-based URL
-    const newspaperUrl = `${baseUrl}/${slug}`;
+    // Trigger Vercel deployment in background
+    fetch(`${baseUrl}/api/tenants/deploy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Internal-Call': 'true',
+        'X-Platform-Secret': process.env.PLATFORM_SECRET || '',
+      },
+      body: JSON.stringify({ tenantId }),
+    }).catch(err => console.error('Failed to trigger deployment:', err));
+
+    // Generate temporary path-based URL (will be replaced by subdomain after deployment)
+    const newspaperUrl = `https://${slug}.newsroomaios.com`;
 
     return NextResponse.json({
       success: true,
@@ -125,7 +147,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error creating tenant:', error);
     console.error('Error message:', error?.message);
-    console.error('Error stack:', error?.stack);
     return NextResponse.json(
       { error: `Failed to create tenant: ${error?.message || 'Unknown error'}` },
       { status: 500 }

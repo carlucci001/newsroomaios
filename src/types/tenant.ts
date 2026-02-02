@@ -56,12 +56,29 @@ export interface Tenant {
   categories: NewsCategory[];
 
   // Status
-  status: 'provisioning' | 'seeding' | 'active' | 'suspended';
+  status: 'provisioning' | 'seeding' | 'deploying' | 'active' | 'suspended' | 'deployment_failed';
   licensingStatus: 'trial' | 'active' | 'past_due' | 'canceled';
+
+  // Billing
+  plan?: 'starter' | 'professional' | 'enterprise';
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  billingStatus?: 'current' | 'past_due' | 'cancelled';
+
+  // Deployment Management (Vercel)
+  vercelProjectId?: string;
+  vercelDeploymentId?: string;
+  siteUrl?: string;              // e.g., "https://the42.newsroomaios.com"
+  subdomain?: string;            // e.g., "the42.newsroomaios.com"
+  customDomain?: string;         // e.g., "the42news.com" (tenant's own domain)
+  currentVersion?: string;       // Template version, e.g., "v1.0.1"
+  deployedAt?: Date;
+  deploymentError?: string;
 
   // Timestamps
   createdAt: Date;
   trialEndsAt?: Date;
+  lastUpdatedAt?: Date;
 
   // Branding (optional)
   settings?: {
