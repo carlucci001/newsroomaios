@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     // Initialize Stripe client with explicit API version
     const stripe = new Stripe(stripeKey, {
-      apiVersion: '2024-06-20',
+      apiVersion: '2024-06-20' as any,
     });
 
     const body = await request.json();
