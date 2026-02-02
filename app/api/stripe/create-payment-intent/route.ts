@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
 
 // Pricing tiers in cents
 const PRICING = {
@@ -8,6 +7,35 @@ const PRICING = {
   professional: 19900, // $199/mo
   enterprise: 29900, // $299/mo
 };
+
+// Helper to make Stripe REST API calls directly (bypasses SDK connection issues)
+async function stripeAPI(endpoint: string, method: string, params?: Record<string, string>) {
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) throw new Error('STRIPE_SECRET_KEY not configured');
+
+  const url = `https://api.stripe.com/v1${endpoint}`;
+  const options: RequestInit = {
+    method,
+    headers: {
+      'Authorization': `Bearer ${stripeKey}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  };
+
+  if (params && (method === 'POST' || method === 'PUT')) {
+    options.body = new URLSearchParams(params).toString();
+  }
+
+  const response = await fetch(url, options);
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error('Stripe API error:', data);
+    throw new Error(data.error?.message || `Stripe error: ${response.status}`);
+  }
+
+  return data;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,14 +48,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Log key prefix for debugging (safe - only shows test/live mode)
+    // Log key info for debugging
     console.log('Stripe key type:', stripeKey.startsWith('sk_test_') ? 'TEST' : stripeKey.startsWith('sk_live_') ? 'LIVE' : 'UNKNOWN');
-    console.log('Stripe key length:', stripeKey.length);
-
-    // Initialize Stripe client with explicit API version
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: '2024-06-20' as any,
-    });
 
     const body = await request.json();
     const { plan, email, newspaperName } = body;
@@ -53,41 +75,40 @@ export async function POST(request: NextRequest) {
     const monthlyFee = PRICING[planKey] || 0;
     const totalAmount = setupFee + monthlyFee;
 
-    // Create or retrieve customer
-    let customer;
-    const existingCustomers = await stripe.customers.list({
-      email: email,
-      limit: 1,
-    });
+    // Find or create customer using REST API
+    let customerId: string;
 
-    if (existingCustomers.data.length > 0) {
-      customer = existingCustomers.data[0];
+    // List customers by email
+    const customersResponse = await stripeAPI(`/customers?email=${encodeURIComponent(email)}&limit=1`, 'GET');
+
+    if (customersResponse.data && customersResponse.data.length > 0) {
+      customerId = customersResponse.data[0].id;
+      console.log('Found existing customer:', customerId);
     } else {
-      customer = await stripe.customers.create({
+      // Create new customer
+      const newCustomer = await stripeAPI('/customers', 'POST', {
         email: email,
-        metadata: {
-          newspaperName: newspaperName,
-          plan: plan,
-        },
+        'metadata[newspaperName]': newspaperName,
+        'metadata[plan]': plan,
       });
+      customerId = newCustomer.id;
+      console.log('Created new customer:', customerId);
     }
 
-    // Create payment intent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: totalAmount,
+    // Create payment intent using REST API
+    const paymentIntent = await stripeAPI('/payment_intents', 'POST', {
+      amount: totalAmount.toString(),
       currency: 'usd',
-      customer: customer.id,
-      metadata: {
-        newspaperName: newspaperName,
-        plan: plan,
-        setupFee: setupFee.toString(),
-        monthlyFee: monthlyFee.toString(),
-      },
-      automatic_payment_methods: {
-        enabled: true,
-      },
+      customer: customerId,
+      'metadata[newspaperName]': newspaperName,
+      'metadata[plan]': plan,
+      'metadata[setupFee]': setupFee.toString(),
+      'metadata[monthlyFee]': monthlyFee.toString(),
+      'automatic_payment_methods[enabled]': 'true',
       description: `${newspaperName} - ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan Setup`,
     });
+
+    console.log('Created payment intent:', paymentIntent.id);
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
@@ -99,13 +120,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Stripe error full:', JSON.stringify(error, null, 2));
-    console.error('Stripe error type:', error?.type);
-    console.error('Stripe error code:', error?.code);
-    console.error('Stripe error message:', error?.message);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Stripe error:', error.message);
     return NextResponse.json(
-      { error: `Failed to create payment intent: ${errorMessage}` },
+      { error: `Failed to create payment intent: ${error.message}` },
       { status: 500 }
     );
   }
