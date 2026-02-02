@@ -105,9 +105,20 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
     selectedPlan: 'professional',
   });
 
+  // Restore form data on mount (after payment redirect)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
+      // Restore form data from localStorage
+      const savedData = localStorage.getItem('onboardingFormData');
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          setFormData(parsed);
+        } catch (e) {
+          console.error('Failed to restore form data:', e);
+        }
+      }
       setPaymentComplete(true);
       setCurrentStep(7);
     }
@@ -154,7 +165,11 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
       return;
     }
     setError('');
-    if (currentStep === 5) await createPaymentIntent();
+    if (currentStep === 5) {
+      // Save form data to localStorage before payment (in case of redirect)
+      localStorage.setItem('onboardingFormData', JSON.stringify(formData));
+      await createPaymentIntent();
+    }
     setCurrentStep(currentStep + 1);
   };
 
@@ -189,6 +204,8 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
       });
       const result = await response.json();
       if (result.success) {
+        // Clear saved form data after successful launch
+        localStorage.removeItem('onboardingFormData');
         onSuccess(result.tenantId);
       } else {
         setError(result.error || 'Failed to create newspaper');
