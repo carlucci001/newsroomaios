@@ -122,10 +122,12 @@ export async function POST(request: NextRequest) {
       tenant: tenantData,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating tenant:', error);
+    console.error('Error message:', error?.message);
+    console.error('Error stack:', error?.stack);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: `Failed to create tenant: ${error?.message || 'Unknown error'}` },
       { status: 500 }
     );
   }
