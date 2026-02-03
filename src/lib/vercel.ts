@@ -237,9 +237,10 @@ class VercelService {
 
     // Step 2: Set environment variables for tenant
     const envVars: Record<string, string> = {
-      // Tenant identification
+      // Tenant identification (both server and client-side)
       TENANT_ID: tenantId,
       TENANT_SLUG: slug,
+      NEXT_PUBLIC_TENANT_ID: tenantId,  // Critical for client-side tenant isolation
 
       // Firebase (same as main platform)
       NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
