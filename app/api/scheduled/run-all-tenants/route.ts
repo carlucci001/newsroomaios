@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/firebase';
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  doc,
-  updateDoc,
-  addDoc,
-  setDoc,
-} from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 import { SetupProgress } from '@/types/setupStatus';
 import { Tenant } from '@/types/tenant';
 import { AIJournalist } from '@/types/aiJournalist';
 import { CREDIT_COSTS } from '@/types/credits';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300; // 5 minutes for seeding
 
 /**
  * Master Cron Job: Run AI Journalists for All Tenants
@@ -28,10 +19,6 @@ export const dynamic = 'force-dynamic';
  * 4. Deduct credits
  *
  * Cron schedule: Every 15 minutes
- * Add to vercel.json:
- * {
- *   "crons": [{ "path": "/api/scheduled/run-all-tenants", "schedule": "0/15 * * * *" }]
- * }
  */
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
@@ -45,14 +32,18 @@ export async function GET(request: NextRequest) {
   }> = [];
 
   try {
-    const db = getDb();
+    const db = getAdminDb();
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not configured' },
+        { status: 500 }
+      );
+    }
 
     // Get all active tenants
-    const tenantsQuery = query(
-      collection(db, 'tenants'),
-      where('status', 'in', ['active', 'provisioning'])
-    );
-    const tenantsSnap = await getDocs(tenantsQuery);
+    const tenantsSnap = await db.collection('tenants')
+      .where('status', 'in', ['active', 'provisioning'])
+      .get();
 
     if (tenantsSnap.empty) {
       return NextResponse.json({
@@ -85,7 +76,7 @@ export async function GET(request: NextRequest) {
           tenantResult.seeded = true;
 
           // Update tenant status to active
-          await updateDoc(doc(db, 'tenants', tenant.id), {
+          await db.collection('tenants').doc(tenant.id).update({
             status: 'active',
             seededAt: new Date(),
           });
@@ -96,13 +87,10 @@ export async function GET(request: NextRequest) {
         }
 
         // REGULAR RUN: Active tenants run scheduled journalists
-        // Get AI journalists for this tenant
-        const journalistsQuery = query(
-          collection(db, 'aiJournalists'),
-          where('tenantId', '==', tenant.id),
-          where('status', '==', 'active')
-        );
-        const journalistsSnap = await getDocs(journalistsQuery);
+        const journalistsSnap = await db.collection('aiJournalists')
+          .where('tenantId', '==', tenant.id)
+          .where('status', '==', 'active')
+          .get();
 
         if (journalistsSnap.empty) {
           tenantResult.errors.push('No active AI journalists');
@@ -130,11 +118,9 @@ export async function GET(request: NextRequest) {
 
           try {
             // Check tenant's credit balance first
-            const creditsQuery = query(
-              collection(db, 'tenantCredits'),
-              where('tenantId', '==', tenant.id)
-            );
-            const creditsSnap = await getDocs(creditsQuery);
+            const creditsSnap = await db.collection('tenantCredits')
+              .where('tenantId', '==', tenant.id)
+              .get();
 
             if (creditsSnap.empty) {
               tenantResult.errors.push('No credit allocation found');
@@ -151,12 +137,8 @@ export async function GET(request: NextRequest) {
               continue;
             }
 
-            // Generate article (placeholder - actual implementation would call AI)
-            const article = await generateArticleForTenant(
-              tenant,
-              journalist,
-              db
-            );
+            // Generate article
+            const article = await generateArticleForTenant(tenant, journalist, db);
 
             if (article) {
               tenantResult.articlesGenerated++;
@@ -166,7 +148,7 @@ export async function GET(request: NextRequest) {
               const newCreditsUsed = (credits.creditsUsed || 0) + articleCost;
               const newCreditsRemaining = credits.monthlyAllocation - newCreditsUsed;
 
-              await updateDoc(doc(db, 'tenantCredits', creditDoc.id), {
+              await db.collection('tenantCredits').doc(creditDoc.id).update({
                 creditsUsed: newCreditsUsed,
                 creditsRemaining: Math.max(0, newCreditsRemaining),
                 lastUsageAt: new Date(),
@@ -174,7 +156,7 @@ export async function GET(request: NextRequest) {
               });
 
               // Log the usage
-              await addDoc(collection(db, 'creditUsage'), {
+              await db.collection('creditUsage').add({
                 tenantId: tenant.id,
                 action: 'article_generation',
                 creditsUsed: articleCost,
@@ -184,7 +166,7 @@ export async function GET(request: NextRequest) {
               });
 
               // Update journalist's last run
-              await updateDoc(doc(db, 'aiJournalists', journalist.id), {
+              await db.collection('aiJournalists').doc(journalist.id).update({
                 lastRunAt: new Date(),
                 articlesGenerated: (journalist.articlesGenerated || 0) + 1,
               });
@@ -273,33 +255,28 @@ function isJournalistDue(
 
 /**
  * Generate an article for a tenant using their AI journalist
- * Calls the centralized AI generation API
  */
 async function generateArticleForTenant(
   tenant: Tenant,
   journalist: AIJournalist,
-  db: ReturnType<typeof getDb>
+  db: FirebaseFirestore.Firestore
 ): Promise<{ id: string; title: string } | null> {
   try {
-    // Find the category for this journalist
     const category = tenant.categories.find((c) => c.id === journalist.categoryId);
     if (!category) {
       console.warn(`[${tenant.businessName}] No category found for journalist ${journalist.name}`);
       return null;
     }
 
-    // Check if we have Gemini API key configured
     const geminiApiKey = process.env.GEMINI_API_KEY;
     if (!geminiApiKey) {
       console.warn(`[${tenant.businessName}] No Gemini API key - using placeholder content`);
       return generatePlaceholderArticle(tenant, journalist, category, db);
     }
 
-    // Call the AI generation API
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const platformSecret = process.env.PLATFORM_SECRET || 'paper-partner-2024';
 
-    // Use web search to find current news for this category
     const response = await fetch(`${baseUrl}/api/ai/generate-article`, {
       method: 'POST',
       headers: {
@@ -330,16 +307,12 @@ async function generateArticleForTenant(
 
     console.log(`[${tenant.businessName}] Generated AI article: ${result.article.title}`);
 
-    // Article is already saved by the API, return the info
-    // Note: The API saves to tenants/{id}/articles, we need to get the ID
-    // For now, we'll create a reference since the API handles storage
     return {
-      id: result.article.slug, // Use slug as temporary ID reference
+      id: result.article.slug,
       title: result.article.title,
     };
   } catch (error) {
     console.error(`[${tenant.businessName}] Article generation failed:`, error);
-    // Fallback to placeholder on error
     return generatePlaceholderArticle(tenant, journalist, tenant.categories.find(c => c.id === journalist.categoryId)!, db);
   }
 }
@@ -351,7 +324,7 @@ async function generatePlaceholderArticle(
   tenant: Tenant,
   journalist: AIJournalist,
   category: { id: string; name: string; slug: string; directive: string },
-  db: ReturnType<typeof getDb>
+  db: FirebaseFirestore.Firestore
 ): Promise<{ id: string; title: string } | null> {
   try {
     const title = generatePlaceholderTitle(
@@ -379,10 +352,7 @@ async function generatePlaceholderArticle(
       isPlaceholder: true,
     };
 
-    const articleRef = await addDoc(
-      collection(db, `tenants/${tenant.id}/articles`),
-      articleData
-    );
+    const articleRef = await db.collection(`tenants/${tenant.id}/articles`).add(articleData);
 
     console.log(`[${tenant.businessName}] Generated placeholder article: ${title}`);
     return { id: articleRef.id, title };
@@ -392,9 +362,6 @@ async function generatePlaceholderArticle(
   }
 }
 
-/**
- * Generate a placeholder news title
- */
 function generatePlaceholderTitle(category: string, city: string, state: string): string {
   const templates = [
     `${city} ${category} Update: Latest Developments`,
@@ -406,9 +373,6 @@ function generatePlaceholderTitle(category: string, city: string, state: string)
   return templates[Math.floor(Math.random() * templates.length)];
 }
 
-/**
- * Convert title to URL slug
- */
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -418,13 +382,11 @@ function slugify(text: string): string {
 
 /**
  * Seed a new tenant with 36 articles (6 per category)
- * This is covered by the setup fee, not monthly credits
- * Uses same AI generation as regular articles for consistent quality
- * Tracks progress in real-time for status page
+ * Uses Admin SDK for reliable server-side writes
  */
 async function seedTenantArticles(
   tenant: Tenant,
-  db: ReturnType<typeof getDb>
+  db: FirebaseFirestore.Firestore
 ): Promise<{ articlesCreated: number; errors: string[] }> {
   const ARTICLES_PER_CATEGORY = 6;
   let articlesCreated = 0;
@@ -446,10 +408,12 @@ async function seedTenantArticles(
     };
   }
 
+  // Status document reference
+  const statusRef = db.collection('tenants').doc(tenant.id).collection('meta').doc('setupStatus');
+
   // Initialize setup status in Firestore
-  const statusRef = doc(db, `tenants/${tenant.id}/meta`, 'setupStatus');
-  await setDoc(statusRef, {
-    currentStep: 'journalists_created',
+  await statusRef.set({
+    currentStep: 'generating_articles',
     completedSteps: ['account_created', 'payment_received', 'journalists_created'],
     articlesGenerated: 0,
     totalArticles,
@@ -459,6 +423,8 @@ async function seedTenantArticles(
     errors: [],
   });
 
+  console.log(`[Seed] Initialized progress for ${tenant.businessName}, ${totalArticles} articles to create`);
+
   // Process each category
   for (let catIndex = 0; catIndex < tenant.categories.length; catIndex++) {
     const category = tenant.categories[catIndex];
@@ -466,13 +432,15 @@ async function seedTenantArticles(
 
     // Update status: starting this category
     categoryProgress[category.id].status = 'in_progress';
-    await setDoc(statusRef, {
+    await statusRef.set({
       currentStep: stepName,
       currentCategory: category.name,
       categoryProgress,
       articlesGenerated: articlesCreated,
       lastUpdatedAt: new Date(),
     }, { merge: true });
+
+    console.log(`[Seed] ${tenant.businessName} - Starting category: ${category.name}`);
 
     for (let i = 0; i < ARTICLES_PER_CATEGORY; i++) {
       try {
@@ -501,13 +469,13 @@ async function seedTenantArticles(
               categoryProgress[category.id].generated++;
 
               // Update progress in real-time
-              await setDoc(statusRef, {
+              await statusRef.set({
                 articlesGenerated: articlesCreated,
                 categoryProgress,
                 lastUpdatedAt: new Date(),
               }, { merge: true });
 
-              console.log(`[Seed] ${tenant.businessName} - Created AI article ${articlesCreated}/${totalArticles} for ${category.name}`);
+              console.log(`[Seed] ${tenant.businessName} - Created article ${articlesCreated}/${totalArticles} for ${category.name}`);
               continue;
             }
           }
@@ -542,12 +510,12 @@ async function seedTenantArticles(
           isPlaceholder: true,
         };
 
-        await addDoc(collection(db, `tenants/${tenant.id}/articles`), articleData);
+        await db.collection(`tenants/${tenant.id}/articles`).add(articleData);
         articlesCreated++;
         categoryProgress[category.id].generated++;
 
         // Update progress
-        await setDoc(statusRef, {
+        await statusRef.set({
           articlesGenerated: articlesCreated,
           categoryProgress,
           lastUpdatedAt: new Date(),
@@ -555,32 +523,37 @@ async function seedTenantArticles(
 
       } catch (error: any) {
         errors.push(`${category.name} article ${i + 1}: ${error.message}`);
+        console.error(`[Seed] Error creating article for ${category.name}:`, error.message);
       }
     }
 
     // Mark category complete
     categoryProgress[category.id].status = 'complete';
-    await setDoc(statusRef, {
+    await statusRef.set({
       categoryProgress,
       lastUpdatedAt: new Date(),
     }, { merge: true });
+
+    console.log(`[Seed] ${tenant.businessName} - Completed category: ${category.name}`);
   }
 
   // Mark seeding complete
-  await setDoc(statusRef, {
+  await statusRef.set({
     currentStep: 'complete',
-    completedSteps: ['account_created', 'payment_received', 'journalists_created', 'generating_local_news', 'generating_sports', 'generating_business', 'generating_weather', 'generating_community', 'generating_opinion', 'deploying_site', 'complete'],
+    completedSteps: ['account_created', 'payment_received', 'journalists_created', 'generating_articles', 'complete'],
     articlesGenerated: articlesCreated,
     categoryProgress,
     lastUpdatedAt: new Date(),
     errors,
-    siteUrl: `https://${tenant.id}.newsroomaios.com`, // Placeholder URL
+    siteUrl: `https://${tenant.slug}.newsroomaios.com`,
   }, { merge: true });
+
+  console.log(`[Seed] ${tenant.businessName} - Seeding complete: ${articlesCreated} articles created`);
 
   return { articlesCreated, errors };
 }
 
-// Article templates for seed variety (used when AI is unavailable)
+// Article templates for seed variety
 const articleTemplates = [
   { prefix: 'Breaking:', suffix: 'Story Develops' },
   { prefix: 'Update:', suffix: 'What You Need to Know' },
@@ -590,10 +563,6 @@ const articleTemplates = [
   { prefix: 'Feature:', suffix: 'In Focus' },
 ];
 
-/**
- * Generate placeholder content for seed articles
- * In production, this would call Gemini for real AI-generated content
- */
 function generateSeedArticleContent(
   businessName: string,
   city: string,
