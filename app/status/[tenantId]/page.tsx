@@ -10,7 +10,7 @@ export default function StatusRedirect() {
 
   useEffect(() => {
     // Redirect to home page with status modal open
-    router.replace(`/?modal=status&id=${tenantId}`);
+    router.replace(`/?view=status&id=${tenantId}`);
   }, [router, tenantId]);
 
   return (

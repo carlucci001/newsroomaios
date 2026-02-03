@@ -7,9 +7,11 @@
 
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { getAuth, Auth } from 'firebase-admin/auth';
 
 let _adminApp: App | null = null;
 let _adminDb: Firestore | null = null;
+let _adminAuth: Auth | null = null;
 
 function getServiceAccount(): object | null {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
@@ -70,4 +72,34 @@ export function getAdminDb(): Firestore | null {
     console.error('[Firebase Admin] Failed to get Firestore:', e);
     return null;
   }
+}
+
+/**
+ * Get Firebase Auth Admin instance (for creating/managing users)
+ */
+export function getAdminAuth(): Auth | null {
+  if (_adminAuth) return _adminAuth;
+
+  const app = getAdminApp();
+  if (!app) return null;
+
+  try {
+    _adminAuth = getAuth(app);
+    return _adminAuth;
+  } catch (e) {
+    console.error('[Firebase Admin] Failed to get Auth:', e);
+    return null;
+  }
+}
+
+/**
+ * Generate a secure temporary password
+ */
+export function generateTempPassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let password = '';
+  for (let i = 0; i < 12; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
 }

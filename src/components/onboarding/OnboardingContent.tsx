@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PREDEFINED_CATEGORIES } from '@/data/categories';
 import { ServiceArea } from '@/types/tenant';
-import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Rocket, CreditCard, Check, AlertTriangle, Home } from 'lucide-react';
+import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Rocket, CreditCard, Check, AlertTriangle, Home, Key, Copy, ExternalLink } from 'lucide-react';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -94,6 +94,10 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentBreakdown, setPaymentBreakdown] = useState<{ setupFee: number; monthlyFee: number; total: number } | null>(null);
   const [paymentComplete, setPaymentComplete] = useState(false);
+  const [adminCredentials, setAdminCredentials] = useState<{ email: string; temporaryPassword: string } | null>(null);
+  const [newspaperUrl, setNewspaperUrl] = useState<string | null>(null);
+  const [launchComplete, setLaunchComplete] = useState(false);
+  const [tenantId, setTenantId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     newspaperName: '',
@@ -206,7 +210,14 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
       if (result.success) {
         // Clear saved form data after successful launch
         localStorage.removeItem('onboardingFormData');
-        onSuccess(result.tenantId);
+        // Store admin credentials, URL, and tenant ID for display
+        if (result.adminCredentials) {
+          setAdminCredentials(result.adminCredentials);
+        }
+        setNewspaperUrl(result.newspaperUrl);
+        setTenantId(result.tenantId);
+        setLaunchComplete(true);
+        setCurrentStep(8); // Move to credentials/launch step
       } else {
         setError(result.error || 'Failed to create newspaper');
       }
@@ -253,10 +264,10 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
         {/* Progress Indicator */}
         <div className="mb-10 bg-card border border-border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
-            {[1, 2, 3, 4, 5, 6, 7].map((step) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
               <div key={step} className="flex items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors ${
+                  className={`w-8 md:w-10 h-8 md:h-10 rounded-full flex items-center justify-center font-semibold transition-colors text-sm md:text-base ${
                     step === currentStep
                       ? 'bg-brand-blue-600 text-white shadow-lg shadow-brand-blue-500/30'
                       : step < currentStep
@@ -264,22 +275,23 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
-                  {step < currentStep ? <Check className="h-5 w-5" /> : step}
+                  {step < currentStep ? <Check className="h-4 w-4 md:h-5 md:w-5" /> : step}
                 </div>
-                {step < 7 && (
-                  <div className={`w-4 md:w-8 h-1 ${step < currentStep ? 'bg-brand-blue-200' : 'bg-muted'}`} />
+                {step < 8 && (
+                  <div className={`w-2 md:w-6 h-1 ${step < currentStep ? 'bg-brand-blue-200' : 'bg-muted'}`} />
                 )}
               </div>
             ))}
           </div>
           <div className="text-center text-sm text-muted-foreground font-medium">
-            Step {currentStep} of 7: {
+            Step {currentStep} of 8: {
               currentStep === 1 ? 'Basic Info' :
               currentStep === 2 ? 'Service Area' :
               currentStep === 3 ? 'Categories' :
               currentStep === 4 ? 'Review' :
               currentStep === 5 ? 'Select Plan' :
-              currentStep === 6 ? 'Payment' : 'Launch'
+              currentStep === 6 ? 'Payment' :
+              currentStep === 7 ? 'Launch' : 'Your Credentials'
             }
           </div>
         </div>
@@ -303,6 +315,7 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
               {currentStep === 5 && 'Choose Your Plan'}
               {currentStep === 6 && 'Complete Payment'}
               {currentStep === 7 && 'Launch Your Newspaper'}
+              {currentStep === 8 && 'Your Newspaper is Ready!'}
             </CardTitle>
             <CardDescription>
               {currentStep === 1 && 'Enter your newspaper details and domain'}
@@ -312,6 +325,7 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
               {currentStep === 5 && 'Select the plan that fits your needs'}
               {currentStep === 6 && 'Enter your payment details to complete setup'}
               {currentStep === 7 && 'Your payment is complete. Launch your newspaper!'}
+              {currentStep === 8 && 'Save your admin credentials and access your newspaper'}
             </CardDescription>
           </CardHeader>
 
@@ -529,7 +543,7 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
             )}
 
             {/* Step 7: Launch */}
-            {currentStep === 7 && (
+            {currentStep === 7 && paymentComplete && !launchComplete && (
               <div className="space-y-6">
                 <div className="text-center py-6">
                   <CheckCircle className="h-16 w-16 mx-auto text-green-600 mb-4" />
@@ -546,9 +560,110 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
                   </div>
                 </div>
                 <div className="text-center py-6">
-                  <Button onClick={handleSubmit} size="lg">
+                  <Button onClick={handleSubmit} size="lg" disabled={loading}>
                     <Rocket className="h-4 w-4 mr-2" />
-                    Launch Newspaper
+                    {loading ? 'Creating Your Newspaper...' : 'Launch Newspaper'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 8: Credentials & Launch Options */}
+            {currentStep === 8 && launchComplete && (
+              <div className="space-y-6">
+                <div className="text-center py-6">
+                  <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
+                    <Rocket className="h-10 w-10 text-green-600" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-green-700 mb-2">Your Newspaper is Live!</h3>
+                  <p className="text-muted-foreground">Congratulations! Your AI-powered newspaper has been created.</p>
+                </div>
+
+                {/* Admin Credentials */}
+                {adminCredentials && (
+                  <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <Key className="h-6 w-6 text-amber-600" />
+                      <h3 className="font-bold text-lg text-amber-900">Your Admin Login Credentials</h3>
+                    </div>
+                    <p className="text-sm text-amber-800 mb-4">
+                      Save these credentials! You&apos;ll need them to log in to your newspaper&apos;s admin panel.
+                    </p>
+                    <div className="bg-white rounded-lg p-4 space-y-3 font-mono text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Email:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{adminCredentials.email}</span>
+                          <button
+                            onClick={() => navigator.clipboard.writeText(adminCredentials.email)}
+                            className="p-1 hover:bg-muted rounded"
+                            title="Copy email"
+                          >
+                            <Copy className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Temporary Password:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-amber-700">{adminCredentials.temporaryPassword}</span>
+                          <button
+                            onClick={() => navigator.clipboard.writeText(adminCredentials.temporaryPassword)}
+                            className="p-1 hover:bg-muted rounded"
+                            title="Copy password"
+                          >
+                            <Copy className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-amber-700 mt-3">
+                      Please change your password after your first login.
+                    </p>
+                  </div>
+                )}
+
+                {/* Newspaper URL */}
+                {newspaperUrl && (
+                  <div className="bg-brand-blue-50 border-2 border-brand-blue-200 rounded-xl p-6">
+                    <h3 className="font-bold text-lg text-brand-blue-900 mb-2">Your Newspaper URL</h3>
+                    <div className="flex items-center gap-2 bg-white rounded-lg p-3">
+                      <span className="font-mono text-brand-blue-700 flex-1">{newspaperUrl}</span>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(newspaperUrl)}
+                        className="p-2 hover:bg-muted rounded"
+                        title="Copy URL"
+                      >
+                        <Copy className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-brand-blue-700 mt-2">
+                      Your site is being built. It will be ready shortly.
+                    </p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="grid md:grid-cols-2 gap-4 pt-4">
+                  <a
+                    href={newspaperUrl ? `${newspaperUrl}/backend` : '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 bg-brand-blue-600 text-white font-semibold py-4 px-6 rounded-xl hover:bg-brand-blue-700 transition-colors"
+                  >
+                    <Key className="h-5 w-5" />
+                    Go to Admin Panel
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                  <Button
+                    onClick={() => tenantId && onSuccess(tenantId)}
+                    variant="outline"
+                    size="lg"
+                    className="py-4 h-auto"
+                    disabled={!tenantId}
+                  >
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    View Setup Progress
                   </Button>
                 </div>
               </div>
@@ -557,7 +672,7 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
         </Card>
 
         {/* Navigation Buttons */}
-        {currentStep !== 6 && currentStep !== 7 && (
+        {currentStep !== 6 && currentStep !== 7 && currentStep !== 8 && (
           <div className="flex items-center justify-between mt-8">
             <Button variant="outline" size="lg" onClick={handlePrevious} disabled={currentStep === 1 || loading}>
               <ArrowLeft className="h-4 w-4 mr-2" /> Previous

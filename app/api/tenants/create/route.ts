@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminDb } from '@/lib/firebaseAdmin';
+import { getAdminDb, getAdminAuth, generateTempPassword } from '@/lib/firebaseAdmin';
 import { Tenant } from '@/types/tenant';
 import { SetupProgress } from '@/types/setupStatus';
 import { createDefaultJournalists } from '@/types/aiJournalist';
@@ -79,6 +79,59 @@ export async function POST(request: NextRequest) {
     };
 
     await db.collection('tenants').doc(tenantId).set(tenantData);
+
+    // Create admin user account for the tenant
+    let adminCredentials: { email: string; temporaryPassword: string; uid?: string } | null = null;
+    const auth = getAdminAuth();
+    if (auth) {
+      try {
+        const tempPassword = generateTempPassword();
+
+        // Check if user already exists
+        let userRecord;
+        try {
+          userRecord = await auth.getUserByEmail(ownerEmail);
+          console.log(`[Tenant Create] User ${ownerEmail} already exists, will link to tenant`);
+        } catch {
+          // User doesn't exist, create new one
+          userRecord = await auth.createUser({
+            email: ownerEmail,
+            password: tempPassword,
+            displayName: businessName + ' Admin',
+          });
+          console.log(`[Tenant Create] Created admin user: ${userRecord.uid}`);
+        }
+
+        // Store admin user info in tenant's users collection
+        await db.collection(`tenants/${tenantId}/users`).doc(userRecord.uid).set({
+          uid: userRecord.uid,
+          email: ownerEmail,
+          displayName: businessName + ' Admin',
+          role: 'owner',
+          tenantId,
+          createdAt: new Date(),
+          lastLoginAt: null,
+        });
+
+        // Also create a root-level user document that maps user to tenant
+        await db.collection('users').doc(userRecord.uid).set({
+          uid: userRecord.uid,
+          email: ownerEmail,
+          tenantId,
+          role: 'owner',
+          createdAt: new Date(),
+        }, { merge: true });
+
+        adminCredentials = {
+          email: ownerEmail,
+          temporaryPassword: tempPassword,
+          uid: userRecord.uid,
+        };
+      } catch (authError: any) {
+        console.error('[Tenant Create] Failed to create admin user:', authError);
+        // Continue without admin account - not a fatal error
+      }
+    }
 
     // Create categories subcollection for template compatibility
     const categoryColors: Record<string, string> = {
@@ -174,6 +227,7 @@ export async function POST(request: NextRequest) {
       newspaperUrl,
       message: 'Newspaper provisioned successfully!',
       tenant: tenantData,
+      adminCredentials, // Includes email and temporaryPassword for user to log in
     });
 
   } catch (error: any) {
