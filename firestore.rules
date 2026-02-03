@@ -124,6 +124,14 @@ service cloud.firestore {
     }
 
     // ============================================
+    // PERSONAS (AI Chat personas for tenant sites)
+    // ============================================
+    match /personas/{personaId} {
+      allow read: if true;  // Allow tenant sites to fetch personas
+      allow write: if isAdmin();
+    }
+
+    // ============================================
     // ADVERTISERS
     // ============================================
     match /advertisers/{advertiserId} {
