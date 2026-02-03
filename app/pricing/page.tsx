@@ -88,7 +88,7 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section className="relative py-16">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {/* Starter Plan */}
             <Card className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-xl relative overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-gray-400 to-brand-gray-500" />
@@ -142,15 +142,15 @@ export default function PricingPage() {
               </CardContent>
             </Card>
 
-            {/* Professional Plan (Most Popular) */}
+            {/* Growth Plan (Most Popular) */}
             <Card className="border-2 border-brand-blue-500 shadow-2xl shadow-brand-blue-500/20 transition-all hover:shadow-brand-blue-500/30 relative overflow-hidden scale-105">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-blue-500 to-brand-blue-600" />
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-brand-blue-500 to-brand-blue-600 text-white text-sm font-semibold rounded-full shadow-lg">
                 Most Popular
               </div>
               <CardHeader className="pb-8 pt-12">
-                <CardTitle className="text-2xl font-display mb-2">Professional</CardTitle>
-                <CardDescription>For serious publishers</CardDescription>
+                <CardTitle className="text-2xl font-display mb-2">Growth</CardTitle>
+                <CardDescription>For growing publishers</CardDescription>
                 <div className="mt-6">
                   <div className="flex items-baseline gap-2">
                     <span className="text-5xl font-display font-bold text-brand-blue-600">$199</span>
@@ -169,6 +169,59 @@ export default function PricingPage() {
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
                     <span className="text-sm font-semibold">3 AI journalist personas</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">Up to 200 articles/month</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">Advanced advertising (CPC/CPM)</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">100 directory listings</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">Newsletter features</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">Priority support</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold"><strong>Keep 100% of revenue</strong></span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Professional Plan */}
+            <Card className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-blue-600 to-brand-blue-700" />
+              <CardHeader className="pb-8 pt-8">
+                <CardTitle className="text-2xl font-display mb-2">Professional</CardTitle>
+                <CardDescription>For serious publishers</CardDescription>
+                <div className="mt-6">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-display font-bold">$299</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">Platform fee only</p>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Link href="/onboarding" className="block">
+                  <Button variant="outline" className="w-full mb-6 hover:bg-brand-gray-50">
+                    Get Started
+                  </Button>
+                </Link>
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm font-semibold">6 AI journalist personas</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -192,7 +245,7 @@ export default function PricingPage() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm font-semibold">Priority support</span>
+                    <span className="text-sm font-semibold">Dedicated support</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -203,54 +256,54 @@ export default function PricingPage() {
             </Card>
 
             {/* Enterprise Plan */}
-            <Card className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-blue-600 to-brand-blue-700" />
+            <Card className="border-2 border-brand-blue-700/50 hover:border-brand-blue-600 transition-all hover:shadow-xl relative overflow-hidden bg-gradient-to-br from-brand-blue-50/30 to-transparent">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-blue-700 to-brand-blue-800" />
               <CardHeader className="pb-8 pt-8">
                 <CardTitle className="text-2xl font-display mb-2">Enterprise</CardTitle>
-                <CardDescription>For newspaper networks</CardDescription>
+                <CardDescription>Multi-paper networks</CardDescription>
                 <div className="mt-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-display font-bold">Custom</span>
+                    <span className="text-4xl font-display font-bold">Contact Us</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">Contact us for pricing</p>
+                  <p className="text-sm text-muted-foreground mt-2">Custom pricing</p>
                 </div>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full mb-6 hover:bg-brand-blue-50">
+                <Button variant="outline" className="w-full mb-6 hover:bg-brand-blue-50 border-brand-blue-300">
                   Contact Sales
                 </Button>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Unlimited AI journalists</span>
+                    <span className="text-sm font-semibold">Unlimited AI journalists</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Multi-newspaper network</span>
+                    <span className="text-sm font-semibold">Multi-newspaper network</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Partner advertising network</span>
+                    <span className="text-sm font-semibold">Unlimited everything</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">White-label options</span>
+                    <span className="text-sm font-semibold">Partner advertising network</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Dedicated account manager</span>
+                    <span className="text-sm font-semibold">White-label options</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Custom integrations</span>
+                    <span className="text-sm font-semibold">Dedicated account manager</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">24/7 phone support</span>
+                    <span className="text-sm font-semibold">24/7 phone support</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm"><strong>Keep 100% of revenue</strong></span>
+                    <span className="text-sm font-semibold"><strong>Keep 100% of revenue</strong></span>
                   </li>
                 </ul>
               </CardContent>
@@ -302,7 +355,8 @@ export default function PricingPage() {
                 <tr className="border-b-2 border-border">
                   <th className="text-left py-4 px-6 font-display text-lg">Feature</th>
                   <th className="text-center py-4 px-6 font-display text-lg">Starter</th>
-                  <th className="text-center py-4 px-6 font-display text-lg text-brand-blue-600">Professional</th>
+                  <th className="text-center py-4 px-6 font-display text-lg text-brand-blue-600">Growth</th>
+                  <th className="text-center py-4 px-6 font-display text-lg">Professional</th>
                   <th className="text-center py-4 px-6 font-display text-lg">Enterprise</th>
                 </tr>
               </thead>
@@ -311,34 +365,40 @@ export default function PricingPage() {
                   <td className="py-4 px-6 font-medium">AI Journalist Personas</td>
                   <td className="py-4 px-6 text-center text-muted-foreground">1</td>
                   <td className="py-4 px-6 text-center text-brand-blue-600 font-semibold">3</td>
+                  <td className="py-4 px-6 text-center">6</td>
                   <td className="py-4 px-6 text-center">Unlimited</td>
                 </tr>
                 <tr className="bg-muted/30">
                   <td className="py-4 px-6 font-medium">Articles per Month</td>
                   <td className="py-4 px-6 text-center text-muted-foreground">50</td>
-                  <td className="py-4 px-6 text-center text-brand-blue-600 font-semibold">Unlimited</td>
+                  <td className="py-4 px-6 text-center text-brand-blue-600 font-semibold">200</td>
+                  <td className="py-4 px-6 text-center">Unlimited</td>
                   <td className="py-4 px-6 text-center">Unlimited</td>
                 </tr>
                 <tr>
                   <td className="py-4 px-6 font-medium">Advertising Features</td>
                   <td className="py-4 px-6 text-center text-muted-foreground">Basic</td>
                   <td className="py-4 px-6 text-center text-brand-blue-600 font-semibold">CPC/CPM</td>
+                  <td className="py-4 px-6 text-center">CPC/CPM</td>
                   <td className="py-4 px-6 text-center">Advanced</td>
                 </tr>
                 <tr className="bg-muted/30">
                   <td className="py-4 px-6 font-medium">AI Banner Generation</td>
-                  <td className="py-4 px-6 text-center"><CheckCircle2 className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="py-4 px-6 text-center text-muted-foreground">-</td>
+                  <td className="py-4 px-6 text-center text-muted-foreground">-</td>
                   <td className="py-4 px-6 text-center"><CheckCircle2 className="h-5 w-5 text-brand-blue-600 mx-auto" /></td>
                   <td className="py-4 px-6 text-center"><CheckCircle2 className="h-5 w-5 text-brand-blue-600 mx-auto" /></td>
                 </tr>
                 <tr>
                   <td className="py-4 px-6 font-medium">Business Directory Listings</td>
                   <td className="py-4 px-6 text-center text-muted-foreground">25</td>
-                  <td className="py-4 px-6 text-center text-brand-blue-600 font-semibold">Unlimited</td>
+                  <td className="py-4 px-6 text-center text-brand-blue-600 font-semibold">100</td>
+                  <td className="py-4 px-6 text-center">Unlimited</td>
                   <td className="py-4 px-6 text-center">Unlimited</td>
                 </tr>
                 <tr className="bg-muted/30">
                   <td className="py-4 px-6 font-medium">Newsletter Subscriptions</td>
+                  <td className="py-4 px-6 text-center"><CheckCircle2 className="h-5 w-5 text-brand-blue-600 mx-auto" /></td>
                   <td className="py-4 px-6 text-center"><CheckCircle2 className="h-5 w-5 text-brand-blue-600 mx-auto" /></td>
                   <td className="py-4 px-6 text-center"><CheckCircle2 className="h-5 w-5 text-brand-blue-600 mx-auto" /></td>
                   <td className="py-4 px-6 text-center"><CheckCircle2 className="h-5 w-5 text-brand-blue-600 mx-auto" /></td>
@@ -347,10 +407,12 @@ export default function PricingPage() {
                   <td className="py-4 px-6 font-medium">Multi-Newspaper Network</td>
                   <td className="py-4 px-6 text-center text-muted-foreground">-</td>
                   <td className="py-4 px-6 text-center text-muted-foreground">-</td>
+                  <td className="py-4 px-6 text-center text-muted-foreground">-</td>
                   <td className="py-4 px-6 text-center"><CheckCircle2 className="h-5 w-5 text-brand-blue-600 mx-auto" /></td>
                 </tr>
                 <tr className="bg-muted/30">
                   <td className="py-4 px-6 font-medium">Partner Advertising Network</td>
+                  <td className="py-4 px-6 text-center text-muted-foreground">-</td>
                   <td className="py-4 px-6 text-center text-muted-foreground">-</td>
                   <td className="py-4 px-6 text-center text-muted-foreground">-</td>
                   <td className="py-4 px-6 text-center"><CheckCircle2 className="h-5 w-5 text-brand-blue-600 mx-auto" /></td>
@@ -359,16 +421,19 @@ export default function PricingPage() {
                   <td className="py-4 px-6 font-medium">White-Label Options</td>
                   <td className="py-4 px-6 text-center text-muted-foreground">-</td>
                   <td className="py-4 px-6 text-center text-muted-foreground">-</td>
+                  <td className="py-4 px-6 text-center text-muted-foreground">-</td>
                   <td className="py-4 px-6 text-center"><CheckCircle2 className="h-5 w-5 text-brand-blue-600 mx-auto" /></td>
                 </tr>
                 <tr className="bg-muted/30">
                   <td className="py-4 px-6 font-medium">Support</td>
                   <td className="py-4 px-6 text-center text-muted-foreground">Email</td>
                   <td className="py-4 px-6 text-center text-brand-blue-600 font-semibold">Priority</td>
+                  <td className="py-4 px-6 text-center">Dedicated</td>
                   <td className="py-4 px-6 text-center">24/7 Phone</td>
                 </tr>
                 <tr>
                   <td className="py-4 px-6 font-medium"><strong>Revenue Share</strong></td>
+                  <td className="py-4 px-6 text-center"><strong className="text-brand-blue-600">0%</strong></td>
                   <td className="py-4 px-6 text-center"><strong className="text-brand-blue-600">0%</strong></td>
                   <td className="py-4 px-6 text-center"><strong className="text-brand-blue-600">0%</strong></td>
                   <td className="py-4 px-6 text-center"><strong className="text-brand-blue-600">0%</strong></td>
@@ -427,7 +492,7 @@ export default function PricingPage() {
                 </div>
 
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <div className="font-medium">Platform fee (Professional plan)</div>
+                  <div className="font-medium">Platform fee (Growth plan)</div>
                   <div className="text-2xl font-display font-semibold">-$199</div>
                 </div>
 
