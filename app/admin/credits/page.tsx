@@ -1,50 +1,62 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, doc, updateDoc, addDoc, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, addDoc, query, where, orderBy, limit, runTransaction } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
-import { TenantCredits, CreditUsage, CreditTransaction, DEFAULT_PLANS, CREDIT_COSTS } from '@/types/credits';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+// Credit costs for display (from the new system)
+const CREDIT_COSTS = {
+  article: 5,
+  image: 2,
+  image_hd: 4,
+  tts: 1,
+  agent: 3,
+  ad_creation: 5,
+  ad_manual: 1,
+};
+
+interface TenantWithCredits extends Tenant {
+  subscriptionCredits: number;
+  topOffCredits: number;
+  totalCredits: number;
+  plan?: string;
+}
+
+interface CreditTransaction {
+  id: string;
+  tenantId: string;
+  type: string;
+  creditPool?: string;
+  feature?: string;
+  amount: number;
+  subscriptionBalance?: number;
+  topOffBalance?: number;
+  description: string;
+  createdAt: Date | any;
+}
+
 interface CreditOverview {
-  totalAllocated: number;
-  totalUsed: number;
-  totalRemaining: number;
-  tenantsAtLimit: number;
-  tenantsWarning: number;
+  totalSubscription: number;
+  totalTopOff: number;
+  totalCredits: number;
+  tenantsLowCredits: number;
+  totalTransactions: number;
 }
 
-function CreditBar({ used, allocated, showLabels = true }: { used: number; allocated: number; showLabels?: boolean }) {
-  const percentage = allocated > 0 ? Math.min(100, (used / allocated) * 100) : 0;
-  const colorClass = percentage >= 90 ? 'bg-red-500' : percentage >= 70 ? 'bg-yellow-500' : 'bg-green-500';
-
-  return (
-    <div className="space-y-1">
-      <div className="w-full bg-gray-200 rounded-full h-2.5">
-        <div className={`h-2.5 rounded-full ${colorClass}`} style={{ width: `${percentage}%` }}></div>
-      </div>
-      {showLabels && (
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>{used.toLocaleString()} used</span>
-          <span>{(allocated - used).toLocaleString()} remaining</span>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function CreditsPage() {
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [credits, setCredits] = useState<TenantCredits[]>([]);
-  const [usage, setUsage] = useState<CreditUsage[]>([]);
+  const [tenants, setTenants] = useState<TenantWithCredits[]>([]);
+  const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTenant, setSelectedTenant] = useState<string>('');
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustAmount, setAdjustAmount] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
+  const [adjustPool, setAdjustPool] = useState<'subscription' | 'topoff'>('topoff');
   const [adjustLoading, setAdjustLoading] = useState(false);
 
   useEffect(() => {
@@ -55,36 +67,41 @@ export default function CreditsPage() {
     try {
       const db = getDb();
 
-      // Fetch tenants
+      // Fetch tenants with credit balances
       const tenantsSnap = await getDocs(collection(db, 'tenants'));
-      const tenantsData = tenantsSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Tenant[];
+      const tenantsData = tenantsSnap.docs.map((docSnap) => {
+        const data = docSnap.data();
+        const subscriptionCredits = data.subscriptionCredits || 0;
+        const topOffCredits = data.topOffCredits || 0;
+        return {
+          id: docSnap.id,
+          ...data,
+          subscriptionCredits,
+          topOffCredits,
+          totalCredits: subscriptionCredits + topOffCredits,
+        } as TenantWithCredits;
+      });
       setTenants(tenantsData);
 
-      // Fetch credits
-      const creditsSnap = await getDocs(collection(db, 'tenantCredits'));
-      const creditsData = creditsSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as TenantCredits[];
-      setCredits(creditsData);
-
-      // Fetch recent usage
+      // Fetch recent credit transactions
       try {
-        const usageQuery = query(
-          collection(db, 'creditUsage'),
-          orderBy('timestamp', 'desc'),
+        const transactionsQuery = query(
+          collection(db, 'creditTransactions'),
+          orderBy('createdAt', 'desc'),
           limit(100)
         );
-        const usageSnap = await getDocs(usageQuery);
-        const usageData = usageSnap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as CreditUsage[];
-        setUsage(usageData);
+        const transactionsSnap = await getDocs(transactionsQuery);
+        const transactionsData = transactionsSnap.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+          } as CreditTransaction;
+        });
+        setTransactions(transactionsData);
       } catch (e) {
+        console.error('Error fetching transactions:', e);
         // Collection might not exist yet
       }
     } catch (error) {
@@ -101,35 +118,64 @@ export default function CreditsPage() {
     try {
       const db = getDb();
       const amount = parseInt(adjustAmount);
-      const tenantCredit = credits.find((c) => c.tenantId === selectedTenant);
+      const tenant = tenants.find((t) => t.id === selectedTenant);
 
-      if (tenantCredit) {
-        const newRemaining = tenantCredit.creditsRemaining + amount;
+      if (!tenant) {
+        alert('Tenant not found');
+        return;
+      }
 
-        // Update credit balance
-        await updateDoc(doc(db, 'tenantCredits', tenantCredit.id), {
-          creditsRemaining: newRemaining,
-          status: newRemaining <= 0 ? 'exhausted' : newRemaining < tenantCredit.softLimit ? 'warning' : 'active',
+      const tenantRef = doc(db, 'tenants', selectedTenant);
+
+      // Use Firestore transaction for atomic update
+      await runTransaction(db, async (transaction) => {
+        const tenantSnap = await transaction.get(tenantRef);
+
+        if (!tenantSnap.exists()) {
+          throw new Error('Tenant not found');
+        }
+
+        const data = tenantSnap.data();
+        let subscriptionCredits = data.subscriptionCredits || 0;
+        let topOffCredits = data.topOffCredits || 0;
+
+        // Update the selected pool
+        if (adjustPool === 'subscription') {
+          subscriptionCredits = Math.max(0, subscriptionCredits + amount);
+        } else {
+          topOffCredits = Math.max(0, topOffCredits + amount);
+        }
+
+        // Update tenant document
+        transaction.update(tenantRef, {
+          subscriptionCredits,
+          topOffCredits,
+          updatedAt: new Date(),
         });
 
-        // Log transaction
-        await addDoc(collection(db, 'creditTransactions'), {
+        // Create transaction record
+        const transactionRef = doc(collection(db, 'creditTransactions'));
+        transaction.set(transactionRef, {
           tenantId: selectedTenant,
           type: 'adjustment',
+          creditPool: adjustPool,
           amount,
-          balance: newRemaining,
-          description: adjustReason || 'Manual credit adjustment',
+          subscriptionBalance: subscriptionCredits,
+          topOffBalance: topOffCredits,
+          description: adjustReason || `Manual ${adjustPool} credit adjustment`,
           createdAt: new Date(),
         });
+      });
 
-        await fetchData();
-        setShowAdjustModal(false);
-        setAdjustAmount('');
-        setAdjustReason('');
-        setSelectedTenant('');
-      }
+      await fetchData();
+      setShowAdjustModal(false);
+      setAdjustAmount('');
+      setAdjustReason('');
+      setAdjustPool('topoff');
+      setSelectedTenant('');
     } catch (error) {
       console.error('Failed to adjust credits:', error);
+      alert('Failed to adjust credits: ' + (error as Error).message);
     } finally {
       setAdjustLoading(false);
     }
@@ -137,27 +183,30 @@ export default function CreditsPage() {
 
   // Calculate overview stats
   const overview: CreditOverview = {
-    totalAllocated: credits.reduce((sum, c) => sum + c.monthlyAllocation, 0),
-    totalUsed: credits.reduce((sum, c) => sum + c.creditsUsed, 0),
-    totalRemaining: credits.reduce((sum, c) => sum + c.creditsRemaining, 0),
-    tenantsAtLimit: credits.filter((c) => c.status === 'exhausted').length,
-    tenantsWarning: credits.filter((c) => c.status === 'warning').length,
+    totalSubscription: tenants.reduce((sum, t) => sum + t.subscriptionCredits, 0),
+    totalTopOff: tenants.reduce((sum, t) => sum + t.topOffCredits, 0),
+    totalCredits: tenants.reduce((sum, t) => sum + t.totalCredits, 0),
+    tenantsLowCredits: tenants.filter((t) => t.totalCredits < 50).length,
+    totalTransactions: transactions.length,
   };
 
-  // Group usage by tenant
-  const usageByTenant = usage.reduce((acc, u) => {
-    if (!acc[u.tenantId]) acc[u.tenantId] = [];
-    acc[u.tenantId].push(u);
+  // Group transactions by tenant
+  const transactionsByTenant = transactions.reduce((acc, t) => {
+    if (!acc[t.tenantId]) acc[t.tenantId] = [];
+    acc[t.tenantId].push(t);
     return acc;
-  }, {} as Record<string, CreditUsage[]>);
+  }, {} as Record<string, CreditTransaction[]>);
 
-  // Group usage by action type
-  const usageByAction = usage.reduce((acc, u) => {
-    if (!acc[u.action]) acc[u.action] = { count: 0, credits: 0 };
-    acc[u.action].count++;
-    acc[u.action].credits += u.creditsUsed;
-    return acc;
-  }, {} as Record<string, { count: number; credits: number }>);
+  // Group usage by feature type
+  const usageByFeature = transactions
+    .filter((t) => t.type === 'usage' && t.feature)
+    .reduce((acc, t) => {
+      const feature = t.feature || 'unknown';
+      if (!acc[feature]) acc[feature] = { count: 0, credits: 0 };
+      acc[feature].count++;
+      acc[feature].credits += Math.abs(t.amount);
+      return acc;
+    }, {} as Record<string, { count: number; credits: number }>);
 
   if (loading) {
     return (
@@ -189,37 +238,31 @@ export default function CreditsPage() {
       {/* Overview Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white rounded-xl border p-6">
-          <p className="text-sm text-gray-500 mb-1">Total Allocated</p>
-          <p className="text-2xl font-bold text-gray-900">{overview.totalAllocated.toLocaleString()}</p>
-          <p className="text-xs text-gray-400 mt-1">This billing cycle</p>
+          <p className="text-sm text-gray-500 mb-1">Subscription Credits</p>
+          <p className="text-2xl font-bold text-blue-600">{overview.totalSubscription.toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-1">Monthly allocation</p>
         </div>
         <div className="bg-white rounded-xl border p-6">
-          <p className="text-sm text-gray-500 mb-1">Total Used</p>
-          <p className="text-2xl font-bold text-blue-600">{overview.totalUsed.toLocaleString()}</p>
-          <p className="text-xs text-gray-400 mt-1">
-            {overview.totalAllocated > 0
-              ? `${((overview.totalUsed / overview.totalAllocated) * 100).toFixed(1)}% of allocation`
-              : 'No allocations'}
+          <p className="text-sm text-gray-500 mb-1">Top-Off Credits</p>
+          <p className="text-2xl font-bold text-purple-600">{overview.totalTopOff.toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-1">Purchased credits</p>
+        </div>
+        <div className="bg-white rounded-xl border p-6">
+          <p className="text-sm text-gray-500 mb-1">Total Available</p>
+          <p className="text-2xl font-bold text-green-600">{overview.totalCredits.toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-1">All credits</p>
+        </div>
+        <div className="bg-white rounded-xl border p-6">
+          <p className="text-sm text-gray-500 mb-1">Low Credit Tenants</p>
+          <p className={`text-2xl font-bold ${overview.tenantsLowCredits > 0 ? 'text-red-600' : 'text-gray-900'}`}>
+            {overview.tenantsLowCredits}
           </p>
+          <p className="text-xs text-gray-400 mt-1">Below 50 credits</p>
         </div>
         <div className="bg-white rounded-xl border p-6">
-          <p className="text-sm text-gray-500 mb-1">Total Remaining</p>
-          <p className="text-2xl font-bold text-green-600">{overview.totalRemaining.toLocaleString()}</p>
-          <p className="text-xs text-gray-400 mt-1">Available credits</p>
-        </div>
-        <div className="bg-white rounded-xl border p-6">
-          <p className="text-sm text-gray-500 mb-1">At Limit</p>
-          <p className={`text-2xl font-bold ${overview.tenantsAtLimit > 0 ? 'text-red-600' : 'text-gray-900'}`}>
-            {overview.tenantsAtLimit}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">Tenants exhausted</p>
-        </div>
-        <div className="bg-white rounded-xl border p-6">
-          <p className="text-sm text-gray-500 mb-1">Warnings</p>
-          <p className={`text-2xl font-bold ${overview.tenantsWarning > 0 ? 'text-yellow-600' : 'text-gray-900'}`}>
-            {overview.tenantsWarning}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">Approaching limit</p>
+          <p className="text-sm text-gray-500 mb-1">Transactions</p>
+          <p className="text-2xl font-bold text-gray-900">{overview.totalTransactions.toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-1">Recent activity</p>
         </div>
       </div>
 
@@ -231,39 +274,45 @@ export default function CreditsPage() {
             <h3 className="text-lg font-semibold text-gray-900">Tenant Balances</h3>
           </div>
           <div className="divide-y max-h-[500px] overflow-y-auto">
-            {credits.length === 0 ? (
+            {tenants.length === 0 ? (
               <div className="px-6 py-12 text-center text-gray-500">
-                No credit allocations yet
+                No tenants yet
               </div>
             ) : (
-              credits
-                .sort((a, b) => (a.creditsRemaining / a.monthlyAllocation) - (b.creditsRemaining / b.monthlyAllocation))
-                .map((credit) => {
-                  const tenant = tenants.find((t) => t.id === credit.tenantId);
+              tenants
+                .sort((a, b) => a.totalCredits - b.totalCredits)
+                .map((tenant) => {
+                  const status = tenant.totalCredits === 0 ? 'exhausted' : tenant.totalCredits < 50 ? 'warning' : 'active';
                   return (
-                    <div key={credit.id} className="px-6 py-4">
+                    <div key={tenant.id} className="px-6 py-4">
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <p className="font-medium text-gray-900">
-                            {tenant?.businessName || credit.tenantId}
+                            {tenant.businessName || tenant.id}
                           </p>
-                          <p className="text-sm text-gray-500">
-                            {credit.creditsRemaining.toLocaleString()} / {credit.monthlyAllocation.toLocaleString()} credits
-                          </p>
+                          <div className="text-sm text-gray-500 space-y-0.5">
+                            <div>Subscription: {tenant.subscriptionCredits.toLocaleString()}</div>
+                            <div>Top-off: {tenant.topOffCredits.toLocaleString()}</div>
+                            <div className="font-medium">Total: {tenant.totalCredits.toLocaleString()}</div>
+                          </div>
                         </div>
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                            credit.status === 'exhausted'
-                              ? 'bg-red-100 text-red-800'
-                              : credit.status === 'warning'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-green-100 text-green-800'
-                          }`}
-                        >
-                          {credit.status}
-                        </span>
+                        <div className="text-right">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                              status === 'exhausted'
+                                ? 'bg-red-100 text-red-800'
+                                : status === 'warning'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}
+                          >
+                            {status}
+                          </span>
+                          {tenant.plan && (
+                            <div className="text-xs text-gray-400 mt-1">{tenant.plan}</div>
+                          )}
+                        </div>
                       </div>
-                      <CreditBar used={credit.creditsUsed} allocated={credit.monthlyAllocation} showLabels={false} />
                     </div>
                   );
                 })
@@ -271,39 +320,39 @@ export default function CreditsPage() {
           </div>
         </div>
 
-        {/* Usage by Action Type */}
+        {/* Usage by Feature */}
         <div className="bg-white rounded-xl border shadow-sm">
           <div className="px-6 py-4 border-b">
             <h3 className="text-lg font-semibold text-gray-900">Usage by Feature</h3>
           </div>
           <div className="p-6">
-            {Object.keys(usageByAction).length === 0 ? (
+            {Object.keys(usageByFeature).length === 0 ? (
               <div className="text-center text-gray-500 py-8">
                 No usage data yet
               </div>
             ) : (
               <div className="space-y-4">
-                {Object.entries(usageByAction)
+                {Object.entries(usageByFeature)
                   .sort(([, a], [, b]) => b.credits - a.credits)
-                  .map(([action, data]) => (
-                    <div key={action} className="flex items-center justify-between">
+                  .map(([feature, data]) => (
+                    <div key={feature} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div
                           className={`w-3 h-3 rounded-full mr-3 ${
-                            action === 'article_generation'
+                            feature === 'article'
                               ? 'bg-blue-500'
-                              : action === 'image_generation'
+                              : feature === 'image' || feature === 'image_hd'
                               ? 'bg-purple-500'
-                              : action === 'fact_check'
+                              : feature === 'tts'
                               ? 'bg-green-500'
-                              : action === 'seo_optimization'
+                              : feature === 'agent'
                               ? 'bg-yellow-500'
                               : 'bg-gray-500'
                           }`}
                         ></div>
                         <div>
                           <p className="font-medium text-gray-900">
-                            {action.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                            {feature.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
                           </p>
                           <p className="text-sm text-gray-500">{data.count} operations</p>
                         </div>
@@ -321,10 +370,10 @@ export default function CreditsPage() {
             <div className="mt-8 pt-6 border-t">
               <h4 className="text-sm font-semibold text-gray-700 mb-3">Credit Costs</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                {Object.entries(CREDIT_COSTS).map(([action, cost]) => (
-                  <div key={action} className="flex justify-between text-gray-600">
-                    <span>{action.replace(/_/g, ' ')}</span>
-                    <span className="font-medium">{cost} credits</span>
+                {Object.entries(CREDIT_COSTS).map(([feature, cost]) => (
+                  <div key={feature} className="flex justify-between text-gray-600">
+                    <span>{feature.replace(/_/g, ' ')}</span>
+                    <span className="font-medium">{cost} {feature === 'tts' ? 'per 500 chars' : 'credits'}</span>
                   </div>
                 ))}
               </div>
@@ -333,11 +382,11 @@ export default function CreditsPage() {
         </div>
       </div>
 
-      {/* Recent Usage Log */}
+      {/* Recent Activity Log */}
       <div className="bg-white rounded-xl border shadow-sm">
         <div className="px-6 py-4 border-b flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-          <span className="text-sm text-gray-500">{usage.length} recent transactions</span>
+          <span className="text-sm text-gray-500">{transactions.length} recent transactions</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -347,7 +396,10 @@ export default function CreditsPage() {
                   Tenant
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                  Action
+                  Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  Pool
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                   Description
@@ -361,31 +413,42 @@ export default function CreditsPage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {usage.length === 0 ? (
+              {transactions.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                     No activity recorded yet
                   </td>
                 </tr>
               ) : (
-                usage.slice(0, 20).map((u) => {
-                  const tenant = tenants.find((t) => t.id === u.tenantId);
-                  const timestamp = u.timestamp instanceof Date ? u.timestamp : new Date((u.timestamp as any)?.seconds * 1000 || Date.now());
+                transactions.slice(0, 20).map((tx) => {
+                  const tenant = tenants.find((t) => t.id === tx.tenantId);
+                  const timestamp = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt?.seconds * 1000 || Date.now());
                   return (
-                    <tr key={u.id} className="hover:bg-gray-50">
+                    <tr key={tx.id} className="hover:bg-gray-50">
                       <td className="px-6 py-3 text-sm text-gray-900">
-                        {tenant?.businessName || u.tenantId}
+                        {tenant?.businessName || tx.tenantId}
                       </td>
                       <td className="px-6 py-3">
-                        <span className="text-sm text-gray-600">
-                          {u.action.replace(/_/g, ' ')}
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          tx.type === 'usage' ? 'bg-red-100 text-red-800' :
+                          tx.type === 'subscription' ? 'bg-green-100 text-green-800' :
+                          tx.type === 'topoff' ? 'bg-purple-100 text-purple-800' :
+                          tx.type === 'bonus' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {tx.type}
                         </span>
                       </td>
-                      <td className="px-6 py-3 text-sm text-gray-500 max-w-xs truncate">
-                        {u.description}
+                      <td className="px-6 py-3 text-sm text-gray-600">
+                        {tx.creditPool || '-'}
                       </td>
-                      <td className="px-6 py-3 text-sm text-right font-medium text-gray-900">
-                        -{u.creditsUsed}
+                      <td className="px-6 py-3 text-sm text-gray-500 max-w-xs truncate">
+                        {tx.description}
+                      </td>
+                      <td className="px-6 py-3 text-sm text-right font-medium">
+                        <span className={tx.amount > 0 ? 'text-green-600' : 'text-red-600'}>
+                          {tx.amount > 0 ? '+' : ''}{tx.amount}
+                        </span>
                       </td>
                       <td className="px-6 py-3 text-sm text-right text-gray-500">
                         {timestamp.toLocaleString()}
@@ -411,6 +474,7 @@ export default function CreditsPage() {
                   setSelectedTenant('');
                   setAdjustAmount('');
                   setAdjustReason('');
+                  setAdjustPool('topoff');
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -432,10 +496,26 @@ export default function CreditsPage() {
                   <option value="">Choose a tenant...</option>
                   {tenants.map((tenant) => (
                     <option key={tenant.id} value={tenant.id}>
-                      {tenant.businessName}
+                      {tenant.businessName} ({tenant.totalCredits} total credits)
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <Label htmlFor="pool">Credit Pool</Label>
+                <select
+                  id="pool"
+                  value={adjustPool}
+                  onChange={(e) => setAdjustPool(e.target.value as 'subscription' | 'topoff')}
+                  className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="topoff">Top-Off Credits (never expire)</option>
+                  <option value="subscription">Subscription Credits (expire monthly)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Top-off credits never expire; subscription credits reset monthly
+                </p>
               </div>
 
               <div>
@@ -473,6 +553,7 @@ export default function CreditsPage() {
                     setSelectedTenant('');
                     setAdjustAmount('');
                     setAdjustReason('');
+                    setAdjustPool('topoff');
                   }}
                 >
                   Cancel
