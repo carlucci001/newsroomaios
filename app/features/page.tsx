@@ -180,12 +180,12 @@ export default function FeaturesPage() {
               <div className="bg-gradient-to-br from-brand-blue-50 to-brand-blue-100/50 rounded-2xl p-8 border border-brand-blue-200/60">
                 <div className="flex items-baseline gap-2 mb-2">
                   <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                  <span className="text-sm font-semibold text-muted-foreground">Average Revenue</span>
+                  <span className="text-sm font-semibold text-muted-foreground">Revenue Potential</span>
                 </div>
                 <div className="text-5xl font-display font-bold text-brand-blue-600 mb-2">
-                  $2,500<span className="text-2xl text-muted-foreground">/month</span>
+                  $1,500-3,000<span className="text-2xl text-muted-foreground">/month</span>
                 </div>
-                <p className="text-sm text-muted-foreground">Based on 25 active advertisers at $99/mo average</p>
+                <p className="text-sm text-muted-foreground">With 15-30 active advertisers</p>
               </div>
             </div>
 
@@ -355,12 +355,12 @@ export default function FeaturesPage() {
               <div className="bg-gradient-to-br from-brand-blue-50 to-brand-blue-100/50 rounded-2xl p-8 border border-brand-blue-200/60">
                 <div className="flex items-baseline gap-2 mb-2">
                   <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                  <span className="text-sm font-semibold text-muted-foreground">Average Revenue</span>
+                  <span className="text-sm font-semibold text-muted-foreground">Revenue Potential</span>
                 </div>
                 <div className="text-5xl font-display font-bold text-brand-blue-600 mb-2">
-                  $1,200<span className="text-2xl text-muted-foreground">/month</span>
+                  $500-1,500<span className="text-2xl text-muted-foreground">/month</span>
                 </div>
-                <p className="text-sm text-muted-foreground">Based on 25 featured businesses at $49/mo</p>
+                <p className="text-sm text-muted-foreground">With 10-30 featured businesses</p>
               </div>
             </div>
           </div>
@@ -425,12 +425,12 @@ export default function FeaturesPage() {
               <div className="bg-gradient-to-br from-brand-blue-50 to-brand-blue-100/50 rounded-2xl p-8 border border-brand-blue-200/60">
                 <div className="flex items-baseline gap-2 mb-2">
                   <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                  <span className="text-sm font-semibold text-muted-foreground">Average Revenue</span>
+                  <span className="text-sm font-semibold text-muted-foreground">Revenue Potential</span>
                 </div>
                 <div className="text-5xl font-display font-bold text-brand-blue-600 mb-2">
-                  $900<span className="text-2xl text-muted-foreground">/month</span>
+                  $500-1,500<span className="text-2xl text-muted-foreground">/month</span>
                 </div>
-                <p className="text-sm text-muted-foreground">Based on 100 premium subscribers at $9/mo</p>
+                <p className="text-sm text-muted-foreground">With 50-150 premium subscribers</p>
               </div>
             </div>
 
@@ -493,10 +493,10 @@ export default function FeaturesPage() {
             <div className="relative bg-gradient-to-br from-brand-blue-600 to-brand-blue-700 rounded-3xl p-16 shadow-2xl border border-brand-blue-400/20 text-center">
               <DollarSign className="h-20 w-20 text-white mx-auto mb-6" />
               <h2 className="font-display text-5xl md:text-6xl font-bold text-white mb-6">
-                Combined: $4,600+/month
+                Combined Potential: $3,000-5,000+/month
               </h2>
               <p className="text-xl text-brand-blue-100 mb-10 max-w-3xl mx-auto leading-relaxed">
-                With all three revenue streams active, newspapers on our platform average over <span className="font-bold text-white">$55,000 per year</span> in recurring revenue. That's real, sustainable income for community journalism.
+                With all three revenue streams active, newspapers have the potential to earn <span className="font-bold text-white">$40,000-60,000+ per year</span> in recurring revenue. Results vary based on community and effort.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
                 <Link href="/pricing">

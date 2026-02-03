@@ -459,10 +459,10 @@ export default function HowItWorksPage() {
           <div className="text-center mb-16">
             <Zap className="h-12 w-12 text-brand-blue-600 mx-auto mb-6" />
             <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
-              Your First 90 Days
+              Potential First 90 Days
             </h2>
             <p className="text-xl text-muted-foreground">
-              What to expect as you grow your newspaper
+              A realistic growth path as you build your newspaper. Results vary based on your community and effort.
             </p>
           </div>
 
@@ -480,7 +480,7 @@ export default function HowItWorksPage() {
                     <p className="text-muted-foreground mb-4">
                       Complete onboarding, configure AI journalists, publish first 10 articles, seed directory with 20 businesses, activate revenue streams.
                     </p>
-                    <div className="text-sm text-brand-blue-600 font-semibold">Expected revenue: $0-200</div>
+                    <div className="text-sm text-brand-blue-600 font-semibold">Potential revenue: $0-500</div>
                   </div>
                 </div>
               </CardContent>
@@ -497,9 +497,9 @@ export default function HowItWorksPage() {
                   <div>
                     <h3 className="font-display text-2xl font-bold mb-2">Day 30: Early Traction</h3>
                     <p className="text-muted-foreground mb-4">
-                      5-10 advertisers, 50+ articles published, 5 featured businesses, first premium subscribers. Local awareness growing.
+                      Building advertiser base, publishing regular content, onboarding businesses to directory. Local awareness growing.
                     </p>
-                    <div className="text-sm text-brand-blue-600 font-semibold">Expected revenue: $1,000-1,500/mo</div>
+                    <div className="text-sm text-brand-blue-600 font-semibold">Potential revenue: $500-1,500/mo</div>
                   </div>
                 </div>
               </CardContent>
@@ -516,9 +516,9 @@ export default function HowItWorksPage() {
                   <div>
                     <h3 className="font-display text-2xl font-bold mb-2">Day 60: Growth Momentum</h3>
                     <p className="text-muted-foreground mb-4">
-                      15-20 advertisers, 100+ articles, 15 featured businesses, 50+ subscribers. Word-of-mouth kicking in.
+                      Expanding advertiser relationships, growing content library, building featured business tier. Community engagement increasing.
                     </p>
-                    <div className="text-sm text-brand-blue-600 font-semibold">Expected revenue: $2,500-3,500/mo</div>
+                    <div className="text-sm text-brand-blue-600 font-semibold">Potential revenue: $1,500-3,000/mo</div>
                   </div>
                 </div>
               </CardContent>
@@ -535,9 +535,9 @@ export default function HowItWorksPage() {
                   <div>
                     <h3 className="font-display text-2xl font-bold mb-2">Day 90: Established Newspaper</h3>
                     <p className="text-muted-foreground mb-4">
-                      25+ advertisers, 200+ articles, 25 featured businesses, 100+ subscribers. Self-sustaining revenue machine.
+                      Mature advertiser base, substantial content archive, growing subscriber community. Sustainable business model emerging.
                     </p>
-                    <div className="text-lg text-brand-blue-600 font-bold">Expected revenue: $4,600+/mo ($55,200/year)</div>
+                    <div className="text-lg text-brand-blue-600 font-bold">Potential revenue: $3,000-5,000+/mo ($40-60K/year)</div>
                   </div>
                 </div>
               </CardContent>
@@ -557,7 +557,7 @@ export default function HowItWorksPage() {
                 Ready to Get Started?
               </h2>
               <p className="text-xl text-brand-blue-100 mb-10 max-w-2xl mx-auto">
-                Join 500+ publishers who've launched successful newspapers with our platform. $199 one-time setup. Keep 100% of revenue.
+                Launch your local newspaper with AI-powered tools and built-in monetization. $199 one-time setup. Keep 100% of revenue.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
                 <Link href="/onboarding">

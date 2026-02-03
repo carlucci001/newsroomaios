@@ -168,7 +168,7 @@ export default function Home() {
             <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-brand-blue-200/60 bg-gradient-to-r from-brand-blue-50/80 to-brand-blue-100/60 backdrop-blur-sm mb-8 shadow-lg shadow-brand-blue-500/10 animate-fade-in">
               <Sparkles className="h-4 w-4 text-brand-blue-600 animate-pulse" />
               <span className="text-sm font-semibold bg-gradient-to-r from-brand-blue-700 to-brand-blue-600 bg-clip-text text-transparent">
-                Trusted by 500+ newspapers nationwide
+                Building the future of local journalism
               </span>
               <Award className="h-4 w-4 text-brand-blue-600" />
             </div>
@@ -220,27 +220,27 @@ export default function Home() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
                 <div className="group cursor-default">
                   <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
-                    500+
+                    50+
                   </div>
-                  <div className="text-sm md:text-base text-muted-foreground font-medium">Active Newspapers</div>
+                  <div className="text-sm md:text-base text-muted-foreground font-medium">Year One Goal</div>
                 </div>
                 <div className="group cursor-default">
                   <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
-                    10M+
+                    Local
                   </div>
-                  <div className="text-sm md:text-base text-muted-foreground font-medium">Monthly Readers</div>
+                  <div className="text-sm md:text-base text-muted-foreground font-medium">Community Focus</div>
                 </div>
                 <div className="group cursor-default">
                   <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
-                    $50M+
+                    $40-60K
                   </div>
-                  <div className="text-sm md:text-base text-muted-foreground font-medium">Revenue Generated</div>
+                  <div className="text-sm md:text-base text-muted-foreground font-medium">Revenue Potential/Year</div>
                 </div>
                 <div className="group cursor-default">
                   <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
-                    98%
+                    100%
                   </div>
-                  <div className="text-sm md:text-base text-muted-foreground font-medium">Customer Satisfaction</div>
+                  <div className="text-sm md:text-base text-muted-foreground font-medium">Publisher-First</div>
                 </div>
               </div>
             </div>
@@ -267,26 +267,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Logo Cloud */}
+      {/* Value Proposition Banner */}
       <section className="relative py-20 bg-gradient-to-b from-muted/30 to-transparent border-y border-border/40 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6">
           <p className="text-center text-sm text-muted-foreground mb-12 font-semibold tracking-wider uppercase">
-            Powering Local Journalism Across America
+            Built for Local Journalism
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-12 items-center">
             {[
-              { name: 'Mountain View Times', icon: '🏔️' },
-              { name: 'Coastal Chronicle', icon: '🌊' },
-              { name: 'Valley Gazette', icon: '🌄' },
-              { name: 'Harbor News', icon: '⚓' }
-            ].map((paper, i) => (
+              { name: 'AI-Powered Content', icon: '🤖' },
+              { name: 'Multiple Revenue Streams', icon: '💰' },
+              { name: 'Community Focused', icon: '🏘️' },
+              { name: 'Launch in Minutes', icon: '🚀' }
+            ].map((item, i) => (
               <div
                 key={i}
                 className="flex flex-col items-center gap-3 p-6 rounded-xl hover:bg-brand-blue-50/50 transition-all group cursor-default"
               >
-                <span className="text-4xl group-hover:scale-125 transition-transform">{paper.icon}</span>
+                <span className="text-4xl group-hover:scale-125 transition-transform">{item.icon}</span>
                 <span className="text-center font-display text-lg font-semibold text-muted-foreground group-hover:text-brand-blue-600 transition-colors">
-                  {paper.name}
+                  {item.name}
                 </span>
               </div>
             ))}
@@ -359,13 +359,13 @@ export default function Home() {
                 </ul>
                 <div className="pt-6 border-t border-border">
                   <div className="flex items-baseline gap-2 mb-1">
-                    <div className="text-sm text-muted-foreground font-medium">Avg Revenue</div>
+                    <div className="text-sm text-muted-foreground font-medium">Revenue Potential</div>
                     <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                   </div>
                   <div className="text-4xl font-display font-bold bg-gradient-to-r from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent">
-                    $2,500<span className="text-xl text-muted-foreground">/month</span>
+                    $1,500-3,000<span className="text-xl text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">Based on 25 active advertisers</p>
+                  <p className="text-sm text-muted-foreground mt-2">With 15-30 active advertisers</p>
                 </div>
               </CardContent>
             </Card>
@@ -415,13 +415,13 @@ export default function Home() {
                 </ul>
                 <div className="pt-6 border-t border-border">
                   <div className="flex items-baseline gap-2 mb-1">
-                    <div className="text-sm text-muted-foreground font-medium">Avg Revenue</div>
+                    <div className="text-sm text-muted-foreground font-medium">Revenue Potential</div>
                     <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                   </div>
                   <div className="text-4xl font-display font-bold bg-gradient-to-r from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent">
-                    $1,200<span className="text-xl text-muted-foreground">/month</span>
+                    $500-1,500<span className="text-xl text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">Based on 25 featured businesses</p>
+                  <p className="text-sm text-muted-foreground mt-2">With 10-30 featured businesses</p>
                 </div>
               </CardContent>
             </Card>
@@ -471,13 +471,13 @@ export default function Home() {
                 </ul>
                 <div className="pt-6 border-t border-border">
                   <div className="flex items-baseline gap-2 mb-1">
-                    <div className="text-sm text-muted-foreground font-medium">Avg Revenue</div>
+                    <div className="text-sm text-muted-foreground font-medium">Revenue Potential</div>
                     <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                   </div>
                   <div className="text-4xl font-display font-bold bg-gradient-to-r from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent">
-                    $900<span className="text-xl text-muted-foreground">/month</span>
+                    $500-1,500<span className="text-xl text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">Based on 100 premium subscribers</p>
+                  <p className="text-sm text-muted-foreground mt-2">With 50-150 premium subscribers</p>
                 </div>
               </CardContent>
             </Card>
@@ -487,10 +487,10 @@ export default function Home() {
           <div className="text-center bg-gradient-to-br from-brand-blue-50 to-brand-blue-100/50 rounded-3xl p-12 border-2 border-brand-blue-200/60 shadow-xl">
             <DollarSign className="h-16 w-16 text-brand-blue-600 mx-auto mb-6" />
             <h3 className="font-display text-4xl font-bold mb-4">
-              Combined: <span className="text-brand-blue-600">$4,600+/month</span>
+              Combined Potential: <span className="text-brand-blue-600">$3,000-5,000+/month</span>
             </h3>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              With all three revenue streams active, newspapers on our platform average over $55,000 per year in recurring revenue.
+              With all three revenue streams active, newspapers have the potential to earn $40,000-60,000+ per year in recurring revenue.
             </p>
             <Link href="/features">
               <Button size="lg" className="gap-2 shadow-lg shadow-brand-blue-500/30">
@@ -746,55 +746,44 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section id="testimonials" className="relative py-32 bg-gradient-to-b from-muted/30 to-transparent observe-animation">
+      {/* Why Choose Us */}
+      <section id="why-us" className="relative py-32 bg-gradient-to-b from-muted/30 to-transparent observe-animation">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-blue-50 border border-brand-blue-200/60 mb-6">
               <Users className="h-4 w-4 text-brand-blue-600" />
-              <span className="text-sm font-semibold text-brand-blue-700">Success Stories</span>
+              <span className="text-sm font-semibold text-brand-blue-700">Why Newsroom AIOS</span>
             </div>
             <h2 className="font-display text-5xl md:text-6xl font-bold mb-6">
-              Loved by Publishers <span className="text-brand-blue-600">Nationwide</span>
+              Built for <span className="text-brand-blue-600">Local Publishers</span>
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                quote: "We launched our newspaper in 3 weeks and hit $5,000/month in revenue within 60 days. The AI-generated advertising banners are incredible.",
-                author: "Sarah Mitchell",
-                role: "Publisher, Mountain View Times",
-                avatar: "🏔️"
+                title: "AI-Powered Efficiency",
+                description: "Generate professional articles, advertising banners, and newsletters automatically. Focus on community engagement while AI handles the heavy lifting.",
+                icon: "🤖"
               },
               {
-                quote: "The business directory became our #1 revenue stream. Local businesses love the featured tier and the SEO brings them real customers.",
-                author: "James Rodriguez",
-                role: "Editor-in-Chief, Coastal Chronicle",
-                avatar: "🌊"
+                title: "Multiple Revenue Streams",
+                description: "Monetize from day one with advertising, business directory listings, and premium subscriptions—all built into one platform.",
+                icon: "💰"
               },
               {
-                quote: "Newsroom AIOS gave us the tools to compete with big city papers. Our community journalism has never been stronger—or more profitable.",
-                author: "Emily Chen",
-                role: "Managing Editor, Valley Gazette",
-                avatar: "🌄"
+                title: "Community First",
+                description: "Local journalism matters. Our platform is designed to help you serve your community with relevant, timely content that builds trust.",
+                icon: "🏘️"
               }
-            ].map((testimonial, i) => (
+            ].map((item, i) => (
               <Card key={i} className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-xl bg-gradient-to-br from-card to-brand-blue-50/30">
                 <CardContent className="pt-8">
-                  <Quote className="h-12 w-12 text-brand-blue-200 mb-6" />
-                  <p className="text-lg leading-relaxed mb-8 italic">
-                    "{testimonial.quote}"
+                  <div className="text-5xl mb-6">{item.icon}</div>
+                  <h3 className="text-xl font-display font-bold mb-4">{item.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {item.description}
                   </p>
-                  <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-full bg-gradient-to-br from-brand-blue-500 to-brand-blue-600 flex items-center justify-center text-2xl shadow-lg">
-                      {testimonial.avatar}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-foreground">{testimonial.author}</div>
-                      <div className="text-sm text-muted-foreground">{testimonial.role}</div>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -812,7 +801,7 @@ export default function Home() {
                 Ready to Launch Your Newspaper?
               </h2>
               <p className="text-xl text-brand-blue-100 mb-10 max-w-2xl mx-auto">
-                Join 500+ publishers who've transformed local journalism with AI-powered tools and multi-stream monetization.
+                Join the next generation of local publishers using AI-powered tools and multi-stream monetization.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
                 <Button

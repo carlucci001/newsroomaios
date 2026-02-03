@@ -269,7 +269,7 @@ export default function PricingPage() {
               <span className="text-brand-blue-600">Ever.</span>
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-              Unlike other platforms that take 20-30% of your ad revenue, we charge a simple monthly fee. Every dollar from advertising, directory, and subscriptions goes straight to you. That's an extra <strong className="text-foreground">$13,800/year</strong> in your pocket on $55k revenue.
+              Unlike other platforms that take 20-30% of your ad revenue, we charge a simple monthly fee. Every dollar from advertising, directory, and subscriptions goes straight to you. That means more of your hard-earned revenue stays in your pocket.
             </p>
             <div className="grid md:grid-cols-3 gap-8">
               <div>
@@ -385,9 +385,10 @@ export default function PricingPage() {
           <div className="text-center mb-12">
             <Sparkles className="h-12 w-12 text-brand-blue-600 mx-auto mb-6" />
             <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
-              Simple Math:<br />
-              <span className="text-brand-blue-600">ROI in 30 Days</span>
+              Example Scenario:<br />
+              <span className="text-brand-blue-600">Potential Month 1</span>
             </h2>
+            <p className="text-muted-foreground">Results vary based on community size and effort</p>
           </div>
 
           <Card className="border-2 border-brand-blue-200 bg-gradient-to-br from-card to-brand-blue-50/30 overflow-hidden">
@@ -442,7 +443,7 @@ export default function PricingPage() {
           </Card>
 
           <p className="text-center text-muted-foreground mt-8 text-lg">
-            These are conservative estimates. Many newspapers exceed <strong className="text-foreground">$4,600/month</strong> within 90 days.
+            This is an example scenario. Actual results vary based on your community size, engagement, and marketing effort. Revenue potential ranges from <strong className="text-foreground">$1,500-$5,000+/month</strong>.
           </p>
         </div>
       </section>

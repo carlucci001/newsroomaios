@@ -85,42 +85,42 @@ export const CREDIT_COSTS = {
   web_search: 1,                   // Per search query
 } as const;
 
-// Default plans
+// Default plans - aligned with front-end pricing
 export const DEFAULT_PLANS: CreditPlan[] = [
   {
     id: 'starter',
     name: 'Starter',
     monthlyCredits: 500,
-    pricePerMonth: 49,
+    pricePerMonth: 99,
     pricePerCredit: 0.15,
     features: [
       '500 AI credits/month',
-      '2 AI journalists',
-      '10 articles/day',
-      'Community support',
+      '1 AI journalist',
+      '50 articles/month',
+      'Email support',
       'Basic analytics',
     ],
-    maxAIJournalists: 2,
+    maxAIJournalists: 1,
     maxArticlesPerDay: 10,
-    supportLevel: 'community',
+    supportLevel: 'email',
   },
   {
     id: 'professional',
     name: 'Professional',
     monthlyCredits: 2000,
-    pricePerMonth: 149,
+    pricePerMonth: 199,
     pricePerCredit: 0.10,
     features: [
       '2,000 AI credits/month',
-      '5 AI journalists',
-      '50 articles/day',
-      'Email support',
+      '3 AI journalists',
+      'Unlimited articles',
+      'Priority support',
       'Advanced analytics',
       'Custom branding',
     ],
-    maxAIJournalists: 5,
-    maxArticlesPerDay: 50,
-    supportLevel: 'email',
+    maxAIJournalists: 3,
+    maxArticlesPerDay: -1, // Unlimited
+    supportLevel: 'priority',
   },
   {
     id: 'enterprise',
@@ -132,7 +132,7 @@ export const DEFAULT_PLANS: CreditPlan[] = [
       '10,000 AI credits/month',
       'Unlimited AI journalists',
       'Unlimited articles/day',
-      'Priority support',
+      '24/7 phone support',
       'Full analytics suite',
       'Custom integrations',
       'Dedicated account manager',
