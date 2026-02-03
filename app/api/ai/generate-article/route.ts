@@ -5,7 +5,8 @@ import { generateContent, NEWS_SYSTEM_INSTRUCTION } from '@/lib/gemini';
 import { buildArticlePrompt, validateSourceMaterial } from '@/lib/promptBuilder';
 import { parseArticleResponse, generateSlug } from '@/lib/articleParser';
 import { generateArticleImage } from '@/lib/imageGeneration';
-import { GenerateArticleRequest, GenerateArticleResponse, PromptContext } from '@/types/generation';
+import { searchNews, generateSearchQuery } from '@/lib/webSearch';
+import { GenerateArticleRequest, GenerateArticleResponse, PromptContext, SourceContent } from '@/types/generation';
 import { Tenant, NewsCategory } from '@/types/tenant';
 import { CREDIT_COSTS } from '@/types/credits';
 
@@ -62,14 +63,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If web search is requested, fetch source content from the web
+    let sourceContent: SourceContent | undefined = body.sourceContent;
+    if (body.useWebSearch && !sourceContent) {
+      console.log(`[Generate] Searching news for: ${category.name} in ${tenant.serviceArea.city}`);
+      const searchQuery = generateSearchQuery(
+        category.id,
+        tenant.serviceArea.city,
+        tenant.serviceArea.state,
+        tenant.serviceArea.region
+      );
+      const searchResult = await searchNews(searchQuery, {
+        focusArea: category.name,
+      });
+      if (searchResult) {
+        sourceContent = searchResult;
+        console.log(`[Generate] ✓ Found source: ${sourceContent.title}`);
+      } else {
+        console.warn(`[Generate] No news found for ${category.name}, using minimal content`);
+      }
+    }
+
     // Validate source material if provided
-    if (body.sourceContent) {
-      const validation = validateSourceMaterial(body.sourceContent);
+    if (sourceContent) {
+      const validation = validateSourceMaterial(sourceContent);
       if (!validation.valid) {
-        return NextResponse.json(
-          { success: false, error: validation.reason },
-          { status: 400 }
-        );
+        // For web search, don't fail - just log and continue with minimal content
+        if (body.useWebSearch) {
+          console.warn(`[Generate] Weak source material: ${validation.reason}`);
+        } else {
+          return NextResponse.json(
+            { success: false, error: validation.reason },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -102,7 +129,7 @@ export async function POST(request: NextRequest) {
       categoryDirective: category.directive,
       articleSpecificPrompt: body.articleSpecificPrompt,
       journalistName: body.journalistName,
-      sourceContent: body.sourceContent,
+      sourceContent, // Use fetched source content (from web search or provided)
       targetWordCount: body.targetWordCount,
       writingStyle: body.writingStyle,
     };
@@ -160,8 +187,8 @@ export async function POST(request: NextRequest) {
       status: 'published',
       publishedAt: new Date(),
       isAIGenerated: true,
-      sourceUrl: body.sourceContent?.url || null,
-      sourceTitle: body.sourceContent?.title || null,
+      sourceUrl: sourceContent?.url || null,
+      sourceTitle: sourceContent?.title || null,
       // Image
       featuredImage: imageResult.url || null,
       imageUrl: imageResult.url || null,
