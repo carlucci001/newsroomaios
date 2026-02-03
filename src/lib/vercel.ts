@@ -182,7 +182,7 @@ class VercelService {
         target: 'production',
         gitSource: {
           type: 'github',
-          ref: 'main',
+          ref: 'master',
         },
       });
 
