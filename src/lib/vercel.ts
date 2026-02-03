@@ -242,13 +242,24 @@ class VercelService {
       TENANT_SLUG: slug,
       NEXT_PUBLIC_TENANT_ID: tenantId,  // Critical for client-side tenant isolation
 
-      // Firebase (same as main platform)
+      // Firebase Client SDK (same as main platform)
       NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
       NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '',
       NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
       NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
       NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
       NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
+
+      // Firebase Admin SDK (for server-side admin APIs)
+      FIREBASE_ADMIN_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
+      FIREBASE_ADMIN_CLIENT_EMAIL: process.env.FIREBASE_ADMIN_CLIENT_EMAIL || '',
+      FIREBASE_ADMIN_PRIVATE_KEY: process.env.FIREBASE_ADMIN_PRIVATE_KEY || '',
+
+      // Shared AI API Keys (platform pays, tenants use)
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+      PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY || '',
+      PEXELS_API_KEY: process.env.PEXELS_API_KEY || '',
+      ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || '',
 
       // Tenant-specific config
       NEXT_PUBLIC_SITE_NAME: businessName,
