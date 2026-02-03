@@ -655,16 +655,16 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
                     Go to Admin Panel
                     <ExternalLink className="h-4 w-4" />
                   </a>
-                  <Button
-                    onClick={() => tenantId && onSuccess(tenantId)}
-                    variant="outline"
-                    size="lg"
-                    className="py-4 h-auto"
-                    disabled={!tenantId}
+                  <a
+                    href={tenantId ? `/status/${tenantId}` : '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 border-2 border-input bg-background hover:bg-accent font-semibold py-4 px-6 rounded-xl transition-colors"
                   >
-                    <CheckCircle className="h-5 w-5 mr-2" />
+                    <CheckCircle className="h-5 w-5" />
                     View Setup Progress
-                  </Button>
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
                 </div>
               </div>
             )}
