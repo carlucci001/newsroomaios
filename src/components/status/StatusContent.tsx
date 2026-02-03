@@ -403,18 +403,47 @@ export function StatusContent({ tenantId, onBack }: StatusContentProps) {
 
         {/* Complete State */}
         {isComplete && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mt-10">
-            <motion.a
-              href={progress?.siteUrl || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="inline-flex items-center gap-3 bg-gradient-to-r from-brand-blue-500 to-brand-blue-600 text-white font-bold py-5 px-10 rounded-xl text-xl shadow-2xl shadow-brand-blue-500/30 hover:shadow-brand-blue-500/40 transition-shadow"
-            >
-              <span>Launch Your Newspaper</span>
-              <span>🚀</span>
-            </motion.a>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-10 space-y-6">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-8 text-center">
+              <div className="text-5xl mb-4">🎉</div>
+              <h2 className="text-2xl font-display font-bold text-green-800 mb-2">Your Newspaper is Ready!</h2>
+              <p className="text-green-700 mb-6">Your site is live and ready for the world to see.</p>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+                <motion.a
+                  href={progress?.siteUrl || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-brand-blue-500 to-brand-blue-600 text-white font-bold py-4 px-8 rounded-xl text-lg shadow-xl shadow-brand-blue-500/30 hover:shadow-brand-blue-500/40 transition-shadow"
+                >
+                  <span>View Your Newspaper</span>
+                  <span>🚀</span>
+                </motion.a>
+                <motion.a
+                  href={`${progress?.siteUrl || ''}/backend`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="inline-flex items-center justify-center gap-3 bg-white border-2 border-brand-blue-200 text-brand-blue-600 font-bold py-4 px-8 rounded-xl text-lg shadow-lg hover:bg-brand-blue-50 transition-colors"
+                >
+                  <span>Open Admin Panel</span>
+                  <span>⚙️</span>
+                </motion.a>
+              </div>
+
+              <div className="bg-white/50 rounded-xl p-4 text-left max-w-md mx-auto">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Your Site URL:</p>
+                <code className="block bg-gray-100 rounded px-3 py-2 text-sm text-gray-800 mb-3 break-all">
+                  {progress?.siteUrl || 'Loading...'}
+                </code>
+                <p className="text-xs text-gray-500">
+                  Tip: Configure your DNS to use your custom domain. Until then, use the Vercel URL above.
+                </p>
+              </div>
+            </div>
           </motion.div>
         )}
       </div>
