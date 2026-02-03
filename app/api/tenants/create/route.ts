@@ -144,6 +144,12 @@ export async function POST(request: NextRequest) {
       'lifestyle': '#db2777',
       'outdoors': '#16a34a',
       'community': '#f59e0b',
+      'crime': '#991b1b',
+      'agriculture': '#15803d',
+      'education': '#1e40af',
+      'health': '#0d9488',
+      'real-estate': '#7c2d12',
+      'technology': '#4f46e5',
     };
 
     const catBatch = db.batch();
@@ -164,6 +170,105 @@ export async function POST(request: NextRequest) {
       });
     }
     await catBatch.commit();
+
+    // Build navigation items from selected categories
+    const navigationItems = selectedCategories.map((cat: any, index: number) => ({
+      id: cat.id || cat.slug,
+      label: cat.name,
+      href: `/category/${cat.slug || cat.id}`,
+      order: index,
+      isActive: cat.enabled !== false,
+    }));
+
+    // Seed siteConfig for the tenant (navigation, general settings)
+    const siteConfigBatch = db.batch();
+
+    // siteConfig/general
+    siteConfigBatch.set(db.collection(`tenants/${tenantId}/siteConfig`).doc('general'), {
+      siteName: businessName,
+      tagline: `Your source for ${serviceArea.city} news`,
+      logo: null,
+      favicon: null,
+      serviceArea,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    // siteConfig/navigation
+    siteConfigBatch.set(db.collection(`tenants/${tenantId}/siteConfig`).doc('navigation'), {
+      mainNav: navigationItems,
+      footerNav: [
+        { id: 'about', label: 'About Us', href: '/about', order: 0 },
+        { id: 'advertise', label: 'Advertise', href: '/advertise', order: 1 },
+        { id: 'contact', label: 'Contact', href: '/contact', order: 2 },
+        { id: 'privacy', label: 'Privacy Policy', href: '/privacy', order: 3 },
+      ],
+      updatedAt: new Date(),
+    });
+
+    // siteConfig/categories
+    siteConfigBatch.set(db.collection(`tenants/${tenantId}/siteConfig`).doc('categories'), {
+      categories: selectedCategories.map((cat: any, index: number) => ({
+        id: cat.id || cat.slug,
+        name: cat.name,
+        slug: cat.slug || cat.id,
+        color: categoryColors[cat.slug] || categoryColors[cat.id] || '#1d4ed8',
+        description: cat.directive || '',
+        isActive: cat.enabled !== false,
+        sortOrder: index,
+      })),
+      updatedAt: new Date(),
+    });
+
+    // settings/site
+    siteConfigBatch.set(db.collection(`tenants/${tenantId}/settings`).doc('site'), {
+      name: businessName,
+      tagline: `Your source for ${serviceArea.city} news`,
+      serviceArea,
+      categories: navigationItems,
+      updatedAt: new Date(),
+    });
+
+    await siteConfigBatch.commit();
+    console.log(`[Tenant Create] Seeded siteConfig for ${tenantId}`);
+
+    // Also seed ROOT level collections for template compatibility
+    const rootBatch = db.batch();
+    rootBatch.set(db.collection('siteConfig').doc('navigation'), {
+      tenantId,
+      mainNav: navigationItems,
+      updatedAt: new Date(),
+    });
+    rootBatch.set(db.collection('siteConfig').doc('general'), {
+      tenantId,
+      siteName: businessName,
+      tagline: `Your source for ${serviceArea.city} news`,
+      serviceArea,
+      updatedAt: new Date(),
+    });
+    rootBatch.set(db.collection('settings').doc('site'), {
+      tenantId,
+      name: businessName,
+      categories: navigationItems,
+      updatedAt: new Date(),
+    });
+
+    // Seed root categories collection
+    for (const cat of selectedCategories) {
+      const catId = cat.id || cat.slug;
+      rootBatch.set(db.collection('categories').doc(catId), {
+        id: catId,
+        name: cat.name,
+        slug: cat.slug || catId,
+        color: categoryColors[cat.slug] || categoryColors[catId] || '#1d4ed8',
+        description: cat.directive || '',
+        isActive: cat.enabled !== false,
+        tenantId,
+        updatedAt: new Date(),
+      });
+    }
+    await rootBatch.commit();
+    console.log(`[Tenant Create] Seeded ROOT collections for ${tenantId}`);
 
     // Create setup progress document for status tracking
     const now = new Date();
