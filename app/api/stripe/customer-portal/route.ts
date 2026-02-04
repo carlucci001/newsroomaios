@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 
 /**
  * Create a Stripe Customer Portal session
@@ -23,10 +24,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Get tenant's Stripe customer ID from Firestore
-    // For now, return a placeholder
-    // const tenant = await getTenant(tenantId);
-    // const customerId = tenant.stripeCustomerId;
+    // Get tenant's Stripe customer ID from Firestore
+    const db = getAdminDb();
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database not configured' },
+        { status: 500 }
+      );
+    }
+
+    const tenantDoc = await db.collection('tenants').doc(tenantId).get();
+    if (!tenantDoc.exists) {
+      return NextResponse.json(
+        { error: 'Tenant not found' },
+        { status: 404 }
+      );
+    }
+
+    const tenant = tenantDoc.data();
+    const customerId = tenant?.stripeCustomerId;
+
+    if (!customerId) {
+      return NextResponse.json(
+        { error: 'No Stripe customer found for this tenant' },
+        { status: 400 }
+      );
+    }
 
     // Create Customer Portal session using REST API
     const response = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
@@ -36,7 +59,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        customer: 'cus_placeholder', // TODO: Get from tenant
+        customer: customerId,
         return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/account/billing`,
       }).toString(),
     });
