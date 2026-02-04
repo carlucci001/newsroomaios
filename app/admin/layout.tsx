@@ -137,14 +137,14 @@ function AdminLayoutContent({
                 key={item.href}
                 href={item.href}
                 prefetch={false}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-none active:scale-95 ${
                   isActive
                     ? isDark
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-brand-50 text-brand-700'
+                      ? 'bg-blue-600 text-white active:bg-blue-700'
+                      : 'bg-brand-50 text-brand-700 active:bg-brand-100'
                     : isDark
-                    ? 'text-gray-300 hover:bg-gray-700 hover:text-gray-100'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'text-gray-300 hover:bg-gray-700 hover:text-gray-100 active:bg-gray-800'
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200'
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -186,8 +186,8 @@ function AdminLayoutContent({
 
               <Link
                 href="/"
-                className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
-                  isDark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+                className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-none active:scale-95 ${
+                  isDark ? 'text-gray-300 hover:bg-gray-700 active:bg-gray-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
                 }`}
               >
                 <ExternalLink className="w-4 h-4" />
@@ -195,8 +195,8 @@ function AdminLayoutContent({
               </Link>
               <button
                 onClick={handleSignOut}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
-                  isDark ? 'text-red-400 hover:bg-red-950' : 'text-danger-600 hover:bg-danger-50'
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-none active:scale-95 ${
+                  isDark ? 'text-red-400 hover:bg-red-950 active:bg-red-900' : 'text-danger-600 hover:bg-danger-50 active:bg-danger-100'
                 }`}
               >
                 <LogOut className="w-4 h-4" />
