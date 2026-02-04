@@ -10,6 +10,9 @@ import {
   Star,
   Award,
   Sparkles,
+  Newspaper,
+  DollarSign,
+  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/layout/SiteHeader";
@@ -71,7 +74,7 @@ export default function PricingPage() {
           <div className="flex items-center justify-center gap-8 mb-16 flex-wrap">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Shield className="h-5 w-5 text-brand-blue-600" />
-              <span className="text-sm font-medium">$199 one-time setup</span>
+              <span className="text-sm font-medium">$199 setup - Complete business included</span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Shield className="h-5 w-5 text-brand-blue-600" />
@@ -80,6 +83,69 @@ export default function PricingPage() {
             <div className="flex items-center gap-2 text-muted-foreground">
               <Shield className="h-5 w-5 text-brand-blue-600" />
               <span className="text-sm font-medium">Cancel anytime</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* What's Included in $199 Setup */}
+      <section className="relative py-16">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="bg-gradient-to-br from-brand-blue-50 to-brand-blue-100/50 rounded-2xl p-12 mb-0">
+            <div className="text-center mb-8">
+              <h3 className="font-display text-3xl font-bold mb-3">
+                Everything Included in Your $199 Setup
+              </h3>
+              <p className="text-lg text-muted-foreground">
+                A complete multi-revenue newspaper business, ready to launch in minutes
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Content Ready */}
+              <div className="bg-white rounded-xl p-6">
+                <Newspaper className="h-10 w-10 text-brand-blue-600 mb-4" />
+                <h4 className="font-bold text-lg mb-2">Launch-Ready Content</h4>
+                <ul className="space-y-2 text-sm">
+                  <li>✅ 36 AI-generated articles</li>
+                  <li>✅ 100 directory listings (pre-populated)</li>
+                  <li>✅ Subdomain with SSL</li>
+                  <li>✅ Custom domain support</li>
+                </ul>
+              </div>
+
+              {/* Revenue Systems */}
+              <div className="bg-white rounded-xl p-6">
+                <DollarSign className="h-10 w-10 text-green-600 mb-4" />
+                <h4 className="font-bold text-lg mb-2">Built-In Revenue Systems</h4>
+                <ul className="space-y-2 text-sm">
+                  <li>✅ Subscription/paywall platform</li>
+                  <li>✅ Advertising management (CPC/CPM)</li>
+                  <li>✅ Directory listing monetization</li>
+                  <li>✅ Keep 100% of ALL revenue</li>
+                </ul>
+              </div>
+
+              {/* Tools & Support */}
+              <div className="bg-white rounded-xl p-6">
+                <Wrench className="h-10 w-10 text-purple-600 mb-4" />
+                <h4 className="font-bold text-lg mb-2">Professional Tools</h4>
+                <ul className="space-y-2 text-sm">
+                  <li>✅ Full CMS & admin dashboard</li>
+                  <li>✅ AI journalist personas</li>
+                  <li>✅ Analytics & reporting</li>
+                  <li>✅ DNS & domain management</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="text-center mt-8 pt-8 border-t border-brand-blue-200">
+              <p className="text-2xl font-bold text-brand-blue-600">
+                Comparable value: $5,000+ in development + hosting
+              </p>
+              <p className="text-muted-foreground mt-2">
+                You pay: $199 one-time + $99-299/mo platform fee
+              </p>
             </div>
           </div>
         </div>
@@ -100,7 +166,10 @@ export default function PricingPage() {
                     <span className="text-5xl font-display font-bold">$99</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">Platform fee only</p>
+                  <p className="text-sm text-muted-foreground mt-2">+ $199 one-time setup</p>
+                  <p className="text-xs text-brand-blue-600 font-medium mt-1">
+                    Includes 36 articles + 100 directory listings
+                  </p>
                 </div>
               </CardHeader>
               <CardContent>
@@ -156,7 +225,10 @@ export default function PricingPage() {
                     <span className="text-5xl font-display font-bold text-brand-blue-600">$199</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">Platform fee only</p>
+                  <p className="text-sm text-muted-foreground mt-2">+ $199 one-time setup</p>
+                  <p className="text-xs text-brand-blue-600 font-medium mt-1">
+                    Includes 36 articles + 100 directory listings
+                  </p>
                 </div>
               </CardHeader>
               <CardContent>
@@ -209,7 +281,10 @@ export default function PricingPage() {
                     <span className="text-5xl font-display font-bold">$299</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">Platform fee only</p>
+                  <p className="text-sm text-muted-foreground mt-2">+ $199 one-time setup</p>
+                  <p className="text-xs text-brand-blue-600 font-medium mt-1">
+                    Includes 36 articles + 100 directory listings
+                  </p>
                 </div>
               </CardHeader>
               <CardContent>
@@ -266,6 +341,9 @@ export default function PricingPage() {
                     <span className="text-4xl font-display font-bold">Contact Us</span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">Custom pricing</p>
+                  <p className="text-xs text-brand-blue-600 font-medium mt-1">
+                    Each newspaper includes complete business setup
+                  </p>
                 </div>
               </CardHeader>
               <CardContent>
@@ -447,6 +525,13 @@ export default function PricingPage() {
       {/* ROI Calculator */}
       <section className="relative py-20 bg-gradient-to-b from-muted/30 to-transparent">
         <div className="max-w-5xl mx-auto px-6">
+          {/* Revenue Systems Included Notice */}
+          <div className="bg-brand-blue-600 text-white rounded-xl p-6 mb-8 text-center">
+            <p className="text-lg font-semibold">
+              All 3 revenue systems below are included in your $199 setup - ready to monetize immediately
+            </p>
+          </div>
+
           <div className="text-center mb-12">
             <Sparkles className="h-12 w-12 text-brand-blue-600 mx-auto mb-6" />
             <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
@@ -524,7 +609,7 @@ export default function PricingPage() {
                 Launch Your Paper Today
               </h2>
               <p className="text-xl text-brand-blue-100 mb-10 max-w-2xl mx-auto">
-                $199 one-time setup. Keep 100% of all revenue you generate from ads, directory, and subscriptions.
+                $199 one-time setup includes 36 articles, 100 directory listings, and complete revenue systems. Keep 100% of everything you earn.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
                 <Link href="/onboarding">

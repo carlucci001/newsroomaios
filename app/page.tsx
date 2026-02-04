@@ -598,6 +598,10 @@ export default function Home() {
                     <span className="text-5xl font-display font-bold">$99</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
+                  <p className="text-sm text-muted-foreground mt-2">+ $199 one-time setup</p>
+                  <p className="text-xs text-brand-blue-600 font-medium mt-1">
+                    Includes 36 articles + 100 listings + all revenue systems
+                  </p>
                 </div>
               </CardHeader>
               <CardContent>
@@ -611,7 +615,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Up to 25 articles/month</span>
+                    <span className="text-sm">Up to 50 articles/month</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -643,6 +647,10 @@ export default function Home() {
                     <span className="text-5xl font-display font-bold text-brand-blue-600">$199</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
+                  <p className="text-sm text-muted-foreground mt-2">+ $199 one-time setup</p>
+                  <p className="text-xs text-brand-blue-600 font-medium mt-1">
+                    Includes 36 articles + 100 listings + all revenue systems
+                  </p>
                 </div>
               </CardHeader>
               <CardContent>
@@ -656,7 +664,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm font-semibold">Up to 55 articles/month</span>
+                    <span className="text-sm font-semibold">Up to 115 articles/month</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -689,6 +697,10 @@ export default function Home() {
                     <span className="text-5xl font-display font-bold">$299</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
+                  <p className="text-sm text-muted-foreground mt-2">+ $199 one-time setup</p>
+                  <p className="text-xs text-brand-blue-600 font-medium mt-1">
+                    Includes 36 articles + 100 listings + all revenue systems
+                  </p>
                 </div>
               </CardHeader>
               <CardContent>
@@ -702,7 +714,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Up to 100 articles/month</span>
+                    <span className="text-sm">Up to 200 articles/month</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -746,7 +758,7 @@ export default function Home() {
 
           <div className="text-center mt-16">
             <p className="text-muted-foreground text-lg mb-6">
-              $199 one-time setup fee. Keep 100% of all revenue you generate.
+              $199 one-time setup includes 36 articles, 100 directory listings, and all revenue systems. Keep 100% of everything you earn.
             </p>
             <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
@@ -841,7 +853,7 @@ export default function Home() {
                 </Button>
               </div>
               <p className="text-brand-blue-200 mt-8 text-sm">
-                $199 setup fee • Keep 100% of revenue • Cancel anytime
+                $199 complete business setup • All systems included • Keep 100% of revenue
               </p>
             </div>
           </div>

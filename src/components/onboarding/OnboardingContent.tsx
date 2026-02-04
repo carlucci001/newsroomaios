@@ -20,20 +20,40 @@ const PLANS = [
     id: 'starter',
     name: 'Starter',
     price: 99,
-    features: ['250 AI credits/month', 'Up to 50 articles/month', 'Basic analytics', 'Email support'],
+    features: [
+      '250 AI credits/month',
+      'Up to 50 articles/month',
+      'Basic analytics',
+      'Email support',
+      '+ $199 setup (36 articles, 100 listings, all systems)',
+    ],
   },
   {
     id: 'growth',
     name: 'Growth',
     price: 199,
-    features: ['575 AI credits/month', 'Up to 115 articles/month', 'Advanced analytics', 'Priority support', 'Custom branding'],
+    features: [
+      '575 AI credits/month',
+      'Up to 115 articles/month',
+      'Advanced analytics',
+      'Priority support',
+      'Custom branding',
+      '+ $199 setup (36 articles, 100 listings, all systems)',
+    ],
     recommended: true,
   },
   {
     id: 'professional',
     name: 'Professional',
     price: 299,
-    features: ['1,000 AI credits/month', 'Up to 200 articles/month', 'Full analytics suite', 'Dedicated support', 'AI banner generation'],
+    features: [
+      '1,000 AI credits/month',
+      'Up to 200 articles/month',
+      'Full analytics suite',
+      'Dedicated support',
+      'AI banner generation',
+      '+ $199 setup (36 articles, 100 listings, all systems)',
+    ],
   },
 ];
 
@@ -467,6 +487,26 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
             {/* Step 5: Plan Selection */}
             {currentStep === 5 && (
               <div className="space-y-6">
+                {/* Value Proposition Callout */}
+                <div className="bg-gradient-to-r from-brand-blue-600 to-brand-blue-700 rounded-xl p-6 text-white">
+                  <h3 className="font-bold text-xl mb-3">What's Included in Your $199 Setup:</h3>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      ✅ 36 AI-generated articles (ready to publish)<br/>
+                      ✅ 100 pre-populated directory listings<br/>
+                      ✅ Subdomain with SSL certificate
+                    </div>
+                    <div>
+                      ✅ Complete subscription/paywall system<br/>
+                      ✅ Full advertising platform (CPC/CPM)<br/>
+                      ✅ Directory monetization tools
+                    </div>
+                  </div>
+                  <p className="mt-4 text-brand-blue-100 text-xs">
+                    All revenue systems are included - start earning immediately
+                  </p>
+                </div>
+
                 <div className="grid gap-4">
                   {PLANS.map((plan) => (
                     <div
@@ -577,6 +617,30 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
                   </div>
                   <h3 className="text-2xl font-bold text-green-700 mb-2">Your Newspaper is Live!</h3>
                   <p className="text-muted-foreground">Congratulations! Your AI-powered newspaper has been created.</p>
+                </div>
+
+                {/* Complete Business Live! */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 mb-6">
+                  <h3 className="font-bold text-xl text-green-900 mb-3">
+                    Your Complete Newspaper Business is Live! 🎉
+                  </h3>
+                  <div className="grid md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <div className="font-semibold text-green-800">Content Ready</div>
+                      <div className="text-green-700">36 articles published</div>
+                      <div className="text-green-700">100 directory listings</div>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-green-800">Revenue Systems</div>
+                      <div className="text-green-700">Subscriptions active</div>
+                      <div className="text-green-700">Ads ready to sell</div>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-green-800">Your Domain</div>
+                      <div className="text-green-700">{newspaperUrl?.replace('https://', '') || 'Provisioning...'}</div>
+                      <div className="text-green-700">SSL enabled</div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Admin Credentials */}
