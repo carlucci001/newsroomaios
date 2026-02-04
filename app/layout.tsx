@@ -16,6 +16,12 @@ const manrope = Manrope({
   weight: ["400", "500", "600", "700"],
 });
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   title: "Newsroom AIOS - Launch Your Local Newspaper in Minutes | AI-Powered News Platform",
   description: "Professional local newspaper software for community journalism. AI-powered content creation, automated advertising, business directory, and newsletter management. Launch your newspaper in minutes, not months.",

@@ -1,10 +1,14 @@
 'use client';
 
+import 'antd/dist/reset.css';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { getAuthInstance } from '@/lib/firebase';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { AntdProvider, useTheme } from '@/components/providers/AntdProvider';
+import { Switch } from 'antd';
+import { MoonOutlined, SunOutlined } from '@ant-design/icons';
 import {
   LayoutDashboard,
   Building2,
@@ -32,7 +36,7 @@ const navItems: NavItem[] = [
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
-export default function AdminLayout({
+function AdminLayoutContent({
   children,
 }: {
   children: React.ReactNode;
@@ -42,6 +46,7 @@ export default function AdminLayout({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
 
   useEffect(() => {
     const auth = getAuthInstance();
@@ -82,7 +87,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -93,30 +98,30 @@ export default function AdminLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 left-0 z-50 h-full w-64 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
+        <div className={`h-16 flex items-center justify-between px-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
           <Link href="/admin" className="flex items-center gap-2">
             <Newspaper className="w-6 h-6 text-brand-600" />
-            <span className="font-bold text-gray-900">newsroomaios</span>
+            <span className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>newsroomaios</span>
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1 rounded-md hover:bg-gray-100"
+            className={`lg:hidden p-1 rounded-md ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
           </button>
         </div>
 
         {/* Admin Badge */}
-        <div className="px-6 py-4 border-b border-gray-200">
-          <p className="text-sm font-medium text-gray-900">
+        <div className={`px-6 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <p className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
             Platform Admin
           </p>
-          <p className="text-xs text-gray-500">
+          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             Full system access
           </p>
         </div>
@@ -131,9 +136,14 @@ export default function AdminLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                prefetch={false}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${
                   isActive
-                    ? 'bg-brand-50 text-brand-700'
+                    ? isDark
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-brand-50 text-brand-700'
+                    : isDark
+                    ? 'text-gray-300 hover:bg-gray-700 hover:text-gray-100'
                     : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
@@ -145,31 +155,49 @@ export default function AdminLayout({
         </nav>
 
         {/* User Menu */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-gray-200 bg-white">
+        <div className={`absolute bottom-0 left-0 right-0 p-3 border-t ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
           <div className="px-3 py-2">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-sm font-medium text-white">
                 {user.email?.[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className={`text-sm font-medium truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                   {user.email}
                 </p>
-                <p className="text-xs text-gray-500">Administrator</p>
+                <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Administrator</p>
               </div>
             </div>
 
             <div className="space-y-1">
+              {/* Theme Toggle */}
+              <div className="flex items-center justify-between px-3 py-2 mb-2">
+                <span className={`text-xs font-medium uppercase ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Theme</span>
+                <div className="flex items-center gap-2">
+                  <SunOutlined style={{ fontSize: '14px', color: isDark ? '#8c8c8c' : '#3b82f6' }} />
+                  <Switch
+                    checked={isDark}
+                    onChange={toggleTheme}
+                    size="small"
+                  />
+                  <MoonOutlined style={{ fontSize: '14px', color: isDark ? '#3b82f6' : '#8c8c8c' }} />
+                </div>
+              </div>
+
               <Link
                 href="/"
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                  isDark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+                }`}
               >
                 <ExternalLink className="w-4 h-4" />
                 <span>View Main Site</span>
               </Link>
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                  isDark ? 'text-red-400 hover:bg-red-950' : 'text-danger-600 hover:bg-danger-50'
+                }`}
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sign Out</span>
@@ -179,39 +207,33 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      {/* Mobile menu button */}
-      <button
-        onClick={() => setSidebarOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-30 p-2 bg-white border border-gray-200 rounded-lg shadow-sm"
-      >
-        <Menu className="w-5 h-5 text-gray-700" />
-      </button>
-
       {/* Main content */}
       <div className="lg:ml-64">
         {/* Top Header */}
-        <header className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
-          <div className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="hidden lg:block text-gray-500 hover:text-gray-700"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-
-            <div className="flex-1 ml-4 lg:ml-0">
-              <h1 className="text-lg font-semibold text-gray-900">
+        <header className={`sticky top-0 z-20 border-b shadow-sm ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className="h-16 flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+            <div className="flex-1">
+              <h1 className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                 {navItems.find((item) => item.href === pathname)?.label || 'Admin Portal'}
               </h1>
             </div>
 
             <Link
               href="/"
-              className="hidden sm:flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              className={`hidden sm:flex items-center gap-1 text-sm transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <span>View Site</span>
               <ExternalLink className="w-4 h-4" />
             </Link>
+
+            {/* Menu button - RIGHT SIDE */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center shadow-lg"
+              style={{ minWidth: '48px', minHeight: '48px' }}
+            >
+              <Menu className="w-7 h-7" />
+            </button>
           </div>
         </header>
 
@@ -219,5 +241,17 @@ export default function AdminLayout({
         <main className="min-h-[calc(100vh-4rem)]">{children}</main>
       </div>
     </div>
+  );
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <AntdProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </AntdProvider>
   );
 }

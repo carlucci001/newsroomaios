@@ -1,28 +1,42 @@
 'use client';
 
+import 'antd/dist/reset.css';
 import { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
-import { PageContainer } from '@/components/layouts/PageContainer';
-import { PageHeader } from '@/components/layouts/PageHeader';
-import { StatCard } from '@/components/ui/stat-card';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useTheme } from '@/components/providers/AntdProvider';
 import {
-  Upload,
-  Github,
-  Filter,
-  Server,
-  Activity,
-  AlertTriangle,
-  ExternalLink,
-  Calendar,
-} from 'lucide-react';
+  Card,
+  Typography,
+  Button,
+  Input,
+  Space,
+  Tag,
+  Spin,
+  Row,
+  Col,
+  Statistic,
+  Table,
+  Modal,
+  Select,
+  Checkbox,
+  Alert,
+  Empty,
+} from 'antd';
+import {
+  UploadOutlined,
+  GithubOutlined,
+  FilterOutlined,
+  CloudServerOutlined,
+  DashboardOutlined,
+  WarningOutlined,
+  LinkOutlined,
+  CalendarOutlined,
+} from '@ant-design/icons';
+
+const { Title, Text } = Typography;
+const { TextArea } = Input;
 
 interface UpdateLog {
   id: string;
@@ -48,19 +62,8 @@ interface GitHubRelease {
   html_url: string;
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const config = {
-    pending: { variant: 'warning' as const, label: 'Pending' },
-    in_progress: { variant: 'primary' as const, label: 'In Progress' },
-    completed: { variant: 'success' as const, label: 'Completed' },
-    failed: { variant: 'danger' as const, label: 'Failed' },
-  };
-
-  const { variant, label } = config[status as keyof typeof config] || { variant: 'default' as const, label: status };
-  return <Badge variant={variant}>{label}</Badge>;
-}
-
 export default function UpdatesPage() {
+  const { isDark } = useTheme();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [updateLogs, setUpdateLogs] = useState<UpdateLog[]>([]);
   const [releases, setReleases] = useState<GitHubRelease[]>([]);
@@ -173,321 +176,292 @@ export default function UpdatesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-600"></div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" />
       </div>
     );
   }
 
+  const columns = [
+    {
+      title: 'Version',
+      dataIndex: 'version',
+      key: 'version',
+      render: (version: string) => <Tag color="blue">{version}</Tag>,
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      ellipsis: true,
+    },
+    {
+      title: 'Targets',
+      dataIndex: 'targetTenants',
+      key: 'targetTenants',
+      render: (targetTenants: string[]) => (
+        <Text type="secondary">
+          {targetTenants.includes('all') ? 'All tenants' : `${targetTenants.length} tenant(s)`}
+        </Text>
+      ),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        const colorMap: Record<string, string> = {
+          pending: 'warning',
+          in_progress: 'processing',
+          completed: 'success',
+          failed: 'error',
+        };
+        return <Tag color={colorMap[status] || 'default'}>{status}</Tag>;
+      },
+    },
+    {
+      title: 'Date',
+      dataIndex: 'initiatedAt',
+      key: 'initiatedAt',
+      render: (date: any) => {
+        const timestamp = date instanceof Date ? date : new Date(date?.seconds * 1000 || Date.now());
+        return <Text type="secondary">{timestamp.toLocaleString()}</Text>;
+      },
+    },
+  ];
+
   return (
-    <PageContainer maxWidth="2xl">
-      <PageHeader
-        title="Update Deployment"
-        subtitle="Deploy platform updates to newspapers via GitHub"
-        action={
-          <Button variant="primary" onClick={() => setShowDeployModal(true)}>
-            <Upload className="w-4 h-4" />
+    <div style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto', minHeight: '100vh' }}>
+      <Space vertical size="large" style={{ width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <Title level={2} style={{ margin: 0 }}>Update Deployment</Title>
+            <Text type="secondary">Deploy platform updates to newspapers via GitHub</Text>
+          </div>
+          <Button type="primary" size="large" icon={<UploadOutlined />} onClick={() => setShowDeployModal(true)}>
             Deploy Update
           </Button>
-        }
-      />
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard
-          label="Total Deployments"
-          value={stats.totalDeployments}
-          icon={<Activity className="w-6 h-6" />}
-          color="brand"
-        />
-        <StatCard
-          label="Pending"
-          value={stats.pendingDeployments}
-          icon={<AlertTriangle className="w-6 h-6" />}
-          color="warning"
-        />
-        <StatCard
-          label="Active Tenants"
-          value={stats.activeTenants}
-          icon={<Server className="w-6 h-6" />}
-          color="success"
-        />
-      </div>
-
-      {/* Deployment Pipeline Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Deployment Pipeline</CardTitle>
-          <CardDescription>Automated deployment workflow</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-brand-100 flex items-center justify-center">
-                <Github className="w-6 h-6 text-brand-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Source Repository</p>
-                <p className="text-xs text-gray-500">carlucci001/wnct-next</p>
-              </div>
-            </div>
-
-            <div className="hidden sm:block">
-              <div className="w-8 h-0.5 bg-gray-300"></div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-warning-100 flex items-center justify-center">
-                <Filter className="w-6 h-6 text-warning-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Build & Test</p>
-                <p className="text-xs text-gray-500">GitHub Actions</p>
-              </div>
-            </div>
-
-            <div className="hidden sm:block">
-              <div className="w-8 h-0.5 bg-gray-300"></div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-success-100 flex items-center justify-center">
-                <Server className="w-6 h-6 text-success-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Deploy</p>
-                <p className="text-xs text-gray-500">Vercel Projects</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Available Releases */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Available Releases</CardTitle>
-          <CardDescription>Ready to deploy versions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {releases.map((release) => (
-              <div key={release.tag_name} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Badge variant="primary">{release.tag_name}</Badge>
-                    <p className="font-medium text-gray-900">{release.name}</p>
-                  </div>
-                  <p className="text-sm text-gray-600 line-clamp-2 whitespace-pre-line">{release.body}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <p className="text-xs text-gray-500">
-                      Released {new Date(release.published_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 ml-4">
-                  <a
-                    href={release.html_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Button variant="ghost" size="sm">
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
-                  </a>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedVersion(release.tag_name);
-                      setShowDeployModal(true);
-                    }}
-                  >
-                    Deploy
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Deployment History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Deployment History</CardTitle>
-          <CardDescription>Recent deployment activity</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Version
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Targets
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
-                    Date
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {updateLogs.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                      No deployments yet. Deploy your first update to get started.
-                    </td>
-                  </tr>
-                ) : (
-                  updateLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <Badge variant="primary">{log.version}</Badge>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                        {log.description}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {log.targetTenants.includes('all')
-                          ? 'All tenants'
-                          : `${log.targetTenants.length} tenant(s)`}
-                      </td>
-                      <td className="px-6 py-4">
-                        <StatusBadge status={log.status} />
-                      </td>
-                      <td className="px-6 py-4 text-sm text-right text-gray-500">
-                        {log.initiatedAt instanceof Date
-                          ? log.initiatedAt.toLocaleString()
-                          : new Date((log.initiatedAt as any)?.seconds * 1000 || Date.now()).toLocaleString()}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Deploy Modal */}
-      {showDeployModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-lg mx-4">
-            <CardHeader>
-              <CardTitle>Deploy Update</CardTitle>
-              <CardDescription>Select version and target tenants</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="version">Version</Label>
-                <select
-                  id="version"
-                  value={selectedVersion}
-                  onChange={(e) => setSelectedVersion(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="">Select a version...</option>
-                  {releases.map((release) => (
-                    <option key={release.tag_name} value={release.tag_name}>
-                      {release.tag_name} - {release.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <div className="flex items-center space-x-2 mb-3">
-                  <Checkbox
-                    id="deployAll"
-                    checked={deployAllTenants}
-                    onCheckedChange={(checked) => setDeployAllTenants(checked as boolean)}
-                  />
-                  <Label htmlFor="deployAll">Deploy to all active tenants</Label>
-                </div>
-
-                {!deployAllTenants && (
-                  <div className="space-y-2 max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">
-                    {tenants.map((tenant) => (
-                      <div key={tenant.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={tenant.id}
-                          checked={selectedTenants.includes(tenant.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedTenants([...selectedTenants, tenant.id]);
-                            } else {
-                              setSelectedTenants(selectedTenants.filter((id) => id !== tenant.id));
-                            }
-                          }}
-                        />
-                        <Label htmlFor={tenant.id} className="text-sm">
-                          {tenant.businessName}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="notes">Deployment Notes (Optional)</Label>
-                <Input
-                  id="notes"
-                  placeholder="Add any notes about this deployment..."
-                  value={deployNotes}
-                  onChange={(e) => setDeployNotes(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-
-              <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-warning-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-warning-900">Deployment Notice</p>
-                    <p className="text-sm text-warning-800 mt-1">
-                      This will trigger a rebuild and redeploy of all selected tenant sites. The process typically completes within 5-10 minutes.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setShowDeployModal(false);
-                    setSelectedVersion('');
-                    setSelectedTenants([]);
-                    setDeployNotes('');
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  className="flex-1"
-                  disabled={!selectedVersion || (!deployAllTenants && selectedTenants.length === 0) || deploying}
-                  onClick={initiateDeployment}
-                >
-                  {deploying ? 'Initiating...' : 'Start Deployment'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
-      )}
-    </PageContainer>
+
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={8}>
+            <Card>
+              <Statistic
+                title={<Text strong style={{ fontSize: '14px' }}>Total Deployments</Text>}
+                value={stats.totalDeployments}
+                prefix={<DashboardOutlined style={{ color: '#3b82f6' }} />}
+                styles={{ content: { fontSize: '28px' } }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card>
+              <Statistic
+                title={<Text strong style={{ fontSize: '14px' }}>Pending</Text>}
+                value={stats.pendingDeployments}
+                prefix={<WarningOutlined style={{ color: '#faad14' }} />}
+                styles={{ content: { fontSize: '28px' } }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card>
+              <Statistic
+                title={<Text strong style={{ fontSize: '14px' }}>Active Tenants</Text>}
+                value={stats.activeTenants}
+                prefix={<CloudServerOutlined style={{ color: '#52c41a' }} />}
+                styles={{ content: { fontSize: '28px' } }}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        <Card title={<Title level={4} style={{ margin: 0 }}>Deployment Pipeline</Title>}>
+          <Text type="secondary" style={{ display: 'block', marginBottom: '16px' }}>Automated deployment workflow</Text>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#1890ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                <GithubOutlined style={{ fontSize: '24px', color: 'white' }} />
+              </div>
+              <Text strong style={{ display: 'block' }}>Source Repository</Text>
+              <Text type="secondary" style={{ fontSize: '12px' }}>carlucci001/wnct-next</Text>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#faad14', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                <FilterOutlined style={{ fontSize: '24px', color: 'white' }} />
+              </div>
+              <Text strong style={{ display: 'block' }}>Build & Test</Text>
+              <Text type="secondary" style={{ fontSize: '12px' }}>GitHub Actions</Text>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#52c41a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                <CloudServerOutlined style={{ fontSize: '24px', color: 'white' }} />
+              </div>
+              <Text strong style={{ display: 'block' }}>Deploy</Text>
+              <Text type="secondary" style={{ fontSize: '12px' }}>Vercel Projects</Text>
+            </div>
+          </div>
+        </Card>
+
+        <Card title={<Title level={4} style={{ margin: 0 }}>Available Releases</Title>}>
+          <Text type="secondary" style={{ display: 'block', marginBottom: '16px' }}>Ready to deploy versions</Text>
+          <Space vertical size="middle" style={{ width: '100%' }}>
+            {releases.map((release) => (
+              <Card key={release.tag_name} size="small">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <Tag color="blue">{release.tag_name}</Tag>
+                      <Text strong>{release.name}</Text>
+                    </div>
+                    <Text style={{ whiteSpace: 'pre-line', display: 'block', marginBottom: '8px' }}>
+                      {release.body}
+                    </Text>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <CalendarOutlined style={{ fontSize: '12px' }} />
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        Released {new Date(release.published_at).toLocaleDateString()}
+                      </Text>
+                    </div>
+                  </div>
+                  <Space>
+                    <Button
+                      icon={<LinkOutlined />}
+                      href={release.html_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    />
+                    <Button
+                      type="primary"
+                      onClick={() => {
+                        setSelectedVersion(release.tag_name);
+                        setShowDeployModal(true);
+                      }}
+                    >
+                      Deploy
+                    </Button>
+                  </Space>
+                </div>
+              </Card>
+            ))}
+          </Space>
+        </Card>
+
+        <Card title={<Title level={4} style={{ margin: 0 }}>Deployment History</Title>}>
+          <Text type="secondary" style={{ display: 'block', marginBottom: '16px' }}>Recent deployment activity</Text>
+          <Table
+            dataSource={updateLogs}
+            columns={columns}
+            rowKey="id"
+            locale={{
+              emptyText: <Empty description="No deployments yet. Deploy your first update to get started." />,
+            }}
+            pagination={{ pageSize: 10 }}
+          />
+        </Card>
+      </Space>
+
+      <Modal
+        title={<Title level={4} style={{ margin: 0 }}>Deploy Update</Title>}
+        open={showDeployModal}
+        onCancel={() => {
+          setShowDeployModal(false);
+          setSelectedVersion('');
+          setSelectedTenants([]);
+          setDeployNotes('');
+        }}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => {
+              setShowDeployModal(false);
+              setSelectedVersion('');
+              setSelectedTenants([]);
+              setDeployNotes('');
+            }}
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="deploy"
+            type="primary"
+            disabled={!selectedVersion || (!deployAllTenants && selectedTenants.length === 0)}
+            loading={deploying}
+            onClick={initiateDeployment}
+          >
+            Start Deployment
+          </Button>,
+        ]}
+      >
+        <Space vertical size="middle" style={{ width: '100%' }}>
+          <div>
+            <Text strong style={{ display: 'block', marginBottom: '8px' }}>Version</Text>
+            <Select
+              value={selectedVersion}
+              onChange={setSelectedVersion}
+              placeholder="Select a version..."
+              style={{ width: '100%' }}
+              size="large"
+            >
+              {releases.map((release) => (
+                <Select.Option key={release.tag_name} value={release.tag_name}>
+                  {release.tag_name} - {release.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </div>
+
+          <div>
+            <Checkbox
+              checked={deployAllTenants}
+              onChange={(e) => setDeployAllTenants(e.target.checked)}
+              style={{ marginBottom: '12px' }}
+            >
+              <Text strong>Deploy to all active tenants</Text>
+            </Checkbox>
+
+            {!deployAllTenants && (
+              <Card size="small" style={{ maxHeight: '200px', overflow: 'auto' }}>
+                <Space vertical size="small">
+                  {tenants.map((tenant) => (
+                    <Checkbox
+                      key={tenant.id}
+                      checked={selectedTenants.includes(tenant.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedTenants([...selectedTenants, tenant.id]);
+                        } else {
+                          setSelectedTenants(selectedTenants.filter((id) => id !== tenant.id));
+                        }
+                      }}
+                    >
+                      {tenant.businessName}
+                    </Checkbox>
+                  ))}
+                </Space>
+              </Card>
+            )}
+          </div>
+
+          <div>
+            <Text strong style={{ display: 'block', marginBottom: '8px' }}>Deployment Notes (Optional)</Text>
+            <Input
+              placeholder="Add any notes about this deployment..."
+              value={deployNotes}
+              onChange={(e) => setDeployNotes(e.target.value)}
+              size="large"
+            />
+          </div>
+
+          <Alert
+            message="Deployment Notice"
+            description="This will trigger a rebuild and redeploy of all selected tenant sites. The process typically completes within 5-10 minutes."
+            type="warning"
+            showIcon
+            icon={<WarningOutlined />}
+          />
+        </Space>
+      </Modal>
+    </div>
   );
 }

@@ -1,29 +1,36 @@
 'use client';
 
+import 'antd/dist/reset.css';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getDb } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import { getCurrentUser, getUserTenant } from '@/lib/accountAuth';
-import { PageContainer } from '@/components/layouts/PageContainer';
-import { PageHeader } from '@/components/layouts/PageHeader';
-import { StatCard } from '@/components/ui/stat-card';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ProgressBar } from '@/components/ui/progress-bar';
+import { useTheme } from '@/components/providers/AntdProvider';
 import {
-  CreditCard,
-  FileText,
-  CheckCircle,
-  Plus,
-  ArrowUpRight,
-  MessageSquare,
-  Settings,
-  TrendingUp,
-} from 'lucide-react';
+  Card,
+  Typography,
+  Row,
+  Col,
+  Statistic,
+  Progress,
+  Button,
+  Space,
+  Tag,
+  Spin,
+} from 'antd';
+import {
+  CreditCardOutlined,
+  CheckCircleOutlined,
+  PlusOutlined,
+  ArrowUpOutlined,
+  MessageOutlined,
+  SettingOutlined,
+  RiseOutlined,
+} from '@ant-design/icons';
+
+const { Title, Text } = Typography;
 
 export default function AccountDashboard() {
+  const { isDark } = useTheme();
   const [user, setUser] = useState<any>(null);
   const [tenant, setTenant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +42,6 @@ export default function AccountDashboard() {
         if (!currentUser) return;
 
         setUser(currentUser);
-
         const userTenant = await getUserTenant(currentUser.uid);
         setTenant(userTenant);
       } catch (error) {
@@ -50,19 +56,17 @@ export default function AccountDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-600"></div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" />
       </div>
     );
   }
 
   if (!tenant) {
     return (
-      <PageContainer>
-        <div className="text-center py-12">
-          <p className="text-gray-500">No tenant found for your account.</p>
-        </div>
-      </PageContainer>
+      <div style={{ padding: '24px', textAlign: 'center' }}>
+        <Text type="secondary">No tenant found for your account.</Text>
+      </div>
     );
   }
 
@@ -71,6 +75,7 @@ export default function AccountDashboard() {
   const totalCredits = subscriptionCredits + topOffCredits;
   const monthlyAllocation = tenant.plan === 'professional' ? 1000 :
                             tenant.plan === 'growth' ? 575 : 250;
+  const creditPercentage = monthlyAllocation > 0 ? Math.round((subscriptionCredits / monthlyAllocation) * 100) : 0;
 
   const isActive = tenant.status === 'active' || tenant.status === 'seeding';
   const nextBillingDate = tenant.nextBillingDate
@@ -78,182 +83,197 @@ export default function AccountDashboard() {
     : 'N/A';
 
   return (
-    <PageContainer maxWidth="2xl">
-      {/* Welcome Header */}
-      <PageHeader
-        title={`Welcome back, ${user?.email?.split('@')[0] || 'User'}`}
-        subtitle={`${tenant.businessName} • ${tenant.plan || 'Starter'} Plan`}
-        action={
-          <Button variant="primary" asChild>
-            <Link
+    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto', minHeight: '100vh' }}>
+      <Space vertical size="large" style={{ width: '100%' }}>
+        {/* Welcome Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <Title level={2} style={{ margin: 0 }}>
+              Welcome back, {user?.email?.split('@')[0] || 'User'}
+            </Title>
+            <Text type="secondary">
+              {tenant.businessName} • {tenant.plan || 'Starter'} Plan
+            </Text>
+          </div>
+          {tenant.domain && (
+            <Button
+              type="primary"
+              size="large"
+              icon={<ArrowUpOutlined />}
               href={`https://${tenant.domain}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2"
             >
               View Your Newspaper
-              <ArrowUpRight className="w-4 h-4" />
-            </Link>
-          </Button>
-        }
-      />
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard
-          label="Credits Remaining"
-          value={totalCredits.toLocaleString()}
-          subValue={`of ${monthlyAllocation} monthly`}
-          icon={<CreditCard className="w-6 h-6" />}
-          color="brand"
-          trend={{ value: -12, label: 'vs last month' }}
-        >
-          <ProgressBar
-            value={subscriptionCredits}
-            max={monthlyAllocation}
-            color="brand"
-            className="mt-3"
-          />
-          {topOffCredits > 0 && (
-            <p className="text-xs text-gray-500 mt-2">
-              + {topOffCredits} top-off credits
-            </p>
+            </Button>
           )}
-        </StatCard>
+        </div>
 
-        <StatCard
-          label="Articles This Month"
-          value="28"
-          subValue="this billing cycle"
-          icon={<FileText className="w-6 h-6" />}
-          color="success"
-          trend={{ value: +8, label: 'vs last month' }}
-        />
+        {/* Stats Cards */}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={8}>
+            <Card>
+              <Statistic
+                title={<Text strong>Credit Balance</Text>}
+                value={totalCredits}
+                suffix="credits"
+                prefix={<CreditCardOutlined style={{ color: '#52c41a' }} />}
+                styles={{ content: { fontSize: '32px' } }}
+              />
+              <div style={{ marginTop: '12px' }}>
+                <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>
+                  {subscriptionCredits} subscription + {topOffCredits} top-off
+                </Text>
+                <Progress
+                  percent={creditPercentage}
+                  strokeColor="#52c41a"
+                  size="small"
+                  showInfo={false}
+                />
+              </div>
+            </Card>
+          </Col>
 
-        <StatCard
-          label="Subscription Status"
-          value={
-            <Badge variant={isActive ? 'success' : 'warning'} dot>
-              {isActive ? 'Active' : tenant.status}
-            </Badge>
-          }
-          subValue={`Renews ${nextBillingDate}`}
-          icon={<CheckCircle className="w-6 h-6" />}
-          color={isActive ? 'success' : 'warning'}
-        />
-      </div>
+          <Col xs={24} sm={12} lg={8}>
+            <Card>
+              <Statistic
+                title={<Text strong>Account Status</Text>}
+                value={isActive ? 'Active' : 'Inactive'}
+                prefix={<CheckCircleOutlined style={{ color: isActive ? '#52c41a' : '#faad14' }} />}
+                styles={{ content: { fontSize: '28px' } }}
+              />
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '12px' }}>
+                Next billing: {nextBillingDate}
+              </Text>
+            </Card>
+          </Col>
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <Col xs={24} sm={12} lg={8}>
+            <Card>
+              <Statistic
+                title={<Text strong>Monthly Allocation</Text>}
+                value={monthlyAllocation}
+                suffix="credits"
+                prefix={<RiseOutlined style={{ color: '#1890ff' }} />}
+                styles={{ content: { fontSize: '32px' } }}
+              />
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '12px' }}>
+                Resets on billing date
+              </Text>
+            </Card>
+          </Col>
+        </Row>
+
         {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common tasks and shortcuts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              <Link
-                href="/account/credits/purchase"
-                className="flex flex-col items-center gap-2 p-4 bg-brand-50 rounded-lg hover:bg-brand-100 transition-colors group"
-              >
-                <div className="p-2 bg-brand-500 rounded-lg group-hover:bg-brand-600 transition-colors">
-                  <Plus className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-sm font-medium text-gray-900">Buy Credits</span>
+        <Card title={<Title level={4} style={{ margin: 0 }}>Quick Actions</Title>}>
+          <Row gutter={[16, 16]}>
+            <Col xs={12} sm={6}>
+              <Link href="/account/billing">
+                <Card hoverable style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: '#1890ff',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px'
+                  }}>
+                    <CreditCardOutlined style={{ fontSize: '24px', color: 'white' }} />
+                  </div>
+                  <Text strong>Manage Billing</Text>
+                </Card>
               </Link>
+            </Col>
 
-              <Link
-                href="/account/billing"
-                className="flex flex-col items-center gap-2 p-4 bg-success-50 rounded-lg hover:bg-success-100 transition-colors group"
-              >
-                <div className="p-2 bg-success-500 rounded-lg group-hover:bg-success-600 transition-colors">
-                  <TrendingUp className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-sm font-medium text-gray-900">Upgrade Plan</span>
+            <Col xs={12} sm={6}>
+              <Link href="/account/credits/purchase">
+                <Card hoverable style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: '#52c41a',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px'
+                  }}>
+                    <PlusOutlined style={{ fontSize: '24px', color: 'white' }} />
+                  </div>
+                  <Text strong>Buy Credits</Text>
+                </Card>
               </Link>
+            </Col>
 
-              <Link
-                href="/account/messages"
-                className="flex flex-col items-center gap-2 p-4 bg-info-50 rounded-lg hover:bg-info-100 transition-colors group"
-              >
-                <div className="p-2 bg-info-500 rounded-lg group-hover:bg-info-600 transition-colors">
-                  <MessageSquare className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-sm font-medium text-gray-900">Contact Support</span>
+            <Col xs={12} sm={6}>
+              <Link href="/account/messages">
+                <Card hoverable style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: '#722ed1',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px'
+                  }}>
+                    <MessageOutlined style={{ fontSize: '24px', color: 'white' }} />
+                  </div>
+                  <Text strong>Messages</Text>
+                </Card>
               </Link>
+            </Col>
 
-              <Link
-                href="/account/settings"
-                className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
-              >
-                <div className="p-2 bg-gray-500 rounded-lg group-hover:bg-gray-600 transition-colors">
-                  <Settings className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-sm font-medium text-gray-900">Settings</span>
+            <Col xs={12} sm={6}>
+              <Link href="/account/settings">
+                <Card hoverable style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: '#8c8c8c',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px'
+                  }}>
+                    <SettingOutlined style={{ fontSize: '24px', color: 'white' }} />
+                  </div>
+                  <Text strong>Settings</Text>
+                </Card>
               </Link>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* Plan Details */}
+        <Card title={<Title level={4} style={{ margin: 0 }}>Current Plan</Title>}>
+          <Space vertical size="middle" style={{ width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Title level={3} style={{ margin: 0, textTransform: 'capitalize' }}>
+                {tenant.plan || 'Starter'}
+              </Title>
+              <Tag color={isActive ? 'success' : 'warning'}>
+                {isActive ? 'Active' : tenant.status}
+              </Tag>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Current Plan */}
-        <Card className="overflow-hidden">
-          <div className="bg-gradient-to-br from-brand-500 to-brand-700 p-6 text-white">
-            <p className="text-brand-100 text-sm font-medium mb-1">Current Plan</p>
-            <h3 className="text-2xl font-bold mb-1 capitalize">
-              {tenant.plan || 'Starter'}
-            </h3>
-            <p className="text-brand-50">
-              {monthlyAllocation} credits/month
-            </p>
-          </div>
-          <CardContent className="pt-6">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Monthly Price</span>
-                <span className="font-semibold text-gray-900">
-                  ${tenant.plan === 'professional' ? '299' :
-                    tenant.plan === 'growth' ? '199' : '99'}/mo
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Next Billing</span>
-                <span className="font-semibold text-gray-900">{nextBillingDate}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Status</span>
-                <Badge variant={isActive ? 'success' : 'warning'}>
-                  {isActive ? 'Active' : tenant.status}
-                </Badge>
-              </div>
+            <div>
+              <Text type="secondary">
+                Your plan includes {monthlyAllocation} AI credits per month
+                {tenant.plan === 'professional' && ', 6 AI journalists, and advanced features'}
+                {tenant.plan === 'growth' && ', 3 AI journalists, and priority support'}
+                {(!tenant.plan || tenant.plan === 'starter') && ' and 1 AI journalist'}
+              </Text>
             </div>
-          </CardContent>
-          <CardFooter className="bg-gray-50 flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1" asChild>
-              <Link href="/account/billing">View Details</Link>
-            </Button>
-            <Button variant="primary" size="sm" className="flex-1" asChild>
-              <Link href="/account/billing#change-plan">Upgrade</Link>
-            </Button>
-          </CardFooter>
+            <Link href="/account/billing">
+              <Button type="primary">Manage Plan</Button>
+            </Link>
+          </Space>
         </Card>
-      </div>
-
-      {/* Getting Started / Tips (if new user) */}
-      {tenant.status === 'seeding' && (
-        <Card className="bg-info-50 border-info-200">
-          <CardHeader>
-            <CardTitle className="text-info-900">Your newspaper is being set up!</CardTitle>
-            <CardDescription className="text-info-700">
-              We're generating your initial articles and setting up your categories.
-              This usually takes 5-10 minutes.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProgressBar value={66} max={100} color="brand" showLabel label="Setup Progress" />
-          </CardContent>
-        </Card>
-      )}
-    </PageContainer>
+      </Space>
+    </div>
   );
 }

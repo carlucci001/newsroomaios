@@ -73,7 +73,9 @@ export default function HowItWorksPage() {
             <Link href="/testimonials" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">
               Success Stories
             </Link>
-            <Button variant="ghost" size="sm">Sign In</Button>
+            <Link href="/account/login">
+              <Button variant="ghost" size="sm">Sign In</Button>
+            </Link>
             <Link href="/onboarding">
               <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
                 Get Started <ArrowRight className="h-4 w-4" />

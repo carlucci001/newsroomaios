@@ -1,20 +1,40 @@
 'use client';
 
+import 'antd/dist/reset.css';
 import { useEffect, useState } from 'react';
 import { collection, getDocs, doc, runTransaction } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
-import { PageContainer } from '@/components/layouts/PageContainer';
-import { PageHeader } from '@/components/layouts/PageHeader';
-import { StatCard } from '@/components/ui/stat-card';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Coins, TrendingUp, TriangleAlert, Plus, Activity } from 'lucide-react';
+import { useTheme } from '@/components/providers/AntdProvider';
+import {
+  Card,
+  Typography,
+  Row,
+  Col,
+  Statistic,
+  Table,
+  Tag,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Space,
+  Progress,
+  Empty,
+} from 'antd';
+import type { TableColumnsType } from 'antd';
+import {
+  DollarOutlined,
+  RiseOutlined,
+  WarningOutlined,
+  PlusOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 
-// Credit costs for display (from the new system)
+const { Title, Text } = Typography;
+const { TextArea } = Input;
+
 const CREDIT_COSTS = {
   article: 5,
   image: 2,
@@ -53,15 +73,13 @@ interface CreditOverview {
 }
 
 export default function CreditsPage() {
+  const { isDark } = useTheme();
   const [tenants, setTenants] = useState<TenantWithCredits[]>([]);
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTenant, setSelectedTenant] = useState<string>('');
   const [showAdjustModal, setShowAdjustModal] = useState(false);
-  const [adjustAmount, setAdjustAmount] = useState('');
-  const [adjustReason, setAdjustReason] = useState('');
-  const [adjustPool, setAdjustPool] = useState<'subscription' | 'topoff'>('topoff');
   const [adjustLoading, setAdjustLoading] = useState(false);
+  const [form] = Form.useForm();
 
   useEffect(() => {
     fetchData();
@@ -71,7 +89,6 @@ export default function CreditsPage() {
     try {
       const db = getDb();
 
-      // Fetch tenants with credit balances
       const tenantsSnap = await getDocs(collection(db, 'tenants'));
       const tenantsData = tenantsSnap.docs.map((docSnap) => {
         const data = docSnap.data();
@@ -87,7 +104,6 @@ export default function CreditsPage() {
       });
       setTenants(tenantsData);
 
-      // Fetch recent credit transactions
       try {
         const transactionsSnap = await getDocs(collection(db, 'creditTransactions'));
         const transactionsData = transactionsSnap.docs.map((docSnap) => {
@@ -109,23 +125,23 @@ export default function CreditsPage() {
     }
   }
 
-  async function adjustCredits() {
-    if (!selectedTenant || !adjustAmount) return;
-
+  async function adjustCredits(values: any) {
     setAdjustLoading(true);
     try {
       const db = getDb();
-      const amount = parseInt(adjustAmount);
-      const tenant = tenants.find((t) => t.id === selectedTenant);
+      const amount = parseInt(values.amount);
+      const tenantId = values.tenant;
+      const adjustPool = values.pool;
+      const adjustReason = values.reason || '';
 
+      const tenant = tenants.find((t) => t.id === tenantId);
       if (!tenant) {
-        alert('Tenant not found');
+        Modal.error({ title: 'Error', content: 'Tenant not found' });
         return;
       }
 
-      const tenantRef = doc(db, 'tenants', selectedTenant);
+      const tenantRef = doc(db, 'tenants', tenantId);
 
-      // Use Firestore transaction for atomic update
       await runTransaction(db, async (transaction) => {
         const tenantSnap = await transaction.get(tenantRef);
 
@@ -137,24 +153,21 @@ export default function CreditsPage() {
         let subscriptionCredits = data.subscriptionCredits || 0;
         let topOffCredits = data.topOffCredits || 0;
 
-        // Update the selected pool
         if (adjustPool === 'subscription') {
           subscriptionCredits = Math.max(0, subscriptionCredits + amount);
         } else {
           topOffCredits = Math.max(0, topOffCredits + amount);
         }
 
-        // Update tenant document
         transaction.update(tenantRef, {
           subscriptionCredits,
           topOffCredits,
           updatedAt: new Date(),
         });
 
-        // Create transaction record
         const transactionRef = doc(collection(db, 'creditTransactions'));
         transaction.set(transactionRef, {
-          tenantId: selectedTenant,
+          tenantId,
           type: 'adjustment',
           creditPool: adjustPool,
           amount,
@@ -167,19 +180,16 @@ export default function CreditsPage() {
 
       await fetchData();
       setShowAdjustModal(false);
-      setAdjustAmount('');
-      setAdjustReason('');
-      setAdjustPool('topoff');
-      setSelectedTenant('');
+      form.resetFields();
+      Modal.success({ title: 'Success', content: 'Credits adjusted successfully' });
     } catch (error) {
       console.error('Failed to adjust credits:', error);
-      alert('Failed to adjust credits: ' + (error as Error).message);
+      Modal.error({ title: 'Error', content: 'Failed to adjust credits: ' + (error as Error).message });
     } finally {
       setAdjustLoading(false);
     }
   }
 
-  // Calculate overview stats
   const overview: CreditOverview = {
     totalSubscription: tenants.reduce((sum, t) => sum + t.subscriptionCredits, 0),
     totalTopOff: tenants.reduce((sum, t) => sum + t.topOffCredits, 0),
@@ -188,7 +198,6 @@ export default function CreditsPage() {
     totalTransactions: transactions.length,
   };
 
-  // Group usage by feature type
   const usageByFeature = transactions
     .filter((t) => t.type === 'usage' && t.feature)
     .reduce((acc, t) => {
@@ -199,366 +208,341 @@ export default function CreditsPage() {
       return acc;
     }, {} as Record<string, { count: number; credits: number }>);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-600"></div>
-      </div>
-    );
-  }
+  const tenantColumns: TableColumnsType<TenantWithCredits> = [
+    {
+      title: <Text strong>Business Name</Text>,
+      dataIndex: 'businessName',
+      key: 'businessName',
+      sorter: (a, b) => (a.businessName || '').localeCompare(b.businessName || ''),
+      render: (text: string, record) => (
+        <div>
+          <Text strong>{text || record.id}</Text>
+          {record.plan && (
+            <div>
+              <Tag color="blue" style={{ marginTop: '4px', fontSize: '11px' }}>
+                {record.plan}
+              </Tag>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: <Text strong>Subscription</Text>,
+      dataIndex: 'subscriptionCredits',
+      key: 'subscriptionCredits',
+      sorter: (a, b) => a.subscriptionCredits - b.subscriptionCredits,
+      render: (value: number) => (
+        <Text>{value.toLocaleString()}</Text>
+      ),
+    },
+    {
+      title: <Text strong>Top-Off</Text>,
+      dataIndex: 'topOffCredits',
+      key: 'topOffCredits',
+      sorter: (a, b) => a.topOffCredits - b.topOffCredits,
+      render: (value: number) => (
+        <Text>{value.toLocaleString()}</Text>
+      ),
+    },
+    {
+      title: <Text strong>Total</Text>,
+      dataIndex: 'totalCredits',
+      key: 'totalCredits',
+      sorter: (a, b) => a.totalCredits - b.totalCredits,
+      render: (value: number) => {
+        const status = value === 0 ? 'exhausted' : value < 50 ? 'warning' : 'active';
+        return (
+          <Space>
+            <Text strong>{value.toLocaleString()}</Text>
+            <Tag color={status === 'exhausted' ? 'error' : status === 'warning' ? 'warning' : 'success'}>
+              {status}
+            </Tag>
+          </Space>
+        );
+      },
+    },
+  ];
+
+  const transactionColumns: TableColumnsType<CreditTransaction> = [
+    {
+      title: <Text strong>Tenant</Text>,
+      dataIndex: 'tenantId',
+      key: 'tenantId',
+      render: (tenantId: string) => {
+        const tenant = tenants.find((t) => t.id === tenantId);
+        return <Text>{tenant?.businessName || tenantId}</Text>;
+      },
+    },
+    {
+      title: <Text strong>Type</Text>,
+      dataIndex: 'type',
+      key: 'type',
+      render: (type: string) => {
+        const colorMap: Record<string, string> = {
+          usage: 'error',
+          subscription: 'success',
+          topoff: 'processing',
+          bonus: 'warning',
+          adjustment: 'default',
+        };
+        return <Tag color={colorMap[type] || 'default'}>{type.toUpperCase()}</Tag>;
+      },
+    },
+    {
+      title: <Text strong>Pool</Text>,
+      dataIndex: 'creditPool',
+      key: 'creditPool',
+      render: (pool: string) => <Text type="secondary">{pool || '-'}</Text>,
+    },
+    {
+      title: <Text strong>Description</Text>,
+      dataIndex: 'description',
+      key: 'description',
+      ellipsis: true,
+      render: (desc: string) => <Text type="secondary">{desc}</Text>,
+    },
+    {
+      title: <Text strong>Credits</Text>,
+      dataIndex: 'amount',
+      key: 'amount',
+      align: 'right',
+      render: (amount: number) => (
+        <Text strong style={{ color: amount > 0 ? '#52c41a' : '#ff4d4f' }}>
+          {amount > 0 ? '+' : ''}{amount}
+        </Text>
+      ),
+    },
+    {
+      title: <Text strong>Time</Text>,
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      align: 'right',
+      render: (date: Date | any) => {
+        const timestamp = date instanceof Date ? date : new Date(date?.seconds * 1000 || Date.now());
+        return <Text type="secondary" style={{ fontSize: '12px' }}>{timestamp.toLocaleString()}</Text>;
+      },
+    },
+  ];
 
   return (
-    <PageContainer maxWidth="2xl">
-      <PageHeader
-        title="Credit Management"
-        subtitle="Monitor and manage tenant credit usage"
-        action={
-          <Button variant="primary" onClick={() => setShowAdjustModal(true)}>
-            <Plus className="w-4 h-4" />
+    <div style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto', minHeight: '100vh' }}>
+      <Space vertical size="large" style={{ width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <Title level={2} style={{ margin: 0 }}>Credit Management</Title>
+            <Text type="secondary">Monitor and manage tenant credit usage</Text>
+          </div>
+          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => setShowAdjustModal(true)}>
             Adjust Credits
           </Button>
-        }
-      />
+        </div>
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <StatCard
-          label="Subscription Credits"
-          value={overview.totalSubscription.toLocaleString()}
-          subValue="monthly allocation"
-          icon={<Coins className="w-6 h-6" />}
-          color="brand"
-        />
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={8}>
+            <Card>
+              <Statistic
+                title={<Text strong style={{ fontSize: '14px' }}>Subscription Credits</Text>}
+                value={overview.totalSubscription}
+                prefix={<DollarOutlined style={{ color: '#3b82f6' }} />}
+                styles={{ content: { fontSize: '28px' } }}
+                suffix={<Text type="secondary" style={{ fontSize: '14px' }}>monthly</Text>}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={8}>
+            <Card>
+              <Statistic
+                title={<Text strong style={{ fontSize: '14px' }}>Top-Off Credits</Text>}
+                value={overview.totalTopOff}
+                prefix={<RiseOutlined style={{ color: '#52c41a' }} />}
+                styles={{ content: { fontSize: '28px' } }}
+                suffix={<Text type="secondary" style={{ fontSize: '14px' }}>purchased</Text>}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={8}>
+            <Card>
+              <Statistic
+                title={<Text strong style={{ fontSize: '14px' }}>Low Credit Tenants</Text>}
+                value={overview.tenantsLowCredits}
+                prefix={<WarningOutlined style={{ color: overview.tenantsLowCredits > 0 ? '#ff4d4f' : '#52c41a' }} />}
+                styles={{ content: { fontSize: '28px' } }}
+                suffix={<Text type="secondary" style={{ fontSize: '14px' }}>below 50</Text>}
+              />
+            </Card>
+          </Col>
+        </Row>
 
-        <StatCard
-          label="Top-Off Credits"
-          value={overview.totalTopOff.toLocaleString()}
-          subValue="purchased credits"
-          icon={<TrendingUp className="w-6 h-6" />}
-          color="brand"
-        />
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={12}>
+            <Card title={<Title level={4} style={{ margin: 0 }}>Tenant Balances</Title>}>
+              <Table
+                columns={tenantColumns}
+                dataSource={tenants.sort((a, b) => a.totalCredits - b.totalCredits)}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+                scroll={{ x: 600 }}
+              />
+            </Card>
+          </Col>
 
-        <StatCard
-          label="Total Available"
-          value={overview.totalCredits.toLocaleString()}
-          subValue="all credits"
-          icon={<Coins className="w-6 h-6" />}
-          color="brand"
-        />
-
-        <StatCard
-          label="Low Credit Tenants"
-          value={overview.tenantsLowCredits}
-          subValue="below 50 credits"
-          icon={<TriangleAlert className="w-6 h-6" />}
-          color={overview.tenantsLowCredits > 0 ? 'danger' : 'success'}
-        />
-
-        <StatCard
-          label="Transactions"
-          value={overview.totalTransactions.toLocaleString()}
-          subValue="recent activity"
-          icon={<Activity className="w-6 h-6" />}
-          color="brand"
-        />
-      </div>
-
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Tenant Credit Balances */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Tenant Balances</CardTitle>
-            <CardDescription>Credit status across all newspapers</CardDescription>
-          </CardHeader>
-          <CardContent className="max-h-[500px] overflow-y-auto">
-            {tenants.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                No tenants yet
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {tenants
-                  .sort((a, b) => a.totalCredits - b.totalCredits)
-                  .map((tenant) => {
-                    const status = tenant.totalCredits === 0 ? 'exhausted' : tenant.totalCredits < 50 ? 'warning' : 'active';
-                    return (
-                      <div key={tenant.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900">
-                              {tenant.businessName || tenant.id}
-                            </p>
-                            <div className="text-sm text-gray-500 space-y-0.5 mt-1">
-                              <div>Subscription: {tenant.subscriptionCredits.toLocaleString()}</div>
-                              <div>Top-off: {tenant.topOffCredits.toLocaleString()}</div>
-                              <div className="font-medium">Total: {tenant.totalCredits.toLocaleString()}</div>
-                            </div>
-                          </div>
-                          <div className="text-right ml-4">
-                            <Badge
-                              variant={
-                                status === 'exhausted' ? 'danger' :
-                                status === 'warning' ? 'warning' :
-                                'success'
-                              }
-                            >
-                              {status}
-                            </Badge>
-                            {tenant.plan && (
-                              <div className="text-xs text-gray-400 mt-1 capitalize">{tenant.plan}</div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Usage by Feature */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Usage by Feature</CardTitle>
-            <CardDescription>Credit consumption breakdown</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {Object.keys(usageByFeature).length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                No usage data yet
-              </div>
-            ) : (
-              <>
-                <div className="space-y-4">
+          <Col xs={24} lg={12}>
+            <Card
+              title={<Title level={4} style={{ margin: 0 }}>Usage by Feature</Title>}
+              extra={<Text type="secondary">Credit consumption breakdown</Text>}
+            >
+              {Object.keys(usageByFeature).length === 0 ? (
+                <Empty description="No usage data yet" style={{ padding: '40px 0' }} />
+              ) : (
+                <Space vertical size="middle" style={{ width: '100%' }}>
                   {Object.entries(usageByFeature)
                     .sort(([, a], [, b]) => b.credits - a.credits)
                     .map(([feature, data]) => (
-                      <div key={feature} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-3 h-3 rounded-full ${
-                              feature === 'article'
-                                ? 'bg-brand-500'
-                                : feature === 'image' || feature === 'image_hd'
-                                ? 'bg-brand-400'
-                                : feature === 'tts'
-                                ? 'bg-brand-600'
-                                : feature === 'agent'
-                                ? 'bg-brand-700'
-                                : 'bg-brand-300'
-                            }`}
-                          />
+                      <div key={feature}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <Text strong>
                               {feature.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-                            </p>
-                            <p className="text-sm text-gray-500">{data.count} operations</p>
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: '12px', marginLeft: '8px' }}>
+                              {data.count} operations
+                            </Text>
                           </div>
+                          <Text strong>{data.credits.toLocaleString()} credits</Text>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium text-gray-900">{data.credits.toLocaleString()}</p>
-                          <p className="text-sm text-gray-500">credits</p>
-                        </div>
+                        <Progress
+                          percent={Math.round((data.credits / overview.totalCredits) * 100)}
+                          strokeColor="#3b82f6"
+                          size="small"
+                        />
                       </div>
                     ))}
-                </div>
 
-                {/* Credit Cost Reference */}
-                <div className="mt-6 pt-6 border-t">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Credit Costs</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    {Object.entries(CREDIT_COSTS).map(([feature, cost]) => (
-                      <div key={feature} className="flex justify-between text-gray-600">
-                        <span>{feature.replace(/_/g, ' ')}</span>
-                        <span className="font-medium">{cost} credits</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </CardContent>
+                  <Card size="small" style={{ marginTop: '16px' }}>
+                    <Title level={5} style={{ margin: '0 0 12px 0' }}>Credit Costs</Title>
+                    <Row gutter={[8, 8]}>
+                      {Object.entries(CREDIT_COSTS).map(([feature, cost]) => (
+                        <Col span={12} key={feature}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Text style={{ fontSize: '12px' }} type="secondary">
+                              {feature.replace(/_/g, ' ')}
+                            </Text>
+                            <Text strong style={{ fontSize: '12px' }}>{cost}</Text>
+                          </div>
+                        </Col>
+                      ))}
+                    </Row>
+                  </Card>
+                </Space>
+              )}
+            </Card>
+          </Col>
+        </Row>
+
+        <Card title={<Title level={4} style={{ margin: 0 }}>Recent Activity</Title>}>
+          <Table
+            columns={transactionColumns}
+            dataSource={transactions.slice(0, 20)}
+            rowKey="id"
+            loading={loading}
+            pagination={{ pageSize: 20 }}
+            scroll={{ x: 1000 }}
+            locale={{ emptyText: <Empty description="No activity recorded yet" /> }}
+          />
         </Card>
-      </div>
+      </Space>
 
-      {/* Recent Activity Log */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>{transactions.length} recent transactions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Tenant
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Pool
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
-                    Credits
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
-                    Time
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {transactions.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                      No activity recorded yet
-                    </td>
-                  </tr>
-                ) : (
-                  transactions.slice(0, 20).map((tx) => {
-                    const tenant = tenants.find((t) => t.id === tx.tenantId);
-                    const timestamp = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt?.seconds * 1000 || Date.now());
-                    return (
-                      <tr key={tx.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-3 text-sm text-gray-900">
-                          {tenant?.businessName || tx.tenantId}
-                        </td>
-                        <td className="px-6 py-3">
-                          <Badge
-                            variant={
-                              tx.type === 'usage' ? 'danger' :
-                              tx.type === 'subscription' ? 'success' :
-                              tx.type === 'topoff' ? 'primary' :
-                              tx.type === 'bonus' ? 'warning' :
-                              'default'
-                            }
-                          >
-                            {tx.type}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-3 text-sm text-gray-600">
-                          {tx.creditPool || '-'}
-                        </td>
-                        <td className="px-6 py-3 text-sm text-gray-500 max-w-xs truncate">
-                          {tx.description}
-                        </td>
-                        <td className="px-6 py-3 text-sm text-right font-medium">
-                          <span className={tx.amount > 0 ? 'text-success-600' : 'text-danger-600'}>
-                            {tx.amount > 0 ? '+' : ''}{tx.amount}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3 text-sm text-right text-gray-500">
-                          {timestamp.toLocaleString()}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      <Modal
+        title="Adjust Credits"
+        open={showAdjustModal}
+        onCancel={() => {
+          setShowAdjustModal(false);
+          form.resetFields();
+        }}
+        footer={null}
+        width={500}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={adjustCredits}
+          initialValues={{ pool: 'topoff' }}
+        >
+          <Form.Item
+            name="tenant"
+            label="Select Tenant"
+            rules={[{ required: true, message: 'Please select a tenant' }]}
+          >
+            <Select
+              showSearch
+              placeholder="Choose a tenant..."
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={tenants.map((tenant) => ({
+                value: tenant.id,
+                label: `${tenant.businessName || tenant.id} (${tenant.totalCredits} credits)`,
+              }))}
+            />
+          </Form.Item>
 
-      {/* Adjust Credits Modal */}
-      {showAdjustModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>Adjust Credits</CardTitle>
-              <CardDescription>Add or deduct credits from a tenant</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="tenant">Select Tenant</Label>
-                <select
-                  id="tenant"
-                  value={selectedTenant}
-                  onChange={(e) => setSelectedTenant(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="">Choose a tenant...</option>
-                  {tenants.map((tenant) => (
-                    <option key={tenant.id} value={tenant.id}>
-                      {tenant.businessName} ({tenant.totalCredits} total credits)
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <Form.Item
+            name="pool"
+            label="Credit Pool"
+            rules={[{ required: true }]}
+          >
+            <Select>
+              <Select.Option value="topoff">Top-Off Credits (never expire)</Select.Option>
+              <Select.Option value="subscription">Subscription Credits (expire monthly)</Select.Option>
+            </Select>
+          </Form.Item>
 
-              <div>
-                <Label htmlFor="pool">Credit Pool</Label>
-                <select
-                  id="pool"
-                  value={adjustPool}
-                  onChange={(e) => setAdjustPool(e.target.value as 'subscription' | 'topoff')}
-                  className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="topoff">Top-Off Credits (never expire)</option>
-                  <option value="subscription">Subscription Credits (expire monthly)</option>
-                </select>
-              </div>
+          <Form.Item
+            name="amount"
+            label="Credit Amount"
+            rules={[
+              { required: true, message: 'Please enter an amount' },
+              { pattern: /^-?\d+$/, message: 'Please enter a valid number' },
+            ]}
+            extra="Use positive numbers to add credits, negative to deduct"
+          >
+            <Input
+              type="number"
+              placeholder="Enter amount (e.g., 100 or -50)"
+              prefix={<ThunderboltOutlined />}
+            />
+          </Form.Item>
 
-              <div>
-                <Label htmlFor="amount">Credit Amount</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  placeholder="Enter amount (positive to add, negative to deduct)"
-                  value={adjustAmount}
-                  onChange={(e) => setAdjustAmount(e.target.value)}
-                  className="mt-1"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Use positive numbers to add credits, negative to deduct
-                </p>
-              </div>
+          <Form.Item
+            name="reason"
+            label="Reason (Optional)"
+          >
+            <TextArea
+              rows={3}
+              placeholder="e.g., Bonus for promotional period"
+            />
+          </Form.Item>
 
-              <div>
-                <Label htmlFor="reason">Reason (Optional)</Label>
-                <Input
-                  id="reason"
-                  placeholder="e.g., Bonus for promotional period"
-                  value={adjustReason}
-                  onChange={(e) => setAdjustReason(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setShowAdjustModal(false);
-                    setSelectedTenant('');
-                    setAdjustAmount('');
-                    setAdjustReason('');
-                    setAdjustPool('topoff');
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  className="flex-1"
-                  disabled={!selectedTenant || !adjustAmount || adjustLoading}
-                  onClick={adjustCredits}
-                >
-                  {adjustLoading ? 'Processing...' : 'Apply Adjustment'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </PageContainer>
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <Button
+                onClick={() => {
+                  setShowAdjustModal(false);
+                  form.resetFields();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="primary" htmlType="submit" loading={adjustLoading}>
+                Apply Adjustment
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
   );
 }

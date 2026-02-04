@@ -51,7 +51,7 @@ export default function AdminLogin() {
         <h1 className="text-4xl font-bold text-white mb-2">
           Newsroom AIOS
         </h1>
-        <Badge variant="default" className="bg-white/20 text-white border-white/30">
+        <Badge variant="default" className="bg-white text-brand-700">
           Platform Administration
         </Badge>
       </div>

@@ -1,13 +1,26 @@
 'use client';
 
+import 'antd/dist/reset.css';
 import { useState } from 'react';
 import Link from 'next/link';
-import { PageContainer } from '@/components/layouts/PageContainer';
-import { PageHeader } from '@/components/layouts/PageHeader';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Check } from 'lucide-react';
+import { useTheme } from '@/components/providers/AntdProvider';
+import {
+  Card,
+  Typography,
+  Button,
+  Space,
+  Tag,
+  Row,
+  Col,
+  message,
+} from 'antd';
+import {
+  ArrowLeftOutlined,
+  CheckOutlined,
+  InfoCircleOutlined,
+} from '@ant-design/icons';
+
+const { Title, Text } = Typography;
 
 const CREDIT_PACKAGES = [
   {
@@ -44,6 +57,7 @@ const CREDIT_PACKAGES = [
 ];
 
 export default function PurchaseCreditsPage() {
+  const { isDark } = useTheme();
   const [purchasing, setPurchasing] = useState<string | null>(null);
 
   const handlePurchase = async (packageId: string, priceId: string) => {
@@ -51,159 +65,158 @@ export default function PurchaseCreditsPage() {
 
     try {
       // TODO: Implement Stripe checkout for one-time credit purchase
-      alert('Credit purchase coming soon! This will create a Stripe checkout session.');
-
-      // const response = await fetch('/api/stripe/create-checkout', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ priceId }),
-      // });
-      // const data = await response.json();
-      // window.location.href = data.url;
+      message.info('Credit purchase coming soon! This will create a Stripe checkout session.');
     } catch (error) {
       console.error('Purchase error:', error);
-      alert('Failed to initiate purchase. Please try again.');
+      message.error('Failed to initiate purchase. Please try again.');
     } finally {
       setPurchasing(null);
     }
   };
 
   return (
-    <PageContainer maxWidth="2xl">
-      <PageHeader
-        title="Purchase Credits"
-        subtitle="Top-off credits never expire and are used after your monthly subscription credits"
-        action={
-          <Button variant="ghost" asChild>
-            <Link href="/account/credits">
-              <ArrowLeft className="w-4 h-4" />
+    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto', minHeight: '100vh' }}>
+      <Space vertical size="large" style={{ width: '100%' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <Title level={2} style={{ margin: 0 }}>
+              Purchase Credits
+            </Title>
+            <Text type="secondary">
+              Top-off credits never expire and are used after your monthly subscription credits
+            </Text>
+          </div>
+          <Link href="/account/credits">
+            <Button icon={<ArrowLeftOutlined />} size="large">
               Back to Credits
-            </Link>
-          </Button>
-        }
-      />
+            </Button>
+          </Link>
+        </div>
 
-      {/* Info Card */}
-      <Card className="bg-brand-50 border-brand-200 mb-6">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-brand-500 rounded-lg">
-              <Check className="w-5 h-5 text-white" />
+        {/* Info Card */}
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              background: '#1890ff',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <CheckOutlined style={{ fontSize: '20px', color: 'white' }} />
             </div>
-            <div>
-              <h3 className="font-semibold text-brand-900 mb-1">
+            <div style={{ flex: 1 }}>
+              <Title level={4} style={{ marginTop: 0, marginBottom: '8px' }}>
                 Top-Off Credits Never Expire
-              </h3>
-              <p className="text-sm text-brand-700">
+              </Title>
+              <Text>
                 These credits are used automatically after your monthly subscription credits run out.
                 They never expire and roll over indefinitely.
-              </p>
+              </Text>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </Card>
 
-      {/* Credit Packages */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {CREDIT_PACKAGES.map((pkg) => (
-          <Card
-            key={pkg.id}
-            className={`relative ${pkg.popular ? 'ring-2 ring-brand-500' : ''}`}
-          >
-            {pkg.popular && (
-              <div className="absolute top-0 right-0 -translate-y-1/2">
-                <Badge variant="primary" className="shadow-md">
-                  Popular
-                </Badge>
-              </div>
-            )}
-
-            <CardHeader className="text-center pb-4">
-              <CardTitle className="text-3xl font-bold">
-                {pkg.credits}
-              </CardTitle>
-              <CardDescription>credits</CardDescription>
-            </CardHeader>
-
-            <CardContent className="text-center pb-4">
-              <div className="mb-4">
-                <span className="text-4xl font-bold text-gray-900">
-                  ${pkg.price}
-                </span>
-                <span className="text-gray-500 text-sm ml-1">one-time</span>
-              </div>
-
-              {pkg.savings && (
-                <Badge variant="success" className="mb-4">
-                  Save {pkg.savings}
-                </Badge>
-              )}
-
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-center justify-center gap-2">
-                  <Check className="w-4 h-4 text-success-500" />
-                  <span>Never expires</span>
-                </div>
-                <div className="flex items-center justify-center gap-2">
-                  <Check className="w-4 h-4 text-success-500" />
-                  <span>Use anytime</span>
-                </div>
-                <div className="flex items-center justify-center gap-2">
-                  <Check className="w-4 h-4 text-success-500" />
-                  <span>${(pkg.price / pkg.credits).toFixed(2)}/credit</span>
-                </div>
-              </div>
-            </CardContent>
-
-            <CardFooter>
-              <Button
-                variant={pkg.popular ? 'primary' : 'outline'}
-                className="w-full"
-                onClick={() => handlePurchase(pkg.id, pkg.priceId)}
-                disabled={purchasing !== null}
+        {/* Credit Packages */}
+        <Row gutter={[16, 16]}>
+          {CREDIT_PACKAGES.map((pkg) => (
+            <Col xs={24} sm={12} lg={6} key={pkg.id}>
+              <Card
+                style={pkg.popular ? { borderColor: '#1890ff', borderWidth: '2px' } : undefined}
               >
-                {purchasing === pkg.id ? 'Processing...' : 'Purchase'}
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+                {pkg.popular && (
+                  <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                    <Tag color="blue">Popular</Tag>
+                  </div>
+                )}
 
-      {/* FAQ */}
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Frequently Asked Questions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-1">
-              When are top-off credits used?
-            </h4>
-            <p className="text-sm text-gray-600">
-              Top-off credits are automatically used after your monthly subscription credits are depleted.
-              Your subscription credits reset each billing cycle, but top-off credits roll over indefinitely.
-            </p>
-          </div>
+                <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                  <Title level={1} style={{ margin: 0 }}>
+                    {pkg.credits}
+                  </Title>
+                  <Text type="secondary">credits</Text>
+                </div>
 
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-1">
-              Do top-off credits expire?
-            </h4>
-            <p className="text-sm text-gray-600">
-              No! Top-off credits never expire and remain available for as long as you maintain an active subscription.
-            </p>
-          </div>
+                <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                  <Title level={2} style={{ margin: 0 }}>
+                    ${pkg.price}
+                  </Title>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>one-time</Text>
+                </div>
 
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-1">
-              Can I get a refund on unused credits?
-            </h4>
-            <p className="text-sm text-gray-600">
-              Top-off credit purchases are non-refundable, but since they never expire, you can use them at any time in the future.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </PageContainer>
+                {pkg.savings && (
+                  <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                    <Tag color="success">Save {pkg.savings}</Tag>
+                  </div>
+                )}
+
+                <Space vertical size="small" style={{ width: '100%', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckOutlined style={{ color: '#52c41a' }} />
+                    <Text>Never expires</Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckOutlined style={{ color: '#52c41a' }} />
+                    <Text>Use anytime</Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckOutlined style={{ color: '#52c41a' }} />
+                    <Text>${(pkg.price / pkg.credits).toFixed(2)}/credit</Text>
+                  </div>
+                </Space>
+
+                <Button
+                  type={pkg.popular ? 'primary' : 'default'}
+                  block
+                  size="large"
+                  onClick={() => handlePurchase(pkg.id, pkg.priceId)}
+                  loading={purchasing === pkg.id}
+                  disabled={purchasing !== null && purchasing !== pkg.id}
+                >
+                  {purchasing === pkg.id ? 'Processing...' : 'Purchase'}
+                </Button>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+
+        {/* FAQ */}
+        <Card title={<Title level={4} style={{ margin: 0 }}>Frequently Asked Questions</Title>}>
+          <Space vertical size="middle" style={{ width: '100%' }}>
+            <div>
+              <Title level={5} style={{ marginTop: 0, marginBottom: '4px' }}>
+                When are top-off credits used?
+              </Title>
+              <Text>
+                Top-off credits are automatically used after your monthly subscription credits are depleted.
+                Your subscription credits reset each billing cycle, but top-off credits roll over indefinitely.
+              </Text>
+            </div>
+
+            <div>
+              <Title level={5} style={{ marginTop: 0, marginBottom: '4px' }}>
+                Do top-off credits expire?
+              </Title>
+              <Text>
+                No! Top-off credits never expire and remain available for as long as you maintain an active subscription.
+              </Text>
+            </div>
+
+            <div>
+              <Title level={5} style={{ marginTop: 0, marginBottom: '4px' }}>
+                Can I get a refund on unused credits?
+              </Title>
+              <Text>
+                Top-off credit purchases are non-refundable, but since they never expire, you can use them at any time in the future.
+              </Text>
+            </div>
+          </Space>
+        </Card>
+      </Space>
+    </div>
   );
 }

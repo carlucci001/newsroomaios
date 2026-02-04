@@ -1,30 +1,42 @@
 'use client';
 
+import 'antd/dist/reset.css';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { collection, query, getDocs, where, orderBy, limit } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
 import { TenantCredits, CreditUsage } from '@/types/credits';
-import { PageContainer } from '@/components/layouts/PageContainer';
-import { PageHeader } from '@/components/layouts/PageHeader';
-import { StatCard } from '@/components/ui/stat-card';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ProgressBar } from '@/components/ui/progress-bar';
+import { useTheme } from '@/components/providers/AntdProvider';
 import {
-  Building2,
-  Clock,
-  TrendingUp,
-  AlertTriangle,
-  Plus,
-  Coins,
-  Upload,
-  Settings as SettingsIcon,
-  ArrowRight,
-  CheckCircle,
-} from 'lucide-react';
+  Card,
+  Typography,
+  Row,
+  Col,
+  Statistic,
+  Progress,
+  List,
+  Tag,
+  Button,
+  Space,
+  Spin,
+  Empty,
+} from 'antd';
+import {
+  TeamOutlined,
+  ClockCircleOutlined,
+  RiseOutlined,
+  WarningOutlined,
+  PlusOutlined,
+  DollarOutlined,
+  UploadOutlined,
+  SettingOutlined,
+  ArrowRightOutlined,
+  CheckCircleOutlined,
+  MessageOutlined,
+} from '@ant-design/icons';
+
+const { Title, Text, Paragraph } = Typography;
 
 interface DashboardStats {
   totalTenants: number;
@@ -39,6 +51,7 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
+  const { isDark } = useTheme();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -106,7 +119,7 @@ export default function AdminDashboard() {
           trialTenants,
           suspendedTenants,
           totalCreditsUsed,
-          totalRevenue: 0, // TODO: Calculate from Stripe
+          totalRevenue: 0,
           recentTenants,
           creditWarnings,
           recentUsage,
@@ -123,235 +136,342 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-600"></div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" />
       </div>
     );
   }
 
   if (!stats) {
     return (
-      <PageContainer>
-        <div className="text-center py-12">
-          <p className="text-gray-500">Failed to load dashboard data</p>
-        </div>
-      </PageContainer>
+      <div style={{ padding: '24px', textAlign: 'center' }}>
+        <Empty description="Failed to load dashboard data" />
+      </div>
     );
   }
 
+  const activePercentage = stats.totalTenants > 0
+    ? Math.round((stats.activeTenants / stats.totalTenants) * 100)
+    : 0;
+
   return (
-    <PageContainer maxWidth="2xl">
-      <PageHeader
-        title="Dashboard Overview"
-        subtitle="Monitor your newspaper network and manage tenant resources"
-      />
+    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto', minHeight: '100vh' }}>
+      <Space vertical size="large" style={{ width: '100%' }}>
+        {/* Header */}
+        <div>
+          <Title level={2} style={{ margin: 0 }}>Dashboard Overview</Title>
+          <Text type="secondary">Monitor your newspaper network and manage tenant resources</Text>
+        </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          label="Total Newspapers"
-          value={stats.totalTenants}
-          subValue={`${stats.activeTenants} active`}
-          icon={<Building2 className="w-6 h-6" />}
-          color="brand"
-        >
-          <ProgressBar
-            value={stats.activeTenants}
-            max={stats.totalTenants}
-            color="brand"
-            className="mt-3"
-          />
-        </StatCard>
-
-        <StatCard
-          label="Trial Period"
-          value={stats.trialTenants}
-          subValue="in trial"
-          icon={<Clock className="w-6 h-6" />}
-          color="warning"
-        />
-
-        <StatCard
-          label="Credits Used"
-          value={stats.totalCreditsUsed.toLocaleString()}
-          subValue="this billing cycle"
-          icon={<TrendingUp className="w-6 h-6" />}
-          color="success"
-        />
-
-        <StatCard
-          label="Credit Warnings"
-          value={stats.creditWarnings.length}
-          subValue="tenants at limit"
-          icon={<AlertTriangle className="w-6 h-6" />}
-          color={stats.creditWarnings.length > 0 ? 'danger' : 'success'}
-        />
-      </div>
-
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Tenants */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Recent Newspapers</CardTitle>
-                <CardDescription>Latest tenant sign-ups</CardDescription>
+        {/* Stats Cards */}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title={<Text strong style={{ fontSize: '14px' }}>Total Newspapers</Text>}
+                value={stats.totalTenants}
+                prefix={<TeamOutlined style={{ color: '#3b82f6' }} />}
+                styles={{ content: { fontSize: '32px' } }}
+              />
+              <div style={{ marginTop: '12px' }}>
+                <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>
+                  {stats.activeTenants} active
+                </Text>
+                <Progress
+                  percent={activePercentage}
+                  strokeColor="#3b82f6"
+                  size="small"
+                  showInfo={false}
+                />
               </div>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/admin/tenants">
-                  View All
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {stats.recentTenants.length === 0 ? (
-              <div className="text-center py-8">
-                <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">
-                  No newspapers yet
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {stats.recentTenants.map((tenant) => (
-                  <Link
-                    key={tenant.id}
-                    href={`/admin/tenants/${tenant.id}`}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
-                        {tenant.businessName}
-                      </p>
-                      <p className="text-sm text-gray-500 truncate">
-                        {tenant.domain}
-                      </p>
-                    </div>
-                    <Badge
-                      variant={
-                        tenant.status === 'active' ? 'success' :
-                        tenant.status === 'seeding' ? 'warning' :
-                        tenant.status === 'suspended' ? 'danger' :
-                        'default'
-                      }
-                      dot
-                    >
-                      {tenant.status}
-                    </Badge>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </Card>
+          </Col>
 
-        {/* Credit Alerts */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Credit Alerts</CardTitle>
-                <CardDescription>Tenants requiring attention</CardDescription>
-              </div>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/admin/credits">
-                  Manage
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {stats.creditWarnings.length === 0 ? (
-              <div className="text-center py-8">
-                <CheckCircle className="w-12 h-12 text-success-400 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">
-                  All tenants have healthy credit balances
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {stats.creditWarnings.map((credit) => (
-                  <div key={credit.id} className="p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-medium text-gray-900">
-                        Tenant {credit.tenantId}
-                      </p>
-                      <Badge
-                        variant={credit.status === 'exhausted' ? 'danger' : 'warning'}
-                      >
-                        {credit.status}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-500 mb-2">
-                      {credit.creditsRemaining} credits remaining
-                    </p>
-                    <ProgressBar
-                      value={credit.creditsRemaining}
-                      max={credit.monthlyAllocation}
-                      color={credit.status === 'exhausted' ? 'danger' : 'warning'}
-                    />
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title={<Text strong style={{ fontSize: '14px' }}>Trial Period</Text>}
+                value={stats.trialTenants}
+                prefix={<ClockCircleOutlined style={{ color: '#faad14' }} />}
+                styles={{ content: { fontSize: '32px' } }}
+                suffix={<Text type="secondary" style={{ fontSize: '14px' }}>in trial</Text>}
+              />
+            </Card>
+          </Col>
+
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title={<Text strong style={{ fontSize: '14px' }}>Credits Used</Text>}
+                value={stats.totalCreditsUsed}
+                prefix={<RiseOutlined style={{ color: '#52c41a' }} />}
+                styles={{ content: { fontSize: '32px' } }}
+              />
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '8px' }}>
+                this billing cycle
+              </Text>
+            </Card>
+          </Col>
+
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title={<Text strong style={{ fontSize: '14px' }}>Credit Warnings</Text>}
+                value={stats.creditWarnings.length}
+                prefix={<WarningOutlined style={{ color: stats.creditWarnings.length > 0 ? '#ff4d4f' : '#52c41a' }} />}
+                styles={{ content: { fontSize: '32px' } }}
+                suffix={<Text type="secondary" style={{ fontSize: '14px' }}>tenants</Text>}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Two Column Layout */}
+        <Row gutter={[16, 16]}>
+          {/* Recent Newspapers */}
+          <Col xs={24} lg={12}>
+            <Card
+              title={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <Title level={4} style={{ margin: 0 }}>Recent Newspapers</Title>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>Latest tenant sign-ups</Text>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
+                  <Link href="/admin/tenants">
+                    <Button type="text" icon={<ArrowRightOutlined />}>
+                      View All
+                    </Button>
+                  </Link>
+                </div>
+              }
+            >
+              {stats.recentTenants.length === 0 ? (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="No newspapers yet"
+                  style={{ padding: '40px 0' }}
+                />
+              ) : (
+                <Space vertical size="small" style={{ width: '100%' }}>
+                  {stats.recentTenants.map((tenant) => (
+                    <div
+                      key={tenant.id}
+                      style={{
+                        padding: '12px',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <Link href={`/admin/tenants/${tenant.id}`}>
+                          <Text strong>{tenant.businessName}</Text>
+                        </Link>
+                        <div>
+                          <Text type="secondary" style={{ fontSize: '12px' }}>{tenant.domain}</Text>
+                        </div>
+                      </div>
+                      <Tag
+                        color={
+                          tenant.status === 'active' ? 'success' :
+                          tenant.status === 'seeding' ? 'warning' :
+                          tenant.status === 'suspended' ? 'error' :
+                          'default'
+                        }
+                      >
+                        {tenant.status}
+                      </Tag>
+                    </div>
+                  ))}
+                </Space>
+              )}
+            </Card>
+          </Col>
+
+          {/* Credit Alerts */}
+          <Col xs={24} lg={12}>
+            <Card
+              title={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <Title level={4} style={{ margin: 0 }}>Credit Alerts</Title>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>Tenants requiring attention</Text>
+                  </div>
+                  <Link href="/admin/credits">
+                    <Button type="text" icon={<ArrowRightOutlined />}>
+                      Manage
+                    </Button>
+                  </Link>
+                </div>
+              }
+            >
+              {stats.creditWarnings.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                  <CheckCircleOutlined style={{ fontSize: '48px', color: '#52c41a', marginBottom: '16px' }} />
+                  <Paragraph type="secondary">All tenants have healthy credit balances</Paragraph>
+                </div>
+              ) : (
+                <List
+                  dataSource={stats.creditWarnings}
+                  renderItem={(credit) => {
+                    const percentage = credit.monthlyAllocation > 0
+                      ? Math.round((credit.creditsRemaining / credit.monthlyAllocation) * 100)
+                      : 0;
+
+                    return (
+                      <List.Item
+                        style={{
+                          padding: '12px',
+                          borderRadius: '8px',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        <div style={{ width: '100%' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <Text strong>Tenant {credit.tenantId}</Text>
+                            <Tag color={credit.status === 'exhausted' ? 'error' : 'warning'}>
+                              {credit.status}
+                            </Tag>
+                          </div>
+                          <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '8px' }}>
+                            {credit.creditsRemaining} credits remaining
+                          </Text>
+                          <Progress
+                            percent={percentage}
+                            strokeColor={credit.status === 'exhausted' ? '#ff4d4f' : '#faad14'}
+                            size="small"
+                          />
+                        </div>
+                      </List.Item>
+                    );
+                  }}
+                />
+              )}
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Quick Actions */}
+        <Card title={<Title level={4} style={{ margin: 0 }}>Quick Actions</Title>}>
+          <Row gutter={[16, 16]}>
+            <Col xs={12} sm={8} lg={4}>
+              <Link href="/admin/tenants/new">
+                <Card
+                  hoverable
+                  style={{ textAlign: 'center' }}
+                >
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: '#1890ff',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px'
+                  }}>
+                    <PlusOutlined style={{ fontSize: '24px', color: 'white' }} />
+                  </div>
+                  <Text strong>Add Newspaper</Text>
+                </Card>
+              </Link>
+            </Col>
+
+            <Col xs={12} sm={8} lg={4}>
+              <Link href="/admin/credits">
+                <Card
+                  hoverable
+                  style={{ textAlign: 'center' }}
+                >
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: '#52c41a',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px'
+                  }}>
+                    <DollarOutlined style={{ fontSize: '24px', color: 'white' }} />
+                  </div>
+                  <Text strong>Manage Credits</Text>
+                </Card>
+              </Link>
+            </Col>
+
+            <Col xs={12} sm={8} lg={4}>
+              <Link href="/admin/analytics">
+                <Card
+                  hoverable
+                  style={{ textAlign: 'center' }}
+                >
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: '#722ed1',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px'
+                  }}>
+                    <MessageOutlined style={{ fontSize: '24px', color: 'white' }} />
+                  </div>
+                  <Text strong>Message Partners</Text>
+                </Card>
+              </Link>
+            </Col>
+
+            <Col xs={12} sm={8} lg={4}>
+              <Link href="/admin/updates">
+                <Card
+                  hoverable
+                  style={{ textAlign: 'center' }}
+                >
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: '#faad14',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px'
+                  }}>
+                    <UploadOutlined style={{ fontSize: '24px', color: 'white' }} />
+                  </div>
+                  <Text strong>Deploy Update</Text>
+                </Card>
+              </Link>
+            </Col>
+
+            <Col xs={12} sm={8} lg={4}>
+              <Link href="/admin/settings">
+                <Card
+                  hoverable
+                  style={{ textAlign: 'center' }}
+                >
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: '#8c8c8c',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px'
+                  }}>
+                    <SettingOutlined style={{ fontSize: '24px', color: 'white' }} />
+                  </div>
+                  <Text strong>Settings</Text>
+                </Card>
+              </Link>
+            </Col>
+          </Row>
         </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common administrative tasks</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link
-              href="/admin/tenants/new"
-              className="flex flex-col items-center gap-2 p-4 bg-brand-50 rounded-lg hover:bg-brand-100 transition-colors group"
-            >
-              <div className="p-2 bg-brand-500 rounded-lg group-hover:bg-brand-600 transition-colors">
-                <Plus className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-sm font-medium text-gray-900">Add Newspaper</span>
-            </Link>
-
-            <Link
-              href="/admin/credits"
-              className="flex flex-col items-center gap-2 p-4 bg-success-50 rounded-lg hover:bg-success-100 transition-colors group"
-            >
-              <div className="p-2 bg-success-500 rounded-lg group-hover:bg-success-600 transition-colors">
-                <Coins className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-sm font-medium text-gray-900">Manage Credits</span>
-            </Link>
-
-            <Link
-              href="/admin/updates"
-              className="flex flex-col items-center gap-2 p-4 bg-warning-50 rounded-lg hover:bg-warning-100 transition-colors group"
-            >
-              <div className="p-2 bg-warning-500 rounded-lg group-hover:bg-warning-600 transition-colors">
-                <Upload className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-sm font-medium text-gray-900">Deploy Update</span>
-            </Link>
-
-            <Link
-              href="/admin/settings"
-              className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
-            >
-              <div className="p-2 bg-gray-500 rounded-lg group-hover:bg-gray-600 transition-colors">
-                <SettingsIcon className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-sm font-medium text-gray-900">Settings</span>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </PageContainer>
+      </Space>
+    </div>
   );
 }

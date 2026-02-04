@@ -69,7 +69,9 @@ export default function RevenuePotentialPage() {
             <Link href="/testimonials" className="text-sm font-medium text-brand-blue-600 border-b-2 border-brand-blue-600">
               Revenue Potential
             </Link>
-            <Button variant="ghost" size="sm">Sign In</Button>
+            <Link href="/account/login">
+              <Button variant="ghost" size="sm">Sign In</Button>
+            </Link>
             <Link href="/onboarding">
               <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
                 Get Started <ArrowRight className="h-4 w-4" />

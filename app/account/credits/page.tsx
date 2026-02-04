@@ -1,18 +1,36 @@
 'use client';
 
+import 'antd/dist/reset.css';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { PageContainer } from '@/components/layouts/PageContainer';
-import { PageHeader } from '@/components/layouts/PageHeader';
-import { StatCard } from '@/components/ui/stat-card';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ProgressBar } from '@/components/ui/progress-bar';
-import { Coins, TrendingDown, Infinity, Plus, ArrowUpRight } from 'lucide-react';
 import { getCurrentUser, getUserTenant } from '@/lib/accountAuth';
 import { getDb } from '@/lib/firebase';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { useTheme } from '@/components/providers/AntdProvider';
+import {
+  Card,
+  Typography,
+  Row,
+  Col,
+  Statistic,
+  Progress,
+  Button,
+  Space,
+  Tag,
+  Spin,
+  List,
+  Empty,
+} from 'antd';
+import {
+  CreditCardOutlined,
+  PlusOutlined,
+  ArrowUpOutlined,
+  InfoCircleOutlined,
+  FallOutlined,
+} from '@ant-design/icons';
+import { Coins, Infinity } from 'lucide-react';
+
+const { Title, Text } = Typography;
 
 interface CreditTransaction {
   id: string;
@@ -26,6 +44,7 @@ interface CreditTransaction {
 }
 
 export default function CreditsPage() {
+  const { isDark } = useTheme();
   const [tenant, setTenant] = useState<any>(null);
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,19 +90,17 @@ export default function CreditsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-600"></div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" />
       </div>
     );
   }
 
   if (!tenant) {
     return (
-      <PageContainer>
-        <div className="text-center py-12">
-          <p className="text-gray-500">No tenant found for your account.</p>
-        </div>
-      </PageContainer>
+      <div style={{ padding: '24px', textAlign: 'center' }}>
+        <Text type="secondary">No tenant found for your account.</Text>
+      </div>
     );
   }
 
@@ -93,199 +110,231 @@ export default function CreditsPage() {
   const monthlyAllocation = tenant.plan === 'professional' ? 1000 :
                             tenant.plan === 'growth' ? 575 : 250;
   const percentUsed = monthlyAllocation > 0 ? ((monthlyAllocation - subscriptionCredits) / monthlyAllocation) * 100 : 0;
+  const creditPercentage = monthlyAllocation > 0 ? Math.round((subscriptionCredits / monthlyAllocation) * 100) : 0;
 
   return (
-    <PageContainer maxWidth="2xl">
-      <PageHeader
-        title="Credit Balance"
-        subtitle="Monitor your credit usage and purchase additional credits"
-        action={
-          <Button variant="primary" asChild>
-            <Link href="/account/credits/purchase">
-              <Plus className="w-4 h-4" />
+    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto', minHeight: '100vh' }}>
+      <Space vertical size="large" style={{ width: '100%' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <Title level={2} style={{ margin: 0 }}>
+              Credit Balance
+            </Title>
+            <Text type="secondary">
+              Monitor your credit usage and purchase additional credits
+            </Text>
+          </div>
+          <Link href="/account/credits/purchase">
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+            >
               Purchase Credits
-            </Link>
-          </Button>
-        }
-      />
+            </Button>
+          </Link>
+        </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard
-          label="Subscription Credits"
-          value={subscriptionCredits.toLocaleString()}
-          subValue={`of ${monthlyAllocation} monthly`}
-          icon={<Coins className="w-6 h-6" />}
-          color="brand"
-        >
-          <ProgressBar
-            value={subscriptionCredits}
-            max={monthlyAllocation}
-            color="brand"
-            className="mt-3"
-          />
-          <p className="text-xs text-gray-500 mt-2">
-            Resets on your billing date
-          </p>
-        </StatCard>
-
-        <StatCard
-          label="Top-Off Credits"
-          value={topOffCredits.toLocaleString()}
-          subValue="never expire"
-          icon={<Infinity className="w-6 h-6" />}
-          color="success"
-        />
-
-        <StatCard
-          label="Total Available"
-          value={totalCredits.toLocaleString()}
-          subValue="ready to use"
-          icon={<TrendingDown className="w-6 h-6" />}
-          color="warning"
-        />
-      </div>
-
-      {/* How Credits Work */}
-      <Card className="bg-brand-50 border-brand-200">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-brand-500 rounded-lg">
-              <Coins className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-brand-900 mb-1">
-                How Credit Usage Works
-              </h3>
-              <p className="text-sm text-brand-700 mb-3">
-                Your subscription credits are used first, then top-off credits are consumed automatically.
-              </p>
-              <div className="space-y-2 text-sm text-brand-700">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">1.</span>
-                  <span>Subscription credits reset every billing cycle</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">2.</span>
-                  <span>Top-off credits never expire and roll over indefinitely</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">3.</span>
-                  <span>Unused subscription credits don't carry over</span>
-                </div>
+        {/* Stats Grid */}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={8}>
+            <Card>
+              <Statistic
+                title={<Text strong>Subscription Credits</Text>}
+                value={subscriptionCredits}
+                suffix="credits"
+                prefix={<CreditCardOutlined style={{ color: '#1890ff' }} />}
+                styles={{ content: { fontSize: '32px' } }}
+              />
+              <div style={{ marginTop: '12px' }}>
+                <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>
+                  {subscriptionCredits} of {monthlyAllocation} monthly
+                </Text>
+                <Progress
+                  percent={creditPercentage}
+                  strokeColor="#1890ff"
+                  size="small"
+                  showInfo={false}
+                />
+                <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '8px' }}>
+                  Resets on your billing date
+                </Text>
               </div>
+            </Card>
+          </Col>
+
+          <Col xs={24} md={8}>
+            <Card>
+              <Statistic
+                title={<Text strong>Top-Off Credits</Text>}
+                value={topOffCredits}
+                suffix="credits"
+                prefix={<Infinity className="w-6 h-6" style={{ color: '#52c41a' }} />}
+                styles={{ content: { fontSize: '32px' } }}
+              />
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '12px' }}>
+                Never expire
+              </Text>
+            </Card>
+          </Col>
+
+          <Col xs={24} md={8}>
+            <Card>
+              <Statistic
+                title={<Text strong>Total Available</Text>}
+                value={totalCredits}
+                suffix="credits"
+                prefix={<FallOutlined style={{ color: '#faad14' }} />}
+                styles={{ content: { fontSize: '32px' } }}
+              />
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '12px' }}>
+                Ready to use
+              </Text>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* How Credits Work */}
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              background: '#1890ff',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <InfoCircleOutlined style={{ fontSize: '20px', color: 'white' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <Title level={4} style={{ marginTop: 0, marginBottom: '8px' }}>
+                How Credit Usage Works
+              </Title>
+              <Text style={{ display: 'block', marginBottom: '12px' }}>
+                Your subscription credits are used first, then top-off credits are consumed automatically.
+              </Text>
+              <Space vertical size="small">
+                <Text>
+                  <Text strong>1.</Text> Subscription credits reset every billing cycle
+                </Text>
+                <Text>
+                  <Text strong>2.</Text> Top-off credits never expire and roll over indefinitely
+                </Text>
+                <Text>
+                  <Text strong>3.</Text> Unused subscription credits don't carry over
+                </Text>
+              </Space>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </Card>
 
-      {/* Credit Usage This Month */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Usage This Billing Cycle</CardTitle>
-          <CardDescription>
-            {percentUsed.toFixed(0)}% of monthly subscription credits used
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        {/* Credit Usage This Month */}
+        <Card title={<Title level={4} style={{ margin: 0 }}>Usage This Billing Cycle</Title>}>
+          <Space vertical size="middle" style={{ width: '100%' }}>
+            <Text type="secondary">
+              {percentUsed.toFixed(0)}% of monthly subscription credits used
+            </Text>
+
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">Subscription Credits</span>
-                <span className="text-sm text-gray-500">
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <Text strong>Subscription Credits</Text>
+                <Text type="secondary">
                   {subscriptionCredits} / {monthlyAllocation}
-                </span>
+                </Text>
               </div>
-              <ProgressBar
-                value={subscriptionCredits}
-                max={monthlyAllocation}
-                color="brand"
+              <Progress
+                percent={creditPercentage}
+                strokeColor="#1890ff"
+                size="small"
               />
             </div>
 
             {topOffCredits > 0 && (
-              <div className="pt-4 border-t">
-                <p className="text-sm text-gray-700 mb-2">
-                  <span className="font-semibold text-success-600">{topOffCredits}</span> top-off credits available
-                </p>
-                <p className="text-xs text-gray-500">
+              <div style={{ paddingTop: '16px', borderTop: '1px solid', borderColor: isDark ? '#424242' : '#f0f0f0' }}>
+                <Text>
+                  <Text strong style={{ color: '#52c41a' }}>{topOffCredits}</Text> top-off credits available
+                </Text>
+                <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '4px' }}>
                   These will be used after your subscription credits run out
-                </p>
+                </Text>
               </div>
             )}
 
-            <div className="pt-4 border-t">
-              <Link href="/account/billing" className="text-sm text-brand-600 hover:text-brand-700 font-medium inline-flex items-center gap-1">
-                Upgrade your plan for more credits
-                <ArrowUpRight className="w-4 h-4" />
+            <div style={{ paddingTop: '16px', borderTop: '1px solid', borderColor: isDark ? '#424242' : '#f0f0f0' }}>
+              <Link href="/account/billing">
+                <Button type="link" icon={<ArrowUpOutlined />} style={{ padding: 0 }}>
+                  Upgrade your plan for more credits
+                </Button>
               </Link>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </Space>
+        </Card>
 
-      {/* Transaction History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Your credit transaction history</CardDescription>
-        </CardHeader>
-        <CardContent>
+        {/* Transaction History */}
+        <Card title={<Title level={4} style={{ margin: 0 }}>Recent Activity</Title>}>
           {transactions.length === 0 ? (
-            <div className="text-center py-12">
-              <Coins className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 mb-1">No transactions yet</p>
-              <p className="text-sm text-gray-400">
-                Your credit activity will appear here
-              </p>
-            </div>
+            <Empty
+              image={<Coins className="w-12 h-12 mx-auto" style={{ opacity: 0.3 }} />}
+              description={
+                <Space vertical size="small">
+                  <Text type="secondary">No transactions yet</Text>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                    Your credit activity will appear here
+                  </Text>
+                </Space>
+              }
+            />
           ) : (
-            <div className="space-y-3">
-              {transactions.map((tx) => (
-                <div
-                  key={tx.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge
-                        variant={
-                          tx.type === 'usage' ? 'danger' :
-                          tx.type === 'subscription' ? 'success' :
-                          tx.type === 'topoff' ? 'primary' :
-                          'default'
+            <List
+              dataSource={transactions}
+              renderItem={(tx) => (
+                <List.Item>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ marginBottom: '4px' }}>
+                        <Tag
+                          color={
+                            tx.type === 'usage' ? 'error' :
+                            tx.type === 'subscription' ? 'success' :
+                            tx.type === 'topoff' ? 'processing' :
+                            'default'
+                          }
+                        >
+                          {tx.type}
+                        </Tag>
+                        {tx.feature && (
+                          <Text type="secondary" style={{ fontSize: '12px', marginLeft: '8px' }}>
+                            {tx.feature}
+                          </Text>
+                        )}
+                      </div>
+                      <Text>{tx.description}</Text>
+                      <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                        {tx.createdAt instanceof Date
+                          ? tx.createdAt.toLocaleString()
+                          : new Date(tx.createdAt).toLocaleString()
                         }
-                      >
-                        {tx.type}
-                      </Badge>
-                      {tx.feature && (
-                        <span className="text-xs text-gray-500">
-                          {tx.feature}
-                        </span>
-                      )}
+                      </Text>
                     </div>
-                    <p className="text-sm text-gray-700">{tx.description}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {tx.createdAt instanceof Date
-                        ? tx.createdAt.toLocaleString()
-                        : new Date(tx.createdAt).toLocaleString()
-                      }
-                    </p>
+                    <div style={{ textAlign: 'right', marginLeft: '16px' }}>
+                      <Text strong style={{ color: tx.amount > 0 ? '#52c41a' : '#ff4d4f' }}>
+                        {tx.amount > 0 ? '+' : ''}{tx.amount}
+                      </Text>
+                      <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
+                        Balance: {(tx.subscriptionBalance || 0) + (tx.topOffBalance || 0)}
+                      </Text>
+                    </div>
                   </div>
-                  <div className="text-right ml-4">
-                    <p className={`font-semibold ${tx.amount > 0 ? 'text-success-600' : 'text-danger-600'}`}>
-                      {tx.amount > 0 ? '+' : ''}{tx.amount}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Balance: {(tx.subscriptionBalance || 0) + (tx.topOffBalance || 0)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                </List.Item>
+              )}
+            />
           )}
-        </CardContent>
-      </Card>
-    </PageContainer>
+        </Card>
+      </Space>
+    </div>
   );
 }
