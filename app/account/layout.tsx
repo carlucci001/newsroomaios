@@ -46,6 +46,12 @@ function AccountLayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    // Skip auth check for login page
+    if (pathname === '/account/login') {
+      setLoading(false);
+      return;
+    }
+
     const auth = getAuthInstance();
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -61,13 +67,18 @@ function AccountLayoutContent({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, pathname]);
 
   const handleSignOut = async () => {
     const auth = getAuthInstance();
     await signOut(auth);
     router.push('/account/login');
   };
+
+  // For login page, just render children without layout
+  if (pathname === '/account/login') {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (
