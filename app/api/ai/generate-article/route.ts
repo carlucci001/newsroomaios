@@ -171,6 +171,9 @@ export async function POST(request: NextRequest) {
     // Parse the response
     const parsedArticle = parseArticleResponse(aiResponse, body.sourceContent);
 
+    // Get database reference for slug uniqueness check
+    const db = getDb();
+
     // CRITICAL FIX: Ensure slug uniqueness by checking database
     let finalSlug = parsedArticle.slug;
     let slugAttempt = 0;
@@ -217,7 +220,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Store the generated article in Firestore
-    const db = getDb();
     const articleData = {
       tenantId: tenant.id,
       title: parsedArticle.title,
