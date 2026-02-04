@@ -20,20 +20,20 @@ const PLANS = [
     id: 'starter',
     name: 'Starter',
     price: 99,
-    features: ['250 AI credits/month', 'Up to 25 articles/month', 'Basic analytics', 'Email support'],
+    features: ['250 AI credits/month', 'Up to 50 articles/month', 'Basic analytics', 'Email support'],
   },
   {
     id: 'growth',
     name: 'Growth',
     price: 199,
-    features: ['575 AI credits/month', 'Up to 55 articles/month', 'Advanced analytics', 'Priority support', 'Custom branding'],
+    features: ['575 AI credits/month', 'Up to 115 articles/month', 'Advanced analytics', 'Priority support', 'Custom branding'],
     recommended: true,
   },
   {
     id: 'professional',
     name: 'Professional',
     price: 299,
-    features: ['1,000 AI credits/month', 'Up to 100 articles/month', 'Full analytics suite', 'Dedicated support', 'AI banner generation'],
+    features: ['1,000 AI credits/month', 'Up to 200 articles/month', 'Full analytics suite', 'Dedicated support', 'AI banner generation'],
   },
 ];
 

@@ -78,8 +78,8 @@ export interface CreditTransaction {
 
 // Credit costs for different operations
 export const CREDIT_COSTS = {
-  article_generation: 10,          // Per article
-  image_generation: 5,             // Per image
+  article_generation: 5,           // Per article (AI article with 1 image)
+  image_generation: 2,             // Additional standard AI image
   fact_check: 2,                   // Per fact check
   seo_optimization: 3,             // Per SEO pass
   web_search: 1,                   // Per search query
@@ -96,7 +96,7 @@ export const DEFAULT_PLANS: CreditPlan[] = [
     features: [
       '250 AI credits/month',
       '1 AI journalist',
-      '25 articles/month',
+      '50 articles/month',
       'Email support',
       'Basic analytics',
     ],
@@ -113,7 +113,7 @@ export const DEFAULT_PLANS: CreditPlan[] = [
     features: [
       '575 AI credits/month',
       '3 AI journalists',
-      '55 articles/month',
+      '115 articles/month',
       'Priority support',
       'Advanced analytics',
       'Custom branding',
@@ -131,7 +131,7 @@ export const DEFAULT_PLANS: CreditPlan[] = [
     features: [
       '1,000 AI credits/month',
       '6 AI journalists',
-      '100 articles/month',
+      '200 articles/month',
       'Dedicated support',
       'Full analytics suite',
       'Custom integrations',

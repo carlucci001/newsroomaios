@@ -4,8 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 const PRICING = {
   setup: 19900, // $199 one-time setup fee
   starter: 9900, // $99/mo
-  professional: 19900, // $199/mo
-  enterprise: 29900, // $299/mo
+  growth: 19900, // $199/mo
+  professional: 29900, // $299/mo
 };
 
 // Helper to make Stripe REST API calls directly (bypasses SDK connection issues)

@@ -116,7 +116,7 @@ export default function PricingPage() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Up to 25 articles/month</span>
+                    <span className="text-sm">Up to 50 articles/month</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -172,7 +172,7 @@ export default function PricingPage() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm font-semibold">Up to 55 articles/month</span>
+                    <span className="text-sm font-semibold">Up to 115 articles/month</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -225,7 +225,7 @@ export default function PricingPage() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm font-semibold">Up to 100 articles/month</span>
+                    <span className="text-sm font-semibold">Up to 200 articles/month</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -370,9 +370,9 @@ export default function PricingPage() {
                 </tr>
                 <tr className="bg-muted/30">
                   <td className="py-4 px-6 font-medium">Articles per Month</td>
-                  <td className="py-4 px-6 text-center text-muted-foreground">25</td>
-                  <td className="py-4 px-6 text-center text-brand-blue-600 font-semibold">55</td>
-                  <td className="py-4 px-6 text-center">100</td>
+                  <td className="py-4 px-6 text-center text-muted-foreground">50</td>
+                  <td className="py-4 px-6 text-center text-brand-blue-600 font-semibold">115</td>
+                  <td className="py-4 px-6 text-center">200</td>
                   <td className="py-4 px-6 text-center">Unlimited</td>
                 </tr>
                 <tr>
