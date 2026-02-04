@@ -79,6 +79,8 @@ export interface Tenant {
   createdAt: Date;
   trialEndsAt?: Date;
   lastUpdatedAt?: Date;
+  seedingStartedAt?: Date;     // When seeding process began
+  seededAt?: Date;              // When seeding completed
 
   // Branding (optional)
   settings?: {

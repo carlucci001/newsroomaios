@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
       serviceArea: tenant.serviceArea,
       ownerEmail: tenant.ownerEmail,
       categories: tenant.categories,
+      apiKey: tenant.apiKey, // OPTION C: Pass tenant's API key for calling platform
     });
 
     if (!result.success) {

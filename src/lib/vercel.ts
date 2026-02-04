@@ -43,6 +43,7 @@ interface DeployTenantOptions {
   };
   ownerEmail: string;
   categories: Array<{ id: string; name: string; color: string }>;
+  apiKey: string; // Tenant's API key for calling platform APIs
 }
 
 interface DeploymentResult {
@@ -221,7 +222,7 @@ class VercelService {
    * Full deployment flow for a new tenant
    */
   async deployTenant(options: DeployTenantOptions): Promise<DeploymentResult> {
-    const { tenantId, slug, businessName, serviceArea, ownerEmail, categories } = options;
+    const { tenantId, slug, businessName, serviceArea, ownerEmail, categories, apiKey } = options;
 
     console.log(`[Vercel] Starting deployment for tenant: ${slug}`);
 
@@ -255,21 +256,19 @@ class VercelService {
       FIREBASE_ADMIN_CLIENT_EMAIL: process.env.FIREBASE_ADMIN_CLIENT_EMAIL || '',
       FIREBASE_ADMIN_PRIVATE_KEY: process.env.FIREBASE_ADMIN_PRIVATE_KEY || '',
 
-      // Shared AI API Keys (platform pays, tenants use)
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-      PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY || '',
-      PEXELS_API_KEY: process.env.PEXELS_API_KEY || '',
-      ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || '',
-      GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY || '',
+      // OPTION C: Tenants NO LONGER receive AI API keys
+      // They call platform API which uses platform's keys
+      // (Removed: GEMINI_API_KEY, PERPLEXITY_API_KEY, PEXELS_API_KEY, etc.)
 
       // Tenant-specific config
       NEXT_PUBLIC_SITE_NAME: businessName,
       NEXT_PUBLIC_SERVICE_AREA_CITY: serviceArea.city,
       NEXT_PUBLIC_SERVICE_AREA_STATE: serviceArea.state,
 
-      // Platform connection
-      PLATFORM_SECRET: process.env.PLATFORM_SECRET || '',
+      // Platform connection (OPTION C: Centralized API)
       PLATFORM_API_URL: process.env.NEXT_PUBLIC_BASE_URL || 'https://newsroomaios.com',
+      TENANT_API_KEY: apiKey, // Unique key for this tenant to call platform APIs
+      PLATFORM_SECRET: process.env.PLATFORM_SECRET || '', // For internal platform calls
     };
 
     const envSet = await this.setEnvVars(project.id, envVars);

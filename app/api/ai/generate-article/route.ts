@@ -13,6 +13,26 @@ import { CREDIT_COSTS } from '@/types/credits';
 // Platform secret for internal calls
 const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
 
+// CORS headers for tenant domains
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*', // Allow all tenant domains
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Tenant-ID, X-API-Key, X-Platform-Secret',
+  'Access-Control-Max-Age': '86400', // 24 hours
+};
+
+/**
+ * OPTIONS /api/ai/generate-article
+ *
+ * Handle CORS preflight requests from tenant domains
+ */
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: CORS_HEADERS,
+  });
+}
+
 /**
  * POST /api/ai/generate-article
  *
@@ -32,7 +52,7 @@ export async function POST(request: NextRequest) {
     if (!authResult.valid) {
       return NextResponse.json(
         { success: false, error: authResult.error },
-        { status: 401 }
+        { status: 401, headers: CORS_HEADERS }
       );
     }
 
@@ -43,14 +63,14 @@ export async function POST(request: NextRequest) {
     if (!body.categoryId) {
       return NextResponse.json(
         { success: false, error: 'categoryId is required' },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
     if (!body.sourceContent && !body.useWebSearch) {
       return NextResponse.json(
         { success: false, error: 'Either sourceContent or useWebSearch must be provided' },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
@@ -59,7 +79,7 @@ export async function POST(request: NextRequest) {
     if (!category) {
       return NextResponse.json(
         { success: false, error: `Category not found: ${body.categoryId}` },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
@@ -94,7 +114,7 @@ export async function POST(request: NextRequest) {
         } else {
           return NextResponse.json(
             { success: false, error: validation.reason },
-            { status: 400 }
+            { status: 400, headers: CORS_HEADERS }
           );
         }
       }
@@ -115,7 +135,7 @@ export async function POST(request: NextRequest) {
           creditsRequired: creditsNeeded,
           creditsRemaining: creditCheck.creditsRemaining,
         },
-        { status: 402 }
+        { status: 402, headers: CORS_HEADERS }
       );
     }
 
@@ -151,6 +171,34 @@ export async function POST(request: NextRequest) {
     // Parse the response
     const parsedArticle = parseArticleResponse(aiResponse, body.sourceContent);
 
+    // CRITICAL FIX: Ensure slug uniqueness by checking database
+    let finalSlug = parsedArticle.slug;
+    let slugAttempt = 0;
+    const maxSlugAttempts = 5;
+
+    while (slugAttempt < maxSlugAttempts) {
+      const existingArticleSnap = await db
+        .collection(`tenants/${tenant.id}/articles`)
+        .where('slug', '==', finalSlug)
+        .limit(1)
+        .get();
+
+      if (existingArticleSnap.empty) {
+        // Slug is unique, we're good
+        break;
+      }
+
+      // Slug collision detected, add entropy
+      slugAttempt++;
+      const randomSuffix = Math.random().toString(36).substring(2, 7);
+      finalSlug = `${parsedArticle.slug}-${randomSuffix}`;
+      console.log(`[Generate] Slug collision detected, trying: ${finalSlug}`);
+    }
+
+    if (slugAttempt >= maxSlugAttempts) {
+      throw new Error('Failed to generate unique slug after multiple attempts');
+    }
+
     // Generate featured image (Pexels first, then Gemini AI fallback)
     let imageResult: { url: string; attribution?: string; method: 'pexels' | 'unsplash' | 'gemini' | 'none' | 'failed' } = { url: '', method: 'none' };
     if (body.generateImage !== false) {
@@ -175,7 +223,7 @@ export async function POST(request: NextRequest) {
       title: parsedArticle.title,
       content: parsedArticle.content,
       excerpt: parsedArticle.excerpt,
-      slug: parsedArticle.slug,
+      slug: finalSlug,
       tags: parsedArticle.tags,
       category: category.slug || category.id,  // Use slug for URL compatibility
       categoryId: category.id,
@@ -227,7 +275,7 @@ export async function POST(request: NextRequest) {
         content: parsedArticle.content,
         excerpt: parsedArticle.excerpt,
         tags: parsedArticle.tags,
-        slug: parsedArticle.slug,
+        slug: finalSlug,
         imageUrl: imageResult.url || undefined,
         imageAttribution: imageResult.attribution,
       },
@@ -237,9 +285,13 @@ export async function POST(request: NextRequest) {
       model: tenant.aiSettings?.defaultModel || 'gemini-2.0-flash',
     };
 
-    return NextResponse.json(response);
+    // Add CORS headers to success response
+    return NextResponse.json(response, {
+      headers: CORS_HEADERS,
+    });
   } catch (error) {
     console.error('[Generate Article] Error:', error);
+    // Add CORS headers to error response
     return NextResponse.json(
       {
         success: false,
@@ -249,7 +301,10 @@ export async function POST(request: NextRequest) {
         creditsUsed: 0,
         creditsRemaining: 0,
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: CORS_HEADERS,
+      }
     );
   }
 }
