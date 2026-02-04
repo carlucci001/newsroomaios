@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -16,18 +16,6 @@ export default function AccountLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [initError, setInitError] = useState<string | null>(null);
-
-  // Validate Firebase configuration on mount
-  useEffect(() => {
-    try {
-      getAuthInstance();
-      console.log('Firebase Auth ready');
-    } catch (err: any) {
-      console.error('Firebase initialization error:', err);
-      setInitError(err.message || 'Failed to initialize authentication');
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +28,11 @@ export default function AccountLogin() {
       router.push('/account');
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Failed to sign in');
+      if (err.message?.includes('configuration') || err.message?.includes('Missing')) {
+        setError('Service configuration error. Please contact support.');
+      } else {
+        setError(err.message || 'Failed to sign in');
+      }
     } finally {
       setLoading(false);
     }
@@ -66,13 +58,6 @@ export default function AccountLogin() {
         {/* Login Card */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {initError && (
-              <div className="bg-danger-50 border border-danger-200 rounded-lg p-4">
-                <p className="text-sm font-semibold text-danger-700 mb-1">Configuration Error</p>
-                <p className="text-sm text-danger-700">{initError}</p>
-                <p className="text-xs text-danger-600 mt-2">Please contact support if this persists.</p>
-              </div>
-            )}
             {error && (
               <div className="bg-danger-50 border border-danger-200 rounded-lg p-4">
                 <p className="text-sm text-danger-700">{error}</p>
@@ -117,9 +102,9 @@ export default function AccountLogin() {
               type="submit"
               variant="primary"
               className="w-full"
-              disabled={loading || !!initError}
+              disabled={loading}
             >
-              {loading ? 'Signing in...' : initError ? 'Service Unavailable' : 'Sign in'}
+              {loading ? 'Signing in...' : 'Sign in'}
             </Button>
           </form>
 
