@@ -43,7 +43,10 @@ export function AnalyticsChart({
   const defaultValueFormatter = (value: number) =>
     `${Intl.NumberFormat('us').format(value).toString()}`;
 
-  const formatter = valueFormatter || defaultValueFormatter;
+  const formatter = (value: number | undefined): string => {
+    if (value === undefined) return '';
+    return valueFormatter ? valueFormatter(value) : defaultValueFormatter(value);
+  };
   const chartColors = colors || CHART_COLORS;
 
   return (
