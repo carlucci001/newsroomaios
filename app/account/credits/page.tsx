@@ -18,7 +18,6 @@ import {
   Space,
   Tag,
   Spin,
-  List,
   Empty,
 } from 'antd';
 import {
@@ -289,49 +288,56 @@ export default function CreditsPage() {
               }
             />
           ) : (
-            <List
-              dataSource={transactions}
-              renderItem={(tx) => (
-                <List.Item>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ marginBottom: '4px' }}>
-                        <Tag
-                          color={
-                            tx.type === 'usage' ? 'error' :
-                            tx.type === 'subscription' ? 'success' :
-                            tx.type === 'topoff' ? 'processing' :
-                            'default'
-                          }
-                        >
-                          {tx.type}
-                        </Tag>
-                        {tx.feature && (
-                          <Text type="secondary" style={{ fontSize: '12px', marginLeft: '8px' }}>
-                            {tx.feature}
-                          </Text>
-                        )}
-                      </div>
-                      <Text>{tx.description}</Text>
-                      <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '4px' }}>
-                        {tx.createdAt instanceof Date
-                          ? tx.createdAt.toLocaleString()
-                          : new Date(tx.createdAt).toLocaleString()
+            <Space vertical size="small" style={{ width: '100%' }}>
+              {transactions.map((tx) => (
+                <div
+                  key={tx.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    width: '100%',
+                    padding: '12px 0',
+                    borderBottom: '1px solid #f0f0f0'
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ marginBottom: '4px' }}>
+                      <Tag
+                        color={
+                          tx.type === 'usage' ? 'error' :
+                          tx.type === 'subscription' ? 'success' :
+                          tx.type === 'topoff' ? 'processing' :
+                          'default'
                         }
-                      </Text>
+                      >
+                        {tx.type}
+                      </Tag>
+                      {tx.feature && (
+                        <Text type="secondary" style={{ fontSize: '12px', marginLeft: '8px' }}>
+                          {tx.feature}
+                        </Text>
+                      )}
                     </div>
-                    <div style={{ textAlign: 'right', marginLeft: '16px' }}>
-                      <Text strong style={{ color: tx.amount > 0 ? '#52c41a' : '#ff4d4f' }}>
-                        {tx.amount > 0 ? '+' : ''}{tx.amount}
-                      </Text>
-                      <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
-                        Balance: {(tx.subscriptionBalance || 0) + (tx.topOffBalance || 0)}
-                      </Text>
-                    </div>
+                    <Text>{tx.description}</Text>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      {tx.createdAt instanceof Date
+                        ? tx.createdAt.toLocaleString()
+                        : new Date(tx.createdAt).toLocaleString()
+                      }
+                    </Text>
                   </div>
-                </List.Item>
-              )}
-            />
+                  <div style={{ textAlign: 'right', marginLeft: '16px' }}>
+                    <Text strong style={{ color: tx.amount > 0 ? '#52c41a' : '#ff4d4f' }}>
+                      {tx.amount > 0 ? '+' : ''}{tx.amount}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
+                      Balance: {(tx.subscriptionBalance || 0) + (tx.topOffBalance || 0)}
+                    </Text>
+                  </div>
+                </div>
+              ))}
+            </Space>
           )}
         </Card>
       </Space>
