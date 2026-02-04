@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { AlertCircle, Loader2, Newspaper } from 'lucide-react';
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -39,101 +42,98 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 px-4">
       {/* Logo */}
       <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-white">
-          <span className="text-blue-400">Newsroom</span> AIOS
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm mb-4">
+          <Newspaper className="w-8 h-8 text-white" />
+        </div>
+        <h1 className="text-4xl font-bold text-white mb-2">
+          Newsroom AIOS
         </h1>
-        <p className="text-gray-400 mt-2">Platform Administration</p>
+        <Badge variant="default" className="bg-white/20 text-white border-white/30">
+          Platform Administration
+        </Badge>
       </div>
 
       {/* Login Card */}
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900">Admin Login</h2>
-          <p className="text-gray-500 mt-1">Sign in to manage the platform</p>
-        </div>
+      <Card className="w-full max-w-md shadow-2xl">
+        <CardHeader className="text-center space-y-2">
+          <CardTitle className="text-2xl">Admin Login</CardTitle>
+          <CardDescription>Sign in to manage the platform</CardDescription>
+        </CardHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="admin@newsroomaios.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="h-12"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="h-12"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
-          >
-            {loading ? (
-              <span className="flex items-center">
-                <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Signing in...
-              </span>
-            ) : (
-              'Sign In'
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-danger-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-danger-600">{error}</p>
+              </div>
             )}
-          </Button>
-        </form>
 
-        <div className="mt-6 text-center">
-          <a href="/" className="text-sm text-gray-500 hover:text-gray-700">
-            Back to homepage
-          </a>
-        </div>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="admin@newsroomaios.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-12"
+                disabled={loading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="h-12"
+                disabled={loading}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12"
+              variant="primary"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Signing in...
+                </span>
+              ) : (
+                'Sign In'
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <a
+              href="/"
+              className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              Back to homepage
+            </a>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Footer */}
-      <p className="mt-8 text-sm text-gray-500">
-        Paper Partner Program by Newsroom AIOS
-      </p>
+      <div className="mt-8 text-center">
+        <p className="text-sm text-white/70">
+          Paper Partner Program by Newsroom AIOS
+        </p>
+      </div>
     </div>
   );
 }

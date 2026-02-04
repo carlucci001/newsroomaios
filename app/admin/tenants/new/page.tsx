@@ -7,10 +7,15 @@ import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
 import { DEFAULT_PLANS } from '@/types/credits';
 import { createDefaultJournalists, createDefaultContentSources } from '@/types/aiJournalist';
+import { PageContainer } from '@/components/layouts/PageContainer';
+import { PageHeader } from '@/components/layouts/PageHeader';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { ArrowLeft, Info, Building2, Globe, Mail, MapPin, CreditCard, Clock } from 'lucide-react';
 
 const DEFAULT_CATEGORIES = [
   { id: 'local-news', name: 'Local News', slug: 'local-news', directive: 'Local community news and events', enabled: true },
@@ -129,34 +134,42 @@ export default function NewTenantPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/admin/tenants" className="text-gray-400 hover:text-gray-600">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-        </Link>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Add New Newspaper</h2>
-          <p className="text-gray-500">Provision a new tenant for the Paper Partner Program</p>
-        </div>
-      </div>
+    <PageContainer maxWidth="lg">
+      <PageHeader
+        title="Add New Newspaper"
+        subtitle="Provision a new tenant for the Paper Partner Program"
+        action={
+          <Link href="/admin/tenants">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Form */}
-      <form onSubmit={createTenant} className="bg-white rounded-xl border shadow-sm p-6 space-y-6">
+      <form onSubmit={createTenant} className="space-y-6">
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
+          <Card className="border-danger-200 bg-danger-50">
+            <CardContent className="pt-6">
+              <p className="text-sm text-danger-600">{error}</p>
+            </CardContent>
+          </Card>
         )}
 
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Newspaper Details</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <Label htmlFor="businessName">Newspaper Name *</Label>
+        {/* Newspaper Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Newspaper Details</CardTitle>
+            <CardDescription>Basic information about the newspaper</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="businessName" className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-gray-400" />
+                Newspaper Name *
+              </Label>
               <Input
                 id="businessName"
                 value={form.businessName}
@@ -167,8 +180,11 @@ export default function NewTenantPage() {
               />
             </div>
 
-            <div className="md:col-span-2">
-              <Label htmlFor="domain">Domain *</Label>
+            <div>
+              <Label htmlFor="domain" className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-gray-400" />
+                Domain *
+              </Label>
               <Input
                 id="domain"
                 value={form.domain}
@@ -182,8 +198,11 @@ export default function NewTenantPage() {
               </p>
             </div>
 
-            <div className="md:col-span-2">
-              <Label htmlFor="ownerEmail">Owner Email *</Label>
+            <div>
+              <Label htmlFor="ownerEmail" className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-gray-400" />
+                Owner Email *
+              </Label>
               <Input
                 id="ownerEmail"
                 type="email"
@@ -194,103 +213,135 @@ export default function NewTenantPage() {
                 className="mt-1"
               />
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="space-y-4 pt-6 border-t">
-          <h3 className="text-lg font-semibold text-gray-900">Service Area</h3>
+        {/* Service Area */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Service Area</CardTitle>
+            <CardDescription>Geographic coverage region</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="city" className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  City *
+                </Label>
+                <Input
+                  id="city"
+                  value={form.city}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  placeholder="Mountain View"
+                  required
+                  className="mt-1"
+                />
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="city">City *</Label>
-              <Input
-                id="city"
-                value={form.city}
-                onChange={(e) => setForm({ ...form, city: e.target.value })}
-                placeholder="Mountain View"
-                required
-                className="mt-1"
-              />
+              <div>
+                <Label htmlFor="state">State *</Label>
+                <Input
+                  id="state"
+                  value={form.state}
+                  onChange={(e) => setForm({ ...form, state: e.target.value })}
+                  placeholder="CA"
+                  required
+                  className="mt-1"
+                />
+              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div>
-              <Label htmlFor="state">State *</Label>
-              <Input
-                id="state"
-                value={form.state}
-                onChange={(e) => setForm({ ...form, state: e.target.value })}
-                placeholder="CA"
-                required
-                className="mt-1"
-              />
+        {/* Subscription */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Subscription</CardTitle>
+            <CardDescription>Plan and trial configuration</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="planId" className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-gray-400" />
+                  Plan
+                </Label>
+                <select
+                  id="planId"
+                  value={form.planId}
+                  onChange={(e) => setForm({ ...form, planId: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                  {DEFAULT_PLANS.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} - ${plan.pricePerMonth}/mo ({plan.monthlyCredits.toLocaleString()} credits)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="trialDays" className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-gray-400" />
+                  Trial Period (days)
+                </Label>
+                <Input
+                  id="trialDays"
+                  type="number"
+                  value={form.trialDays}
+                  onChange={(e) => setForm({ ...form, trialDays: parseInt(e.target.value) })}
+                  min={0}
+                  max={90}
+                  className="mt-1"
+                />
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="space-y-4 pt-6 border-t">
-          <h3 className="text-lg font-semibold text-gray-900">Subscription</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="planId">Plan</Label>
-              <select
-                id="planId"
-                value={form.planId}
-                onChange={(e) => setForm({ ...form, planId: e.target.value })}
-                className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3"
-              >
-                {DEFAULT_PLANS.map((plan) => (
-                  <option key={plan.id} value={plan.id}>
-                    {plan.name} - ${plan.pricePerMonth}/mo ({plan.monthlyCredits.toLocaleString()} credits)
-                  </option>
-                ))}
-              </select>
+        {/* Info Card */}
+        <Card className="border-brand-200 bg-brand-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-brand-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-brand-900 mb-2">What happens automatically?</p>
+                <ul className="text-sm text-brand-800 space-y-1">
+                  <li className="flex items-start gap-2">
+                    <span className="text-brand-600 mt-1">•</span>
+                    <span>Tenant created with credits allocated</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-brand-600 mt-1">•</span>
+                    <span>6 AI journalists auto-provisioned (one per category)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-brand-600 mt-1">•</span>
+                    <span>Content sources configured for their location</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-brand-600 mt-1">•</span>
+                    <span>Master cron will start generating articles immediately</span>
+                  </li>
+                </ul>
+              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div>
-              <Label htmlFor="trialDays">Trial Period (days)</Label>
-              <Input
-                id="trialDays"
-                type="number"
-                value={form.trialDays}
-                onChange={(e) => setForm({ ...form, trialDays: parseInt(e.target.value) })}
-                min={0}
-                max={90}
-                className="mt-1"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-6 border-t flex justify-end gap-4">
+        {/* Actions */}
+        <div className="flex justify-end gap-4">
           <Link href="/admin/tenants">
             <Button type="button" variant="outline">
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+          <Button type="submit" disabled={loading} variant="primary">
             {loading ? 'Creating...' : 'Create Newspaper'}
           </Button>
         </div>
       </form>
-
-      {/* Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start">
-          <svg className="w-5 h-5 text-blue-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p className="text-sm font-medium text-blue-800">What happens automatically?</p>
-            <ul className="text-sm text-blue-700 mt-1 list-disc list-inside">
-              <li>Tenant created with credits allocated</li>
-              <li>6 AI journalists auto-provisioned (one per category)</li>
-              <li>Content sources configured for their location</li>
-              <li>Master cron will start generating articles immediately</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
+    </PageContainer>
   );
 }

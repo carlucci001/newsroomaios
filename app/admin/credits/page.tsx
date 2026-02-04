@@ -1,12 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, doc, updateDoc, addDoc, query, where, orderBy, limit, runTransaction } from 'firebase/firestore';
+import { collection, getDocs, doc, runTransaction } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
+import { PageContainer } from '@/components/layouts/PageContainer';
+import { PageHeader } from '@/components/layouts/PageHeader';
+import { StatCard } from '@/components/ui/stat-card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Coins, TrendingUp, TriangleAlert, Plus, Activity } from 'lucide-react';
 
 // Credit costs for display (from the new system)
 const CREDIT_COSTS = {
@@ -46,7 +52,6 @@ interface CreditOverview {
   totalTransactions: number;
 }
 
-
 export default function CreditsPage() {
   const [tenants, setTenants] = useState<TenantWithCredits[]>([]);
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
@@ -84,12 +89,7 @@ export default function CreditsPage() {
 
       // Fetch recent credit transactions
       try {
-        const transactionsQuery = query(
-          collection(db, 'creditTransactions'),
-          orderBy('createdAt', 'desc'),
-          limit(100)
-        );
-        const transactionsSnap = await getDocs(transactionsQuery);
+        const transactionsSnap = await getDocs(collection(db, 'creditTransactions'));
         const transactionsData = transactionsSnap.docs.map((docSnap) => {
           const data = docSnap.data();
           return {
@@ -98,10 +98,9 @@ export default function CreditsPage() {
             createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
           } as CreditTransaction;
         });
-        setTransactions(transactionsData);
+        setTransactions(transactionsData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 100));
       } catch (e) {
         console.error('Error fetching transactions:', e);
-        // Collection might not exist yet
       }
     } catch (error) {
       console.error('Failed to fetch credit data:', error);
@@ -189,13 +188,6 @@ export default function CreditsPage() {
     totalTransactions: transactions.length,
   };
 
-  // Group transactions by tenant
-  const transactionsByTenant = transactions.reduce((acc, t) => {
-    if (!acc[t.tenantId]) acc[t.tenantId] = [];
-    acc[t.tenantId].push(t);
-    return acc;
-  }, {} as Record<string, CreditTransaction[]>);
-
   // Group usage by feature type
   const usageByFeature = transactions
     .filter((t) => t.type === 'usage' && t.feature)
@@ -210,287 +202,287 @@ export default function CreditsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Credit Management</h2>
-          <p className="text-gray-500">Monitor and manage tenant credit usage</p>
-        </div>
-        <Button
-          onClick={() => setShowAdjustModal(true)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Adjust Credits
-        </Button>
-      </div>
+    <PageContainer maxWidth="2xl">
+      <PageHeader
+        title="Credit Management"
+        subtitle="Monitor and manage tenant credit usage"
+        action={
+          <Button variant="primary" onClick={() => setShowAdjustModal(true)}>
+            <Plus className="w-4 h-4" />
+            Adjust Credits
+          </Button>
+        }
+      />
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white rounded-xl border p-6">
-          <p className="text-sm text-gray-500 mb-1">Subscription Credits</p>
-          <p className="text-2xl font-bold text-blue-600">{overview.totalSubscription.toLocaleString()}</p>
-          <p className="text-xs text-gray-400 mt-1">Monthly allocation</p>
-        </div>
-        <div className="bg-white rounded-xl border p-6">
-          <p className="text-sm text-gray-500 mb-1">Top-Off Credits</p>
-          <p className="text-2xl font-bold text-purple-600">{overview.totalTopOff.toLocaleString()}</p>
-          <p className="text-xs text-gray-400 mt-1">Purchased credits</p>
-        </div>
-        <div className="bg-white rounded-xl border p-6">
-          <p className="text-sm text-gray-500 mb-1">Total Available</p>
-          <p className="text-2xl font-bold text-green-600">{overview.totalCredits.toLocaleString()}</p>
-          <p className="text-xs text-gray-400 mt-1">All credits</p>
-        </div>
-        <div className="bg-white rounded-xl border p-6">
-          <p className="text-sm text-gray-500 mb-1">Low Credit Tenants</p>
-          <p className={`text-2xl font-bold ${overview.tenantsLowCredits > 0 ? 'text-red-600' : 'text-gray-900'}`}>
-            {overview.tenantsLowCredits}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">Below 50 credits</p>
-        </div>
-        <div className="bg-white rounded-xl border p-6">
-          <p className="text-sm text-gray-500 mb-1">Transactions</p>
-          <p className="text-2xl font-bold text-gray-900">{overview.totalTransactions.toLocaleString()}</p>
-          <p className="text-xs text-gray-400 mt-1">Recent activity</p>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <StatCard
+          label="Subscription Credits"
+          value={overview.totalSubscription.toLocaleString()}
+          subValue="monthly allocation"
+          icon={<Coins className="w-6 h-6" />}
+          color="brand"
+        />
+
+        <StatCard
+          label="Top-Off Credits"
+          value={overview.totalTopOff.toLocaleString()}
+          subValue="purchased credits"
+          icon={<TrendingUp className="w-6 h-6" />}
+          color="success"
+        />
+
+        <StatCard
+          label="Total Available"
+          value={overview.totalCredits.toLocaleString()}
+          subValue="all credits"
+          icon={<Coins className="w-6 h-6" />}
+          color="gray"
+        />
+
+        <StatCard
+          label="Low Credit Tenants"
+          value={overview.tenantsLowCredits}
+          subValue="below 50 credits"
+          icon={<TriangleAlert className="w-6 h-6" />}
+          color={overview.tenantsLowCredits > 0 ? 'danger' : 'success'}
+        />
+
+        <StatCard
+          label="Transactions"
+          value={overview.totalTransactions.toLocaleString()}
+          subValue="recent activity"
+          icon={<Activity className="w-6 h-6" />}
+          color="gray"
+        />
       </div>
 
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Tenant Credit Balances */}
-        <div className="bg-white rounded-xl border shadow-sm">
-          <div className="px-6 py-4 border-b">
-            <h3 className="text-lg font-semibold text-gray-900">Tenant Balances</h3>
-          </div>
-          <div className="divide-y max-h-[500px] overflow-y-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Tenant Balances</CardTitle>
+            <CardDescription>Credit status across all newspapers</CardDescription>
+          </CardHeader>
+          <CardContent className="max-h-[500px] overflow-y-auto">
             {tenants.length === 0 ? (
-              <div className="px-6 py-12 text-center text-gray-500">
+              <div className="text-center py-12 text-gray-500">
                 No tenants yet
               </div>
             ) : (
-              tenants
-                .sort((a, b) => a.totalCredits - b.totalCredits)
-                .map((tenant) => {
-                  const status = tenant.totalCredits === 0 ? 'exhausted' : tenant.totalCredits < 50 ? 'warning' : 'active';
-                  return (
-                    <div key={tenant.id} className="px-6 py-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {tenant.businessName || tenant.id}
-                          </p>
-                          <div className="text-sm text-gray-500 space-y-0.5">
-                            <div>Subscription: {tenant.subscriptionCredits.toLocaleString()}</div>
-                            <div>Top-off: {tenant.topOffCredits.toLocaleString()}</div>
-                            <div className="font-medium">Total: {tenant.totalCredits.toLocaleString()}</div>
+              <div className="space-y-3">
+                {tenants
+                  .sort((a, b) => a.totalCredits - b.totalCredits)
+                  .map((tenant) => {
+                    const status = tenant.totalCredits === 0 ? 'exhausted' : tenant.totalCredits < 50 ? 'warning' : 'active';
+                    return (
+                      <div key={tenant.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">
+                              {tenant.businessName || tenant.id}
+                            </p>
+                            <div className="text-sm text-gray-500 space-y-0.5 mt-1">
+                              <div>Subscription: {tenant.subscriptionCredits.toLocaleString()}</div>
+                              <div>Top-off: {tenant.topOffCredits.toLocaleString()}</div>
+                              <div className="font-medium">Total: {tenant.totalCredits.toLocaleString()}</div>
+                            </div>
+                          </div>
+                          <div className="text-right ml-4">
+                            <Badge
+                              variant={
+                                status === 'exhausted' ? 'danger' :
+                                status === 'warning' ? 'warning' :
+                                'success'
+                              }
+                            >
+                              {status}
+                            </Badge>
+                            {tenant.plan && (
+                              <div className="text-xs text-gray-400 mt-1 capitalize">{tenant.plan}</div>
+                            )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                              status === 'exhausted'
-                                ? 'bg-red-100 text-red-800'
-                                : status === 'warning'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-green-100 text-green-800'
-                            }`}
-                          >
-                            {status}
-                          </span>
-                          {tenant.plan && (
-                            <div className="text-xs text-gray-400 mt-1">{tenant.plan}</div>
-                          )}
-                        </div>
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+              </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Usage by Feature */}
-        <div className="bg-white rounded-xl border shadow-sm">
-          <div className="px-6 py-4 border-b">
-            <h3 className="text-lg font-semibold text-gray-900">Usage by Feature</h3>
-          </div>
-          <div className="p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Usage by Feature</CardTitle>
+            <CardDescription>Credit consumption breakdown</CardDescription>
+          </CardHeader>
+          <CardContent>
             {Object.keys(usageByFeature).length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
+              <div className="text-center py-12 text-gray-500">
                 No usage data yet
               </div>
             ) : (
-              <div className="space-y-4">
-                {Object.entries(usageByFeature)
-                  .sort(([, a], [, b]) => b.credits - a.credits)
-                  .map(([feature, data]) => (
-                    <div key={feature} className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div
-                          className={`w-3 h-3 rounded-full mr-3 ${
-                            feature === 'article'
-                              ? 'bg-blue-500'
-                              : feature === 'image' || feature === 'image_hd'
-                              ? 'bg-purple-500'
-                              : feature === 'tts'
-                              ? 'bg-green-500'
-                              : feature === 'agent'
-                              ? 'bg-yellow-500'
-                              : 'bg-gray-500'
-                          }`}
-                        ></div>
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {feature.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-                          </p>
-                          <p className="text-sm text-gray-500">{data.count} operations</p>
+              <>
+                <div className="space-y-4">
+                  {Object.entries(usageByFeature)
+                    .sort(([, a], [, b]) => b.credits - a.credits)
+                    .map(([feature, data]) => (
+                      <div key={feature} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-3 h-3 rounded-full ${
+                              feature === 'article'
+                                ? 'bg-brand-500'
+                                : feature === 'image' || feature === 'image_hd'
+                                ? 'bg-success-500'
+                                : feature === 'tts'
+                                ? 'bg-warning-500'
+                                : feature === 'agent'
+                                ? 'bg-danger-500'
+                                : 'bg-gray-500'
+                            }`}
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {feature.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                            </p>
+                            <p className="text-sm text-gray-500">{data.count} operations</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-gray-900">{data.credits.toLocaleString()}</p>
+                          <p className="text-sm text-gray-500">credits</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium text-gray-900">{data.credits.toLocaleString()}</p>
-                        <p className="text-sm text-gray-500">credits</p>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
+                    ))}
+                </div>
 
-            {/* Credit Cost Reference */}
-            <div className="mt-8 pt-6 border-t">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Credit Costs</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                {Object.entries(CREDIT_COSTS).map(([feature, cost]) => (
-                  <div key={feature} className="flex justify-between text-gray-600">
-                    <span>{feature.replace(/_/g, ' ')}</span>
-                    <span className="font-medium">{cost} {feature === 'tts' ? 'per 500 chars' : 'credits'}</span>
+                {/* Credit Cost Reference */}
+                <div className="mt-6 pt-6 border-t">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Credit Costs</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {Object.entries(CREDIT_COSTS).map(([feature, cost]) => (
+                      <div key={feature} className="flex justify-between text-gray-600">
+                        <span>{feature.replace(/_/g, ' ')}</span>
+                        <span className="font-medium">{cost} credits</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Recent Activity Log */}
-      <div className="bg-white rounded-xl border shadow-sm">
-        <div className="px-6 py-4 border-b flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-          <span className="text-sm text-gray-500">{transactions.length} recent transactions</span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                  Tenant
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                  Pool
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                  Description
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
-                  Credits
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
-                  Time
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {transactions.length === 0 ? (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+          <CardDescription>{transactions.length} recent transactions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                    No activity recorded yet
-                  </td>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Tenant
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Pool
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                    Credits
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                    Time
+                  </th>
                 </tr>
-              ) : (
-                transactions.slice(0, 20).map((tx) => {
-                  const tenant = tenants.find((t) => t.id === tx.tenantId);
-                  const timestamp = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt?.seconds * 1000 || Date.now());
-                  return (
-                    <tr key={tx.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-3 text-sm text-gray-900">
-                        {tenant?.businessName || tx.tenantId}
-                      </td>
-                      <td className="px-6 py-3">
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                          tx.type === 'usage' ? 'bg-red-100 text-red-800' :
-                          tx.type === 'subscription' ? 'bg-green-100 text-green-800' :
-                          tx.type === 'topoff' ? 'bg-purple-100 text-purple-800' :
-                          tx.type === 'bonus' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {tx.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-sm text-gray-600">
-                        {tx.creditPool || '-'}
-                      </td>
-                      <td className="px-6 py-3 text-sm text-gray-500 max-w-xs truncate">
-                        {tx.description}
-                      </td>
-                      <td className="px-6 py-3 text-sm text-right font-medium">
-                        <span className={tx.amount > 0 ? 'text-green-600' : 'text-red-600'}>
-                          {tx.amount > 0 ? '+' : ''}{tx.amount}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-sm text-right text-gray-500">
-                        {timestamp.toLocaleString()}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </thead>
+              <tbody className="divide-y">
+                {transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                      No activity recorded yet
+                    </td>
+                  </tr>
+                ) : (
+                  transactions.slice(0, 20).map((tx) => {
+                    const tenant = tenants.find((t) => t.id === tx.tenantId);
+                    const timestamp = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt?.seconds * 1000 || Date.now());
+                    return (
+                      <tr key={tx.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-3 text-sm text-gray-900">
+                          {tenant?.businessName || tx.tenantId}
+                        </td>
+                        <td className="px-6 py-3">
+                          <Badge
+                            variant={
+                              tx.type === 'usage' ? 'danger' :
+                              tx.type === 'subscription' ? 'success' :
+                              tx.type === 'topoff' ? 'primary' :
+                              tx.type === 'bonus' ? 'warning' :
+                              'default'
+                            }
+                          >
+                            {tx.type}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-600">
+                          {tx.creditPool || '-'}
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-500 max-w-xs truncate">
+                          {tx.description}
+                        </td>
+                        <td className="px-6 py-3 text-sm text-right font-medium">
+                          <span className={tx.amount > 0 ? 'text-success-600' : 'text-danger-600'}>
+                            {tx.amount > 0 ? '+' : ''}{tx.amount}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-sm text-right text-gray-500">
+                          {timestamp.toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Adjust Credits Modal */}
       {showAdjustModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Adjust Credits</h3>
-              <button
-                onClick={() => {
-                  setShowAdjustModal(false);
-                  setSelectedTenant('');
-                  setAdjustAmount('');
-                  setAdjustReason('');
-                  setAdjustPool('topoff');
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle>Adjust Credits</CardTitle>
+              <CardDescription>Add or deduct credits from a tenant</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="tenant">Select Tenant</Label>
                 <select
                   id="tenant"
                   value={selectedTenant}
                   onChange={(e) => setSelectedTenant(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="">Choose a tenant...</option>
                   {tenants.map((tenant) => (
@@ -507,14 +499,11 @@ export default function CreditsPage() {
                   id="pool"
                   value={adjustPool}
                   onChange={(e) => setAdjustPool(e.target.value as 'subscription' | 'topoff')}
-                  className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="topoff">Top-Off Credits (never expire)</option>
                   <option value="subscription">Subscription Credits (expire monthly)</option>
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Top-off credits never expire; subscription credits reset monthly
-                </p>
               </div>
 
               <div>
@@ -558,17 +547,18 @@ export default function CreditsPage() {
                   Cancel
                 </Button>
                 <Button
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  variant="primary"
+                  className="flex-1"
                   disabled={!selectedTenant || !adjustAmount || adjustLoading}
                   onClick={adjustCredits}
                 >
                   {adjustLoading ? 'Processing...' : 'Apply Adjustment'}
                 </Button>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }
