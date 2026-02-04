@@ -3,6 +3,9 @@ import { getAdminDb, getAdminAuth, generateTempPassword } from '@/lib/firebaseAd
 import { Tenant } from '@/types/tenant';
 import { SetupProgress } from '@/types/setupStatus';
 import { createDefaultJournalists } from '@/types/aiJournalist';
+import { DEFAULT_PLANS } from '@/types/credits';
+import { addSubdomainRecord, isGoDaddyConfigured } from '@/lib/godaddy';
+import { sendWelcomeEmail, isResendConfigured } from '@/lib/resend';
 
 function generateSlug(businessName: string): string {
   return businessName
@@ -19,6 +22,7 @@ export async function POST(request: NextRequest) {
       domain,
       serviceArea,
       selectedCategories,
+      plan,
     } = await request.json();
 
     // Validation
@@ -79,6 +83,39 @@ export async function POST(request: NextRequest) {
     };
 
     await db.collection('tenants').doc(tenantId).set(tenantData);
+
+    // Allocate initial credits based on plan
+    const selectedPlan = DEFAULT_PLANS.find(p => p.id === plan) || DEFAULT_PLANS[0]; // Default to Starter if plan not found
+    const now = new Date();
+    const nextBillingDate = new Date(now);
+    nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+
+    // Add subscription credits to tenant document (dual-pool system)
+    await db.collection('tenants').doc(tenantId).update({
+      plan: selectedPlan.id,
+      subscriptionCredits: selectedPlan.monthlyCredits,
+      topOffCredits: 0,
+      currentBillingStart: now,
+      nextBillingDate: nextBillingDate,
+    });
+
+    // Create initial credit transaction record
+    await db.collection('creditTransactions').add({
+      tenantId: tenantId,
+      type: 'subscription',
+      creditPool: 'subscription',
+      amount: selectedPlan.monthlyCredits,
+      balanceAfter: selectedPlan.monthlyCredits,
+      description: `Initial credit allocation - ${selectedPlan.name} plan (${selectedPlan.monthlyCredits} credits)`,
+      createdAt: now,
+      metadata: {
+        planId: selectedPlan.id,
+        planName: selectedPlan.name,
+        billingCycle: 'monthly',
+      },
+    });
+
+    console.log(`[Tenant Create] Allocated ${selectedPlan.monthlyCredits} credits to ${tenantId} (${selectedPlan.name} plan)`);
 
     // Create admin user account for the tenant
     let adminCredentials: { email: string; temporaryPassword: string; uid?: string } | null = null;
@@ -271,15 +308,15 @@ export async function POST(request: NextRequest) {
     console.log(`[Tenant Create] Seeded ROOT collections for ${tenantId}`);
 
     // Create setup progress document for status tracking
-    const now = new Date();
+    const progressNow = new Date();
     const progressData: SetupProgress = {
       currentStep: 'journalists_created',
       completedSteps: ['account_created', 'payment_received'],
       articlesGenerated: 0,
       totalArticles: 36,
       categoryProgress: {},
-      startedAt: now,
-      lastUpdatedAt: now,
+      startedAt: progressNow,
+      lastUpdatedAt: progressNow,
       errors: [],
     };
 
@@ -322,8 +359,44 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({ tenantId }),
     }).catch(err => console.error('Failed to trigger deployment:', err));
 
+    // Create GoDaddy DNS record for subdomain (runs in parallel with deployment)
+    if (isGoDaddyConfigured()) {
+      addSubdomainRecord(slug)
+        .then(result => {
+          if (result.success) {
+            console.log(`[Tenant Create] DNS record created: ${result.fullDomain}`);
+          } else {
+            console.warn(`[Tenant Create] DNS setup warning: ${result.message}`);
+          }
+        })
+        .catch(err => console.error('[Tenant Create] Failed to create DNS record:', err));
+    } else {
+      console.log('[Tenant Create] GoDaddy not configured - skipping DNS setup');
+    }
+
     // Generate temporary path-based URL (will be replaced by subdomain after deployment)
     const newspaperUrl = `https://${slug}.newsroomaios.com`;
+
+    // Send welcome email with credentials (runs in background)
+    if (isResendConfigured() && adminCredentials) {
+      sendWelcomeEmail({
+        to: ownerEmail,
+        newspaperName: businessName,
+        newspaperUrl,
+        adminEmail: adminCredentials.email,
+        temporaryPassword: adminCredentials.temporaryPassword,
+      })
+        .then(result => {
+          if (result.success) {
+            console.log(`[Tenant Create] Welcome email sent to ${ownerEmail}`);
+          } else {
+            console.warn(`[Tenant Create] Failed to send welcome email: ${result.error}`);
+          }
+        })
+        .catch(err => console.error('[Tenant Create] Email error:', err));
+    } else {
+      console.log('[Tenant Create] Resend not configured or no admin credentials - skipping welcome email');
+    }
 
     return NextResponse.json({
       success: true,
