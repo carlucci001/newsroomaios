@@ -14,6 +14,17 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID?.trim(),
 };
 
+// Validate Firebase configuration
+function validateFirebaseConfig() {
+  const requiredVars = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'] as const;
+  const missing = requiredVars.filter(key => !firebaseConfig[key]);
+
+  if (missing.length > 0) {
+    console.error('Missing Firebase environment variables:', missing.map(k => `NEXT_PUBLIC_FIREBASE_${k.toUpperCase()}`));
+    throw new Error(`Firebase configuration incomplete. Missing: ${missing.join(', ')}`);
+  }
+}
+
 // Lazy initialization - only when needed
 let _app: FirebaseApp | null = null;
 let _db: Firestore | null = null;
@@ -22,7 +33,14 @@ let _storage: FirebaseStorage | null = null;
 
 function getApp(): FirebaseApp {
   if (!_app) {
-    _app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    try {
+      validateFirebaseConfig();
+      _app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+      console.log('Firebase initialized successfully');
+    } catch (error) {
+      console.error('Firebase initialization failed:', error);
+      throw error;
+    }
   }
   return _app;
 }
