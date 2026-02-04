@@ -245,7 +245,7 @@ function AccountLayoutContent({ children }: { children: React.ReactNode }) {
             {/* Menu button - RIGHT SIDE */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center shadow-lg"
+              className="lg:hidden p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center shadow-lg"
               style={{ minWidth: '48px', minHeight: '48px' }}
             >
               <Menu className="w-7 h-7" />

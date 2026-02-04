@@ -35,12 +35,12 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
               <Button variant="ghost" size="sm">Sign In</Button>
             </Link>
             {onGetStarted ? (
-              <Button size="sm" onClick={onGetStarted} className="gap-2 shadow-lg shadow-brand-blue-500/20">
+              <Button size="sm" onClick={onGetStarted} className="gap-2 shadow-lg shadow-brand-blue-500/20 bg-brand-blue-600 text-white hover:bg-brand-blue-700">
                 Get Started <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
               <Link href="/onboarding">
-                <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
+                <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20 bg-brand-blue-600 text-white hover:bg-brand-blue-700">
                   Get Started <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -99,13 +99,13 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
                   onGetStarted();
                   setMobileMenuOpen(false);
                 }}
-                className="gap-2 shadow-lg shadow-brand-blue-500/20 w-full"
+                className="gap-2 shadow-lg shadow-brand-blue-500/20 w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700"
               >
                 Get Started <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
               <Link href="/onboarding" onClick={() => setMobileMenuOpen(false)}>
-                <Button size="lg" className="gap-2 shadow-lg shadow-brand-blue-500/20 w-full">
+                <Button size="lg" className="gap-2 shadow-lg shadow-brand-blue-500/20 w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700">
                   Get Started <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
