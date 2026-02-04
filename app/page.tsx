@@ -611,7 +611,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Up to 50 articles/month</span>
+                    <span className="text-sm">Up to 25 articles/month</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -629,14 +629,14 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            {/* Professional Plan (Most Popular) */}
+            {/* Growth Plan (Most Popular) */}
             <Card className="border-2 border-brand-blue-500 shadow-2xl shadow-brand-blue-500/20 transition-all hover:shadow-brand-blue-500/30 relative overflow-hidden scale-105">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-blue-500 to-brand-blue-600" />
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-brand-blue-500 to-brand-blue-600 text-white text-sm font-semibold rounded-full shadow-lg">
                 Most Popular
               </div>
               <CardHeader className="pb-8 pt-12">
-                <CardTitle className="text-2xl font-display mb-2">Professional</CardTitle>
+                <CardTitle className="text-2xl font-display mb-2">Growth</CardTitle>
                 <CardDescription>For serious publishers</CardDescription>
                 <div className="mt-6">
                   <div className="flex items-baseline gap-2">
@@ -656,7 +656,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm font-semibold">Unlimited articles</span>
+                    <span className="text-sm font-semibold">Up to 55 articles/month</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -668,7 +668,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm font-semibold">Premium newsletter features</span>
+                    <span className="text-sm font-semibold">Custom branding</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -678,48 +678,68 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            {/* Enterprise Plan */}
+            {/* Professional Plan */}
             <Card className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-xl relative overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-blue-600 to-brand-blue-700" />
               <CardHeader className="pb-8 pt-8">
-                <CardTitle className="text-2xl font-display mb-2">Enterprise</CardTitle>
-                <CardDescription>For newspaper networks</CardDescription>
+                <CardTitle className="text-2xl font-display mb-2">Professional</CardTitle>
+                <CardDescription>For high-volume publishers</CardDescription>
                 <div className="mt-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-display font-bold">Custom</span>
+                    <span className="text-5xl font-display font-bold">$299</span>
+                    <span className="text-muted-foreground">/month</span>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full mb-6 hover:bg-brand-blue-50">
-                  Contact Sales
+                <Button variant="outline" onClick={openOnboarding} className="w-full mb-6 hover:bg-brand-blue-50">
+                  Get Started
                 </Button>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Unlimited AI journalists</span>
+                    <span className="text-sm">6 AI journalists</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Multi-newspaper network</span>
+                    <span className="text-sm">Up to 100 articles/month</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Partner advertising network</span>
+                    <span className="text-sm">Full analytics suite</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">White-label options</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Dedicated account manager</span>
+                    <span className="text-sm">AI banner generation</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
                     <span className="text-sm">Custom integrations</span>
                   </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
+                    <span className="text-sm">Dedicated support</span>
+                  </li>
                 </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Enterprise Plan - Full Width */}
+          <div className="max-w-2xl mx-auto mt-8">
+            <Card className="border-2 border-dashed border-brand-blue-300 hover:border-brand-blue-500 transition-all hover:shadow-xl relative overflow-hidden bg-gradient-to-br from-brand-blue-50/50 to-transparent">
+              <CardContent className="p-8">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="text-center md:text-left">
+                    <h3 className="text-2xl font-display font-bold mb-2">Enterprise</h3>
+                    <p className="text-muted-foreground">
+                      Looking to launch multiple newspapers across the country? Our Enterprise plan offers custom solutions for newspaper networks.
+                    </p>
+                  </div>
+                  <Button variant="outline" className="shrink-0 hover:bg-brand-blue-50">
+                    Contact Sales
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>

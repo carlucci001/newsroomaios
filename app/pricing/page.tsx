@@ -116,7 +116,7 @@ export default function PricingPage() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">Up to 50 articles/month</span>
+                    <span className="text-sm">Up to 25 articles/month</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -172,7 +172,7 @@ export default function PricingPage() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm font-semibold">Up to 200 articles/month</span>
+                    <span className="text-sm font-semibold">Up to 55 articles/month</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -225,7 +225,7 @@ export default function PricingPage() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
-                    <span className="text-sm font-semibold">Unlimited articles</span>
+                    <span className="text-sm font-semibold">Up to 100 articles/month</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-brand-blue-600 shrink-0 mt-0.5" />
@@ -260,7 +260,7 @@ export default function PricingPage() {
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-blue-700 to-brand-blue-800" />
               <CardHeader className="pb-8 pt-8">
                 <CardTitle className="text-2xl font-display mb-2">Enterprise</CardTitle>
-                <CardDescription>Multi-paper networks</CardDescription>
+                <CardDescription>Multiple newspapers nationwide</CardDescription>
                 <div className="mt-6">
                   <div className="flex items-baseline gap-2">
                     <span className="text-4xl font-display font-bold">Contact Us</span>
@@ -370,9 +370,9 @@ export default function PricingPage() {
                 </tr>
                 <tr className="bg-muted/30">
                   <td className="py-4 px-6 font-medium">Articles per Month</td>
-                  <td className="py-4 px-6 text-center text-muted-foreground">50</td>
-                  <td className="py-4 px-6 text-center text-brand-blue-600 font-semibold">200</td>
-                  <td className="py-4 px-6 text-center">Unlimited</td>
+                  <td className="py-4 px-6 text-center text-muted-foreground">25</td>
+                  <td className="py-4 px-6 text-center text-brand-blue-600 font-semibold">55</td>
+                  <td className="py-4 px-6 text-center">100</td>
                   <td className="py-4 px-6 text-center">Unlimited</td>
                 </tr>
                 <tr>

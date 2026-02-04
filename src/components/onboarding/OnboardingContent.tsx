@@ -20,20 +20,20 @@ const PLANS = [
     id: 'starter',
     name: 'Starter',
     price: 99,
-    features: ['Up to 50 AI articles/month', 'Basic analytics', 'Email support', 'Standard templates'],
+    features: ['250 AI credits/month', 'Up to 25 articles/month', 'Basic analytics', 'Email support'],
+  },
+  {
+    id: 'growth',
+    name: 'Growth',
+    price: 199,
+    features: ['575 AI credits/month', 'Up to 55 articles/month', 'Advanced analytics', 'Priority support', 'Custom branding'],
+    recommended: true,
   },
   {
     id: 'professional',
     name: 'Professional',
-    price: 199,
-    features: ['Up to 200 AI articles/month', 'Advanced analytics', 'Priority support', 'Custom branding', 'Ad management'],
-    recommended: true,
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
     price: 299,
-    features: ['Unlimited AI articles', 'Full analytics suite', 'Dedicated support', 'White-label solution', 'API access'],
+    features: ['1,000 AI credits/month', 'Up to 100 articles/month', 'Full analytics suite', 'Dedicated support', 'AI banner generation'],
   },
 ];
 
@@ -106,7 +106,7 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
     domain: '',
     serviceArea: { city: '', state: '', region: '' } as ServiceArea,
     selectedCategories: [] as string[],
-    selectedPlan: 'professional',
+    selectedPlan: 'growth',
   });
 
   // Restore form data on mount (after payment redirect)
@@ -584,32 +584,29 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
                   <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6">
                     <div className="flex items-center gap-3 mb-4">
                       <Key className="h-6 w-6 text-amber-600" />
-                      <h3 className="font-bold text-lg text-amber-900">Your Admin Login Credentials</h3>
+                      <h3 className="font-bold text-lg text-amber-900">Your Admin Login</h3>
                     </div>
-                    <p className="text-sm text-amber-800 mb-4">
-                      Save these credentials! You&apos;ll need them to log in to your newspaper&apos;s admin panel.
-                    </p>
-                    <div className="bg-white rounded-lg p-4 space-y-3 font-mono text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Email:</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{adminCredentials.email}</span>
+                    <div className="bg-white rounded-lg p-5 space-y-4">
+                      <div>
+                        <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Email</div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-lg font-semibold">{adminCredentials.email}</span>
                           <button
                             onClick={() => navigator.clipboard.writeText(adminCredentials.email)}
-                            className="p-1 hover:bg-muted rounded"
+                            className="p-2 hover:bg-muted rounded"
                             title="Copy email"
                           >
                             <Copy className="h-4 w-4 text-muted-foreground" />
                           </button>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Temporary Password:</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-amber-700">{adminCredentials.temporaryPassword}</span>
+                      <div className="border-t pt-4">
+                        <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Default Password</div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-2xl font-bold text-amber-700">{adminCredentials.temporaryPassword}</span>
                           <button
                             onClick={() => navigator.clipboard.writeText(adminCredentials.temporaryPassword)}
-                            className="p-1 hover:bg-muted rounded"
+                            className="p-2 hover:bg-muted rounded"
                             title="Copy password"
                           >
                             <Copy className="h-4 w-4 text-muted-foreground" />
@@ -617,28 +614,23 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
                         </div>
                       </div>
                     </div>
-                    <p className="text-xs text-amber-700 mt-3">
-                      Please change your password after your first login.
-                    </p>
+                    <div className="mt-4 bg-red-100 border border-red-300 rounded-lg p-3">
+                      <p className="text-sm text-red-800 font-medium">
+                        ⚠️ Change your password immediately after logging in!
+                      </p>
+                    </div>
                   </div>
                 )}
 
-                {/* Newspaper URL */}
+                {/* Your Site is Live! */}
                 {newspaperUrl && (
-                  <div className="bg-brand-blue-50 border-2 border-brand-blue-200 rounded-xl p-6">
-                    <h3 className="font-bold text-lg text-brand-blue-900 mb-2">Your Newspaper URL</h3>
-                    <div className="flex items-center gap-2 bg-white rounded-lg p-3">
-                      <span className="font-mono text-brand-blue-700 flex-1">{newspaperUrl}</span>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(newspaperUrl)}
-                        className="p-2 hover:bg-muted rounded"
-                        title="Copy URL"
-                      >
-                        <Copy className="h-4 w-4 text-muted-foreground" />
-                      </button>
+                  <div className="bg-gradient-to-br from-brand-blue-600 to-brand-blue-700 rounded-xl p-8 text-white text-center">
+                    <h3 className="font-bold text-xl mb-3">Your Site is Live!</h3>
+                    <div className="bg-white/10 backdrop-blur rounded-lg p-4 mb-4">
+                      <p className="font-mono text-2xl font-bold">{newspaperUrl.replace('https://', '')}</p>
                     </div>
-                    <p className="text-xs text-brand-blue-700 mt-2">
-                      Your site is being built. It will be ready shortly.
+                    <p className="text-brand-blue-100 text-sm">
+                      Your newspaper is now live and accessible to the world.
                     </p>
                   </div>
                 )}
@@ -646,23 +638,23 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
                 {/* Action Buttons */}
                 <div className="grid md:grid-cols-2 gap-4 pt-4">
                   <a
-                    href={newspaperUrl ? `${newspaperUrl}/backend` : '#'}
+                    href={newspaperUrl || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 bg-brand-blue-600 text-white font-semibold py-4 px-6 rounded-xl hover:bg-brand-blue-700 transition-colors"
+                    className="flex items-center justify-center gap-2 bg-green-600 text-white font-semibold py-5 px-6 rounded-xl hover:bg-green-700 transition-colors text-lg"
                   >
-                    <Key className="h-5 w-5" />
-                    Go to Admin Panel
+                    <Rocket className="h-5 w-5" />
+                    Go to Your Site
                     <ExternalLink className="h-4 w-4" />
                   </a>
                   <a
-                    href={tenantId ? `/status/${tenantId}` : '#'}
+                    href={newspaperUrl ? `${newspaperUrl}/backend` : '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 border-2 border-input bg-background hover:bg-accent font-semibold py-4 px-6 rounded-xl transition-colors"
+                    className="flex items-center justify-center gap-2 bg-brand-blue-600 text-white font-semibold py-5 px-6 rounded-xl hover:bg-brand-blue-700 transition-colors text-lg"
                   >
-                    <CheckCircle className="h-5 w-5" />
-                    View Setup Progress
+                    <Key className="h-5 w-5" />
+                    Go to Admin
                     <ExternalLink className="h-4 w-4" />
                   </a>
                 </div>

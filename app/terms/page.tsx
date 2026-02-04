@@ -77,7 +77,7 @@ export default function TermsOfUse() {
                 </li>
                 <li>
                   <strong>Monthly Subscription:</strong> After the setup fee, you will be charged a monthly subscription
-                  fee based on your selected plan (Starter: $99/mo, Professional: $199/mo, Enterprise: Custom pricing).
+                  fee based on your selected plan (Starter: $99/mo, Growth: $199/mo, Professional: $299/mo, Enterprise: Custom pricing).
                 </li>
                 <li>
                   <strong>No Refunds:</strong> Due to the significant time, resources, and proprietary processes required
