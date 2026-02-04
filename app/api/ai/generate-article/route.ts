@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/firebase';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 import { generateContent, NEWS_SYSTEM_INSTRUCTION } from '@/lib/gemini';
 import { buildArticlePrompt, validateSourceMaterial } from '@/lib/promptBuilder';
@@ -172,7 +173,10 @@ export async function POST(request: NextRequest) {
     const parsedArticle = parseArticleResponse(aiResponse, body.sourceContent);
 
     // Get database reference for slug uniqueness check
-    const db = getDb();
+    const db = getAdminDb();
+    if (!db) {
+      throw new Error('Database not configured');
+    }
 
     // CRITICAL FIX: Ensure slug uniqueness by checking database
     let finalSlug = parsedArticle.slug;
