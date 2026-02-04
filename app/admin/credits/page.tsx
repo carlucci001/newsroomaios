@@ -235,7 +235,7 @@ export default function CreditsPage() {
           value={overview.totalTopOff.toLocaleString()}
           subValue="purchased credits"
           icon={<TrendingUp className="w-6 h-6" />}
-          color="success"
+          color="brand"
         />
 
         <StatCard
@@ -243,7 +243,7 @@ export default function CreditsPage() {
           value={overview.totalCredits.toLocaleString()}
           subValue="all credits"
           icon={<Coins className="w-6 h-6" />}
-          color="gray"
+          color="brand"
         />
 
         <StatCard
@@ -259,7 +259,7 @@ export default function CreditsPage() {
           value={overview.totalTransactions.toLocaleString()}
           subValue="recent activity"
           icon={<Activity className="w-6 h-6" />}
-          color="gray"
+          color="brand"
         />
       </div>
 
@@ -342,12 +342,12 @@ export default function CreditsPage() {
                               feature === 'article'
                                 ? 'bg-brand-500'
                                 : feature === 'image' || feature === 'image_hd'
-                                ? 'bg-success-500'
+                                ? 'bg-brand-400'
                                 : feature === 'tts'
-                                ? 'bg-warning-500'
+                                ? 'bg-brand-600'
                                 : feature === 'agent'
-                                ? 'bg-danger-500'
-                                : 'bg-gray-500'
+                                ? 'bg-brand-700'
+                                : 'bg-brand-300'
                             }`}
                           />
                           <div>
