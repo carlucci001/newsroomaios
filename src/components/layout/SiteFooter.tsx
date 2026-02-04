@@ -5,7 +5,7 @@ import { Newspaper } from 'lucide-react';
 
 export function SiteFooter() {
   return (
-    <footer className="relative border-t border-border bg-gradient-to-b from-muted/50 to-muted/80 py-16">
+    <footer className="relative z-10 border-t border-border bg-gradient-to-b from-muted/50 to-muted/80 py-16">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-12 mb-12">
           <div>

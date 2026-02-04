@@ -93,13 +93,15 @@ export function getAdminAuth(): Auth | null {
 }
 
 /**
- * Generate a secure temporary password
+ * Default password for new admin accounts
+ * Simple and easy to type - users are prompted to change it on first login
+ */
+export const DEFAULT_ADMIN_PASSWORD = 'Welcome1';
+
+/**
+ * Generate the default temporary password
+ * Returns a simple, consistent password that users can easily see and type
  */
 export function generateTempPassword(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  let password = '';
-  for (let i = 0; i < 12; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
+  return DEFAULT_ADMIN_PASSWORD;
 }

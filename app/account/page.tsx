@@ -2,16 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getDb } from '@/src/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { getCurrentUser, getUserTenant } from '@/src/lib/accountAuth';
-import { PageContainer } from '@/src/components/layouts/PageContainer';
-import { PageHeader } from '@/src/components/layouts/PageHeader';
-import { StatCard } from '@/src/components/ui/stat-card';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/src/components/ui/card';
-import { Badge } from '@/src/components/ui/badge';
-import { Button } from '@/src/components/ui/button';
-import { ProgressBar } from '@/src/components/ui/progress-bar';
+import { getCurrentUser, getUserTenant } from '@/lib/accountAuth';
+import { PageContainer } from '@/components/layouts/PageContainer';
+import { PageHeader } from '@/components/layouts/PageHeader';
+import { StatCard } from '@/components/ui/stat-card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ProgressBar } from '@/components/ui/progress-bar';
 import {
   CreditCard,
   FileText,
@@ -250,7 +250,7 @@ export default function AccountDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ProgressBar value={66} max={100} color="info" showLabel label="Setup Progress" />
+            <ProgressBar value={66} max={100} color="brand" showLabel label="Setup Progress" />
           </CardContent>
         </Card>
       )}

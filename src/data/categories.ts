@@ -18,14 +18,14 @@ export const PREDEFINED_CATEGORIES: NewsCategory[] = [
   },
   {
     id: 'politics',
-    name: 'Politics & Government',
+    name: 'Politics',
     slug: 'politics',
     directive: 'Cover local government, elections, policy decisions, town halls, county board meetings, and political issues affecting the local community.',
     enabled: true,
   },
   {
     id: 'crime',
-    name: 'Crime & Public Safety',
+    name: 'Crime',
     slug: 'crime',
     directive: 'Cover local crime reports, police activity, court proceedings, public safety initiatives, and law enforcement news in the service area.',
     enabled: true,
@@ -48,14 +48,14 @@ export const PREDEFINED_CATEGORIES: NewsCategory[] = [
   },
   {
     id: 'jobs',
-    name: 'Jobs & Employment',
+    name: 'Jobs',
     slug: 'jobs',
     directive: 'Cover local job market, employment opportunities, workforce development, career advice, and major employer news in the service area.',
     enabled: true,
   },
   {
     id: 'agriculture',
-    name: 'Agriculture & Farming',
+    name: 'Agriculture',
     slug: 'agriculture',
     directive: 'Cover local farming news, agricultural markets, crop reports, livestock updates, and rural community stories in the service area.',
     enabled: true,
@@ -85,7 +85,7 @@ export const PREDEFINED_CATEGORIES: NewsCategory[] = [
   },
   {
     id: 'outdoors',
-    name: 'Outdoors & Recreation',
+    name: 'Outdoors',
     slug: 'outdoors',
     directive: 'Cover hunting, fishing, hiking, camping, parks, trails, and outdoor recreation opportunities in the service area.',
     enabled: true,
@@ -94,14 +94,14 @@ export const PREDEFINED_CATEGORIES: NewsCategory[] = [
   // Lifestyle & Culture
   {
     id: 'entertainment',
-    name: 'Arts & Entertainment',
+    name: 'Entertainment',
     slug: 'entertainment',
     directive: 'Cover local arts scene, theater productions, music events, cultural festivals, gallery openings, and entertainment options in the service area.',
     enabled: true,
   },
   {
     id: 'food-dining',
-    name: 'Food & Dining',
+    name: 'Food',
     slug: 'food-dining',
     directive: 'Cover local restaurants, food trends, new eateries, chef spotlights, food events, and dining reviews in the service area.',
     enabled: true,
@@ -115,14 +115,14 @@ export const PREDEFINED_CATEGORIES: NewsCategory[] = [
   },
   {
     id: 'faith',
-    name: 'Faith & Religion',
+    name: 'Faith',
     slug: 'faith',
     directive: 'Cover local churches, religious events, faith community news, charitable works, and spiritual interest stories.',
     enabled: true,
   },
   {
     id: 'pets-animals',
-    name: 'Pets & Animals',
+    name: 'Pets',
     slug: 'pets-animals',
     directive: 'Cover local animal shelters, pet adoptions, veterinary news, wildlife stories, and pet-related events in the community.',
     enabled: true,
@@ -145,21 +145,21 @@ export const PREDEFINED_CATEGORIES: NewsCategory[] = [
   },
   {
     id: 'events',
-    name: 'Events & Calendar',
+    name: 'Events',
     slug: 'events',
     directive: 'Cover upcoming local events, festivals, fairs, concerts, community gatherings, and things to do in the service area.',
     enabled: true,
   },
   {
     id: 'seniors',
-    name: 'Senior Living',
+    name: 'Seniors',
     slug: 'seniors',
     directive: 'Cover news and resources for seniors, retirement living, Medicare updates, senior center activities, and aging-related topics.',
     enabled: true,
   },
   {
     id: 'veterans',
-    name: 'Veterans & Military',
+    name: 'Veterans',
     slug: 'veterans',
     directive: 'Cover veteran affairs, military news, VA updates, veteran spotlights, and military family support in the community.',
     enabled: true,
@@ -175,7 +175,7 @@ export const PREDEFINED_CATEGORIES: NewsCategory[] = [
   },
   {
     id: 'youth',
-    name: 'Youth & Teens',
+    name: 'Youth',
     slug: 'youth',
     directive: 'Cover youth activities, teen achievements, youth organizations, summer programs, and stories featuring young people in the community.',
     enabled: true,
@@ -184,7 +184,7 @@ export const PREDEFINED_CATEGORIES: NewsCategory[] = [
   // Health & Environment
   {
     id: 'health',
-    name: 'Health & Wellness',
+    name: 'Health',
     slug: 'health',
     directive: 'Cover local healthcare news, wellness programs, health initiatives, hospital updates, fitness trends, and health resources available in the community.',
     enabled: true,
@@ -214,7 +214,7 @@ export const PREDEFINED_CATEGORIES: NewsCategory[] = [
   },
   {
     id: 'development',
-    name: 'Development & Growth',
+    name: 'Development',
     slug: 'development',
     directive: 'Cover new construction projects, zoning changes, urban development, infrastructure improvements, and growth planning in the community.',
     enabled: true,
@@ -230,14 +230,14 @@ export const PREDEFINED_CATEGORIES: NewsCategory[] = [
   },
   {
     id: 'tourism',
-    name: 'Tourism & Travel',
+    name: 'Tourism',
     slug: 'tourism',
     directive: 'Cover local tourism, travel destinations, visitor attractions, hotel news, and tourism industry updates in the service area.',
     enabled: true,
   },
   {
     id: 'history',
-    name: 'Local History',
+    name: 'History',
     slug: 'history',
     directive: 'Cover local history, historical landmarks, heritage preservation, nostalgic stories, and historical anniversaries in the community.',
     enabled: true,
@@ -253,7 +253,7 @@ export const PREDEFINED_CATEGORIES: NewsCategory[] = [
   },
   {
     id: 'letters',
-    name: 'Letters to Editor',
+    name: 'Letters',
     slug: 'letters',
     directive: 'Publish reader-submitted letters addressing local issues, community concerns, and responses to news coverage.',
     enabled: true,

@@ -43,7 +43,7 @@ export default function TenantDetailPage() {
     try {
       const db = getDb();
 
-      // Fetch tenant
+      // First fetch tenant to check if it exists
       const tenantDoc = await getDoc(doc(db, 'tenants', tenantId));
       if (!tenantDoc.exists()) {
         router.push('/admin/tenants');
@@ -62,9 +62,28 @@ export default function TenantDetailPage() {
         hardLimit: 0,
       });
 
-      // Fetch credits
+      // Fetch credits, usage, and transactions in parallel for faster loading
       const creditsQuery = query(collection(db, 'tenantCredits'), where('tenantId', '==', tenantId));
-      const creditsSnap = await getDocs(creditsQuery);
+      const usageQuery = query(
+        collection(db, 'creditUsage'),
+        where('tenantId', '==', tenantId),
+        orderBy('timestamp', 'desc'),
+        limit(20)
+      );
+      const txQuery = query(
+        collection(db, 'creditTransactions'),
+        where('tenantId', '==', tenantId),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+      );
+
+      const [creditsSnap, usageSnap, txSnap] = await Promise.all([
+        getDocs(creditsQuery),
+        getDocs(usageQuery).catch(() => null), // Collection might not exist
+        getDocs(txQuery).catch(() => null),    // Collection might not exist
+      ]);
+
+      // Process credits
       if (!creditsSnap.empty) {
         const creditData = { id: creditsSnap.docs[0].id, ...creditsSnap.docs[0].data() } as TenantCredits;
         setCredits(creditData);
@@ -75,32 +94,14 @@ export default function TenantDetailPage() {
         }));
       }
 
-      // Fetch usage
-      try {
-        const usageQuery = query(
-          collection(db, 'creditUsage'),
-          where('tenantId', '==', tenantId),
-          orderBy('timestamp', 'desc'),
-          limit(20)
-        );
-        const usageSnap = await getDocs(usageQuery);
+      // Process usage
+      if (usageSnap) {
         setUsage(usageSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as CreditUsage[]);
-      } catch (e) {
-        // Collection might not exist
       }
 
-      // Fetch transactions
-      try {
-        const txQuery = query(
-          collection(db, 'creditTransactions'),
-          where('tenantId', '==', tenantId),
-          orderBy('createdAt', 'desc'),
-          limit(20)
-        );
-        const txSnap = await getDocs(txQuery);
+      // Process transactions
+      if (txSnap) {
         setTransactions(txSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as CreditTransaction[]);
-      } catch (e) {
-        // Collection might not exist
       }
     } catch (error) {
       console.error('Failed to fetch tenant:', error);

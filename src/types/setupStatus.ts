@@ -17,8 +17,8 @@ export type SetupStep =
   | 'complete';
 
 export interface SetupProgress {
-  currentStep: SetupStep;
-  completedSteps: SetupStep[];
+  currentStep: SetupStep | string; // Can be dynamic like "generating_agriculture"
+  completedSteps: (SetupStep | string)[];
   articlesGenerated: number;
   totalArticles: number;
   currentCategory?: string;
@@ -65,11 +65,26 @@ export const STEP_ORDER: SetupStep[] = [
   'complete',
 ];
 
-export function getStepIndex(step: SetupStep): number {
-  return STEP_ORDER.indexOf(step);
+export function getStepIndex(step: SetupStep | string): number {
+  // First check if it's in the standard STEP_ORDER
+  const index = STEP_ORDER.indexOf(step as SetupStep);
+  if (index !== -1) return index;
+
+  // Handle dynamic step names like "generating_agriculture", "generating_crime"
+  // These are all in the article generation phase (after journalists_created, before deploying_site)
+  if (typeof step === 'string' && step.startsWith('generating_')) {
+    // Return index equivalent to mid-generation phase (between journalists_created and deploying_site)
+    const journalistsIndex = STEP_ORDER.indexOf('journalists_created');
+    const deployingIndex = STEP_ORDER.indexOf('deploying_site');
+    // Return a value in the middle of the generation range
+    return Math.floor((journalistsIndex + deployingIndex) / 2);
+  }
+
+  // Unknown step - return 0 to avoid negative percentages
+  return 0;
 }
 
-export function isStepComplete(currentStep: SetupStep, checkStep: SetupStep): boolean {
+export function isStepComplete(currentStep: SetupStep | string, checkStep: SetupStep): boolean {
   return getStepIndex(currentStep) > getStepIndex(checkStep);
 }
 
@@ -77,7 +92,15 @@ export function getProgressPercentage(progress: SetupProgress): number {
   const stepWeight = 0.3; // Steps account for 30%
   const articleWeight = 0.7; // Articles account for 70%
 
-  const stepProgress = (getStepIndex(progress.currentStep) / (STEP_ORDER.length - 1)) * stepWeight;
+  // For article generation phase, step progress should reflect we're in the generation phase
+  const stepIndex = getStepIndex(progress.currentStep);
+  const maxStepIndex = STEP_ORDER.length - 1;
+
+  // Ensure stepIndex is never negative
+  const safeStepIndex = Math.max(0, stepIndex);
+  const stepProgress = (safeStepIndex / maxStepIndex) * stepWeight;
+
+  // Article progress is the main indicator during generation
   const articleProgress = progress.totalArticles > 0
     ? (progress.articlesGenerated / progress.totalArticles) * articleWeight
     : 0;

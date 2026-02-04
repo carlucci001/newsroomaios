@@ -15,7 +15,7 @@ const firebaseConfig = {
   appId: "1:23445908902:web:ead0e3559af558852b7367",
 };
 
-const TENANT_ID = 'tenant_1770080631285_tp82nake5';
+const TENANT_ID = process.env.TENANT_ID || 'tenant_1770130007686_goh8kbfgl';
 
 async function seedSiteConfig() {
   console.log('Initializing Firebase...');

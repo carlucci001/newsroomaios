@@ -23,7 +23,6 @@ interface TenantWithCredits extends Tenant {
   subscriptionCredits: number;
   topOffCredits: number;
   totalCredits: number;
-  plan?: string;
 }
 
 interface CreditTransaction {

@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { getAuthInstance } from '@/src/lib/firebase';
-import { getCurrentUser, getUserTenant } from '@/src/lib/accountAuth';
+import { getAuthInstance } from '@/lib/firebase';
+import { getCurrentUser, getUserTenant } from '@/lib/accountAuth';
 import {
   HomeIcon,
   CreditCard,

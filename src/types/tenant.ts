@@ -60,7 +60,7 @@ export interface Tenant {
   licensingStatus: 'trial' | 'active' | 'past_due' | 'canceled';
 
   // Billing
-  plan?: 'starter' | 'professional' | 'enterprise';
+  plan?: 'starter' | 'growth' | 'professional' | 'enterprise';
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   billingStatus?: 'current' | 'past_due' | 'cancelled';

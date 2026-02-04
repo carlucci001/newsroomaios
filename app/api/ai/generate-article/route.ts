@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
       excerpt: parsedArticle.excerpt,
       slug: parsedArticle.slug,
       tags: parsedArticle.tags,
-      category: category.name,  // For template compatibility
+      category: category.slug || category.id,  // Use slug for URL compatibility
       categoryId: category.id,
       categoryName: category.name,
       categorySlug: category.slug || category.id,

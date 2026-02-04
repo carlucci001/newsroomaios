@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 
 export default function FeaturesPage() {
   return (
@@ -524,64 +525,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-muted/30 py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-12 mb-12">
-            <div>
-              <Link href="/" className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-brand-blue-600">
-                  <Globe2 className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xl font-display font-bold">
-                  Newsroom <span className="text-brand-blue-600">AIOS</span>
-                </span>
-              </Link>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Empowering local journalism with AI-powered tools and built-in monetization.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Platform</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><Link href="/features" className="hover:text-brand-blue-600 transition-colors">Features</Link></li>
-                <li><Link href="/pricing" className="hover:text-brand-blue-600 transition-colors">Pricing</Link></li>
-                <li><Link href="/testimonials" className="hover:text-brand-blue-600 transition-colors">Success Stories</Link></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Documentation</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Resources</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Community</a></li>
-                <li><a href="#" className="hover:text-brand-blue-600 transition-colors">API Reference</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Legal</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><Link href="/privacy" className="hover:text-brand-blue-600 transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:text-brand-blue-600 transition-colors">Terms of Use</Link></li>
-                <li><Link href="/refund-policy" className="hover:text-brand-blue-600 transition-colors">Refund Policy</Link></li>
-                <li><a href="mailto:support@newsroomaios.com" className="hover:text-brand-blue-600 transition-colors">Contact Us</a></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-8 border-t border-border text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
-              © 2026 Newsroom AIOS. A service of <strong>Farrington Development LLC</strong>. All rights reserved.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              <Link href="/refund-policy" className="underline hover:text-brand-blue-600">No refunds once your paper is live.</Link> Cancel anytime.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

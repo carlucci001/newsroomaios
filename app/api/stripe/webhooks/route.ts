@@ -29,7 +29,8 @@ export async function POST(request: NextRequest) {
 
     // Get the raw body for signature verification
     const body = await request.text();
-    const signature = headers().get('stripe-signature');
+    const headersList = await headers();
+    const signature = headersList.get('stripe-signature');
 
     if (!signature) {
       console.error('[Webhook] Missing signature');
