@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { getAuthInstance } from '@/src/lib/firebase';
 import { getCurrentUser, getUserTenant } from '@/src/lib/accountAuth';
 import {
   HomeIcon,
@@ -44,7 +45,7 @@ export default function AccountLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    const auth = getAuth();
+    const auth = getAuthInstance();
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (!firebaseUser) {
@@ -70,7 +71,7 @@ export default function AccountLayout({
   }, [router]);
 
   const handleSignOut = async () => {
-    const auth = getAuth();
+    const auth = getAuthInstance();
     await signOut(auth);
     router.push('/account/login');
   };

@@ -1,10 +1,10 @@
-import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
-import { getDb } from './firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { getDb, getAuthInstance } from './firebase';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
 // Get current authenticated user
 export async function getCurrentUser(): Promise<User | null> {
-  const auth = getAuth();
+  const auth = getAuthInstance();
   return new Promise((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       unsubscribe();
