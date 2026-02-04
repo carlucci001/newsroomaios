@@ -56,13 +56,8 @@ export default function AccountLayout({
 
       setUser(firebaseUser);
 
-      // Get user's tenant
+      // Get user's tenant (will be null for platform admins)
       const userTenant = await getUserTenant(firebaseUser.uid);
-      if (!userTenant) {
-        console.error('No tenant found for user');
-        // Could redirect to an error page or show a message
-      }
-
       setTenant(userTenant);
       setLoading(false);
     });
@@ -114,17 +109,28 @@ export default function AccountLayout({
           </button>
         </div>
 
-        {/* Tenant Info */}
-        {tenant && (
-          <div className="px-6 py-4 border-b border-gray-200">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {tenant.businessName}
-            </p>
-            <p className="text-xs text-gray-500 capitalize">
-              {tenant.plan || 'Starter'} Plan
-            </p>
-          </div>
-        )}
+        {/* Tenant Info / Admin Badge */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          {tenant ? (
+            <>
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {tenant.businessName}
+              </p>
+              <p className="text-xs text-gray-500 capitalize">
+                {tenant.plan || 'Starter'} Plan
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-gray-900">
+                Platform Admin
+              </p>
+              <p className="text-xs text-gray-500">
+                Full system access
+              </p>
+            </>
+          )}
+        </div>
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1">
