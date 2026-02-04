@@ -61,8 +61,16 @@ function AccountLayoutContent({ children }: { children: React.ReactNode }) {
       }
 
       setUser(firebaseUser);
-      const userTenant = await getUserTenant(firebaseUser.uid);
-      setTenant(userTenant);
+
+      try {
+        const userTenant = await getUserTenant(firebaseUser.uid);
+        setTenant(userTenant);
+      } catch (error) {
+        console.warn('Could not fetch tenant data:', error);
+        // Continue without tenant data - user can still access account
+        setTenant(null);
+      }
+
       setLoading(false);
     });
 

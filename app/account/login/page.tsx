@@ -56,16 +56,16 @@ export default function AccountLogin() {
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-300 p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-danger-50 border border-danger-200 rounded-lg p-4">
-                <p className="text-sm text-danger-700">{error}</p>
+              <div className="bg-red-50 border border-red-300 rounded-lg p-4">
+                <p className="text-sm text-red-700 font-medium">{error}</p>
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-900">Email</label>
               <Input
                 id="email"
                 type="email"
@@ -79,10 +79,10 @@ export default function AccountLogin() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <label htmlFor="password" className="block text-sm font-semibold text-gray-900">Password</label>
                 <Link
                   href="/account/forgot-password"
-                  className="text-sm text-brand-600 hover:text-brand-700"
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Forgot password?
                 </Link>
@@ -98,14 +98,13 @@ export default function AccountLogin() {
               />
             </div>
 
-            <Button
+            <button
               type="submit"
-              variant="primary"
-              className="w-full"
               disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </Button>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
           </form>
 
           <div className="mt-6 text-center">
