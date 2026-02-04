@@ -1,7 +1,7 @@
 'use client';
 
 import 'antd/dist/reset.css';
-import { Card, Typography, Button, Tag, Row, Col, Space, Divider, List } from 'antd';
+import { Card, Typography, Button, Tag, Row, Col, Space, Divider } from 'antd';
 import {
   CreditCardOutlined,
   CheckCircleOutlined,
@@ -196,15 +196,14 @@ export default function BillingAntPage() {
                     </div>
 
                     <div>
-                      <List
-                        dataSource={plan.features}
-                        renderItem={(feature) => (
-                          <List.Item style={{ padding: '8px 0', border: 'none' }}>
+                      <Space vertical size="small" style={{ width: '100%' }}>
+                        {plan.features.map((feature, index) => (
+                          <div key={index} style={{ display: 'flex', alignItems: 'center', padding: '8px 0' }}>
                             <CheckCircleOutlined style={{ color: '#52c41a', marginRight: '8px' }} />
                             <Text>{feature}</Text>
-                          </List.Item>
-                        )}
-                      />
+                          </div>
+                        ))}
+                      </Space>
                     </div>
 
                     {plan.id === currentPlan.id ? (
