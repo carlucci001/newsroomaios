@@ -241,3 +241,99 @@ export async function listAllSubdomains(): Promise<GoDaddyDNSRecord[]> {
     return [];
   }
 }
+
+/**
+ * Add TXT records to the domain
+ * Used for email verification (SPF, DKIM, DMARC) and other verifications
+ */
+export async function addTxtRecords(records: Array<{ name: string; data: string; ttl?: number }>): Promise<{
+  success: boolean;
+  message: string;
+  addedCount: number;
+}> {
+  if (!isGoDaddyConfigured()) {
+    return {
+      success: false,
+      message: 'GoDaddy API credentials not configured',
+      addedCount: 0,
+    };
+  }
+
+  try {
+    const txtRecords: GoDaddyDNSRecord[] = records.map(r => ({
+      type: 'TXT',
+      name: r.name,
+      data: r.data,
+      ttl: r.ttl || 3600,
+    }));
+
+    const response = await fetch(
+      `https://api.godaddy.com/v1/domains/${DOMAIN}/records`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': getAuthHeader(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(txtRecords),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({})) as GoDaddyError;
+      const errorMessage = errorData.message || `HTTP ${response.status}`;
+      console.error(`[GoDaddy] Failed to add TXT records: ${errorMessage}`);
+      return {
+        success: false,
+        message: `Failed to add TXT records: ${errorMessage}`,
+        addedCount: 0,
+      };
+    }
+
+    console.log(`[GoDaddy] Successfully added ${txtRecords.length} TXT records`);
+    return {
+      success: true,
+      message: `Added ${txtRecords.length} TXT records successfully`,
+      addedCount: txtRecords.length,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[GoDaddy] Error adding TXT records: ${errorMessage}`);
+    return {
+      success: false,
+      message: `Error adding TXT records: ${errorMessage}`,
+      addedCount: 0,
+    };
+  }
+}
+
+/**
+ * Get all TXT records for the domain
+ */
+export async function getTxtRecords(): Promise<GoDaddyDNSRecord[]> {
+  if (!isGoDaddyConfigured()) {
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.godaddy.com/v1/domains/${DOMAIN}/records/TXT`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': getAuthHeader(),
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    return await response.json() as GoDaddyDNSRecord[];
+  } catch (error) {
+    console.error('[GoDaddy] Error getting TXT records:', error);
+    return [];
+  }
+}
