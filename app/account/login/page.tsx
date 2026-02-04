@@ -5,10 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { getAuthInstance } from '@/lib/firebase';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Newspaper } from 'lucide-react';
+import { SiteHeader } from '@/components/layout/SiteHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 
 export default function AccountLogin() {
   const router = useRouter();
@@ -39,21 +38,19 @@ export default function AccountLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-gray-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <Newspaper className="w-10 h-10 text-brand-600" />
-            <span className="text-2xl font-bold text-gray-900">newsroomaios</span>
+    <>
+      <SiteHeader />
+      <div className="min-h-[calc(100vh-200px)] bg-gradient-to-br from-brand-50 to-gray-50 flex flex-col items-center justify-center py-12 px-4">
+        <div className="w-full max-w-md">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome back
+            </h1>
+            <p className="text-gray-600">
+              Sign in to manage your newspaper
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Welcome back
-          </h1>
-          <p className="text-gray-600">
-            Sign in to manage your newspaper
-          </p>
-        </div>
 
         {/* Login Card */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-300 p-8">
@@ -120,16 +117,18 @@ export default function AccountLogin() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>
-            Need help?{' '}
-            <Link href="/contact" className="text-brand-600 hover:text-brand-700">
-              Contact support
-            </Link>
-          </p>
+          {/* Help Link */}
+          <div className="mt-8 text-center text-sm text-gray-500">
+            <p>
+              Need help?{' '}
+              <Link href="/contact" className="text-blue-600 hover:text-blue-700 font-medium">
+                Contact support
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+      <SiteFooter />
+    </>
   );
 }
