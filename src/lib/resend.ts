@@ -9,12 +9,14 @@
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = 'Newsroom AIOS <hello@newsroomaios.com>';
+const ADMIN_EMAIL = 'carlfaring@gmail.com'; // Get notified of all new signups
 
 interface SendEmailOptions {
   to: string;
   subject: string;
   html: string;
   text?: string;
+  bcc?: string;
 }
 
 interface ResendResponse {
@@ -55,6 +57,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<{
       body: JSON.stringify({
         from: FROM_EMAIL,
         to: options.to,
+        bcc: options.bcc,
         subject: options.subject,
         html: options.html,
         text: options.text,
@@ -175,6 +178,7 @@ The Newsroom AIOS Team
 
   return sendEmail({
     to,
+    bcc: ADMIN_EMAIL, // Notify admin of new signups
     subject: `🎉 Welcome to ${newspaperName} - Your newspaper is live!`,
     html,
     text,
