@@ -1,0 +1,9 @@
+# Public Assets Folder
+
+Place static assets here:
+- favicon.ico
+- robots.txt
+- sitemap.xml
+- images/
+- fonts/
+- Any files that need to be served from the root URL

@@ -28,6 +28,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { OnboardingContent } from "@/components/onboarding/OnboardingContent";
 import { StatusContent } from "@/components/status/StatusContent";
+import { VideoModal } from "@/components/VideoModal";
 
 type PageView = 'home' | 'onboarding' | 'status';
 
@@ -35,6 +36,7 @@ export default function Home() {
   const [isVisible, setIsVisible] = useState(false);
   const [pageView, setPageView] = useState<PageView>('home');
   const [tenantId, setTenantId] = useState<string | null>(null);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
   const pricingRef = useRef<HTMLDivElement>(null);
@@ -208,6 +210,7 @@ export default function Home() {
               <Button
                 size="lg"
                 variant="outline"
+                onClick={() => setIsVideoModalOpen(true)}
                 className="text-lg px-10 h-16 gap-3 border-2 hover:border-brand-blue-500/50 hover:bg-brand-blue-50/50 transition-all group"
               >
                 <Play className="h-5 w-5 group-hover:scale-110 transition-transform" />
@@ -847,6 +850,7 @@ export default function Home() {
                 <Button
                   size="lg"
                   variant="outline"
+                  onClick={() => setIsVideoModalOpen(true)}
                   className="text-lg px-10 h-16 gap-3 border-2 border-white text-white hover:bg-white/10"
                 >
                   <Play className="h-5 w-5" /> Watch Demo
@@ -865,6 +869,13 @@ export default function Home() {
 
       {/* Footer */}
       <SiteFooter />
+
+      {/* Video Modal */}
+      <VideoModal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        videoSrc="/hero-video.mp4"
+      />
 
       <style jsx>{`
         @keyframes fade-in-up {
