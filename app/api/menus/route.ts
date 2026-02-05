@@ -161,9 +161,6 @@ async function buildDefaultMenus(tenantId: string, db: any): Promise<any[]> {
       items: [
         { id: 'home', label: 'Home', path: '/', type: 'internal' as const, enabled: true, order: 0 },
         ...categoryNavItems,
-        { id: 'directory', label: 'Directory', path: '/directory', type: 'internal' as const, enabled: true, order: 100 },
-        { id: 'blog', label: 'Blog', path: '/blog', type: 'internal' as const, enabled: true, order: 101 },
-        { id: 'community', label: 'Community', path: '/community', type: 'internal' as const, enabled: true, order: 102 },
       ],
     },
     {
