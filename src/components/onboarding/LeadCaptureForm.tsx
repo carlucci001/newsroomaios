@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, CheckCircle, Loader2, ArrowLeft } from 'lucide-react';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface LeadCaptureFormProps {
@@ -32,6 +32,8 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
     setIsSubmitting(true);
 
     try {
+      const db = getDb();
+
       // Save to Firestore 'leads' collection
       const leadRef = await addDoc(collection(db, 'leads'), {
         ...formData,

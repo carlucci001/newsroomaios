@@ -7,7 +7,7 @@ import { InteractiveMap } from '@/components/map/InteractiveMap';
 import { ActivityFeed } from '@/components/map/ActivityFeed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, TrendingUp, Users, Zap } from 'lucide-react';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, query, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { Lead, LeadActivity } from '@/types/lead';
 
@@ -21,6 +21,8 @@ export default function GrowthMapPage() {
   });
 
   useEffect(() => {
+    const db = getDb();
+
     // Subscribe to leads
     const leadsQuery = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
     const unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
