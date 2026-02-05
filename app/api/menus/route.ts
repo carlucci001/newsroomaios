@@ -22,6 +22,10 @@ const CORS_HEADERS = {
 async function getTenant(tenantId: string): Promise<Tenant | null> {
   try {
     const db = getAdminDb();
+    if (!db) {
+      console.error('[Menus] Firebase admin not initialized');
+      return null;
+    }
     const tenantDoc = await db.collection('tenants').doc(tenantId).get();
     if (!tenantDoc.exists) {
       return null;
