@@ -249,6 +249,24 @@ export async function GET(request: NextRequest) {
           needsRegeneration = true;
           console.log(`[Menus API] main-nav only has ${itemCount} items - forcing regeneration`);
         }
+
+        // Check if category labels are too long (multi-word labels cause stacking)
+        // Labels should be ONE WORD only for proper display
+        if (!needsRegeneration && mainNavData.items) {
+          const categoryItems = mainNavData.items.filter((item: any) =>
+            item.path && item.path.includes('/category/')
+          );
+          const hasLongLabels = categoryItems.some((item: any) => {
+            const label = item.label || '';
+            // Check if label has spaces or is longer than 15 chars (indicates multi-word)
+            return label.includes(' ') || label.length > 15;
+          });
+
+          if (hasLongLabels) {
+            needsRegeneration = true;
+            console.log(`[Menus API] Found multi-word category labels - forcing regeneration with short labels`);
+          }
+        }
       }
     }
 
