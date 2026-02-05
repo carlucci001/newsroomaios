@@ -104,20 +104,47 @@ async function buildDefaultMenus(tenantId: string, db: any): Promise<any[]> {
 
   console.log(`[Menus] Building default menus for ${tenant.businessName} with ${categories.length} categories`);
 
-  // Build category navigation items
+  /**
+   * Shorten category names to ONE WORD for menu display
+   * Prevents text stacking in navigation bars
+   */
+  function shortenCategoryLabel(fullName: string): string {
+    const labelMap: Record<string, string> = {
+      'Local News': 'Local',
+      'Politics & Government': 'Politics',
+      'Crime & Public Safety': 'Crime',
+      'Business': 'Business',
+      'Agriculture & Farming': 'Agriculture',
+      'College Sports': 'Sports',
+      'Entertainment': 'Entertainment',
+      'Weather': 'Weather',
+      'Lifestyle': 'Lifestyle',
+      'Outdoors': 'Outdoors',
+      'Community': 'Community',
+      'Education': 'Education',
+      'Health': 'Health',
+      'Real Estate': 'Real Estate',
+      'Technology': 'Technology',
+    };
+
+    // Use mapping if available, otherwise take first word
+    return labelMap[fullName] || fullName.split(' ')[0];
+  }
+
+  // Build category navigation items with SHORT labels (one word only)
   const categoryNavItems = categories.map((cat: any, index: number) => ({
     id: cat.id || cat.slug,
-    label: cat.name,
+    label: shortenCategoryLabel(cat.name),
     path: `/category/${cat.slug || cat.id}`,
     type: 'internal' as const,
     enabled: cat.enabled !== false,
     order: index,
   }));
 
-  // Build category footer items (same as nav, just for footer placement)
+  // Build category footer items with SHORT labels
   const categoryFooterItems = categories.map((cat: any, index: number) => ({
     id: `${cat.id || cat.slug}-footer`,
-    label: cat.name,
+    label: shortenCategoryLabel(cat.name),
     path: `/category/${cat.slug || cat.id}`,
     type: 'internal' as const,
     enabled: cat.enabled !== false,
