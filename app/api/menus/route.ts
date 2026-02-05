@@ -1,9 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateTenant } from '@/lib/tenantAuth';
 import { getFirestore } from 'firebase-admin/firestore';
-import { getAdminApp } from '@/lib/firebaseAdmin';
+import { getAdminApp, getAdminDb } from '@/lib/firebaseAdmin';
+import { Tenant } from '@/types/tenant';
 
 export const dynamic = 'force-dynamic';
+
+// Platform secret for internal calls
+const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
+
+// CORS headers for tenant domains
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Tenant-ID, X-API-Key, X-Platform-Secret',
+  'Access-Control-Max-Age': '86400',
+};
+
+/**
+ * Get tenant from Firestore
+ */
+async function getTenant(tenantId: string): Promise<Tenant | null> {
+  try {
+    const db = getAdminDb();
+    const tenantDoc = await db.collection('tenants').doc(tenantId).get();
+    if (!tenantDoc.exists) {
+      return null;
+    }
+    return { id: tenantDoc.id, ...tenantDoc.data() } as Tenant;
+  } catch (error) {
+    console.error('[Menus] Error fetching tenant:', error);
+    return null;
+  }
+}
+
+/**
+ * Authenticate request (platform secret or tenant API key)
+ */
+async function authenticateRequest(request: NextRequest): Promise<{
+  valid: boolean;
+  error?: string;
+  tenant?: Tenant;
+}> {
+  const platformSecret = request.headers.get('x-platform-secret');
+  const tenantId = request.headers.get('x-tenant-id') || request.nextUrl.searchParams.get('tenantId');
+  const apiKey = request.headers.get('x-api-key');
+
+  // Option 1: Platform secret (internal calls)
+  if (platformSecret) {
+    if (platformSecret !== PLATFORM_SECRET) {
+      return { valid: false, error: 'Invalid platform secret' };
+    }
+    if (!tenantId) {
+      return { valid: false, error: 'Tenant ID required' };
+    }
+    const tenant = await getTenant(tenantId);
+    if (!tenant) {
+      return { valid: false, error: 'Tenant not found' };
+    }
+    return { valid: true, tenant };
+  }
+
+  // Option 2: Tenant API key (external tenant calls)
+  if (tenantId && apiKey) {
+    const tenant = await getTenant(tenantId);
+    if (!tenant) {
+      return { valid: false, error: 'Tenant not found' };
+    }
+    if (tenant.apiKey !== apiKey) {
+      return { valid: false, error: 'Invalid API key' };
+    }
+    return { valid: true, tenant };
+  }
+
+  return { valid: false, error: 'Missing authentication credentials' };
+}
+
+/**
+ * OPTIONS - Handle CORS preflight
+ */
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: CORS_HEADERS,
+  });
+}
 
 // Default menus that every tenant gets
 const DEFAULT_MENUS = [
@@ -56,12 +136,12 @@ const DEFAULT_MENUS = [
  */
 export async function GET(request: NextRequest) {
   try {
-    // Authenticate tenant
-    const authResult = await authenticateTenant(request);
-    if (!authResult.authenticated || !authResult.tenant) {
+    // Authenticate request
+    const authResult = await authenticateRequest(request);
+    if (!authResult.valid || !authResult.tenant) {
       return NextResponse.json(
         { success: false, error: authResult.error || 'Authentication failed' },
-        { status: 401 }
+        { status: 401, headers: CORS_HEADERS }
       );
     }
 
@@ -84,11 +164,14 @@ export async function GET(request: NextRequest) {
       }
       await batch.commit();
 
-      return NextResponse.json({
-        success: true,
-        menus: DEFAULT_MENUS,
-        initialized: true,
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          menus: DEFAULT_MENUS,
+          initialized: true,
+        },
+        { headers: CORS_HEADERS }
+      );
     }
 
     const menus = snapshot.docs.map(doc => ({
@@ -96,10 +179,13 @@ export async function GET(request: NextRequest) {
       ...doc.data(),
     }));
 
-    return NextResponse.json({
-      success: true,
-      menus,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        menus,
+      },
+      { headers: CORS_HEADERS }
+    );
   } catch (error) {
     console.error('[Menus API] Error fetching menus:', error);
     return NextResponse.json(
@@ -108,7 +194,7 @@ export async function GET(request: NextRequest) {
         error: 'Failed to fetch menus',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }
@@ -118,11 +204,11 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await authenticateTenant(request);
-    if (!authResult.authenticated || !authResult.tenant) {
+    const authResult = await authenticateRequest(request);
+    if (!authResult.valid || !authResult.tenant) {
       return NextResponse.json(
         { success: false, error: authResult.error || 'Authentication failed' },
-        { status: 401 }
+        { status: 401, headers: CORS_HEADERS }
       );
     }
 
@@ -132,7 +218,7 @@ export async function POST(request: NextRequest) {
     if (!name || !slug) {
       return NextResponse.json(
         { success: false, error: 'name and slug are required' },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
@@ -145,7 +231,7 @@ export async function POST(request: NextRequest) {
     if (!existing.empty) {
       return NextResponse.json(
         { success: false, error: 'A menu with this slug already exists' },
-        { status: 409 }
+        { status: 409, headers: CORS_HEADERS }
       );
     }
 
@@ -162,10 +248,13 @@ export async function POST(request: NextRequest) {
 
     await menusRef.doc(slug).set(newMenu);
 
-    return NextResponse.json({
-      success: true,
-      menu: newMenu,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        menu: newMenu,
+      },
+      { headers: CORS_HEADERS }
+    );
   } catch (error) {
     console.error('[Menus API] Error creating menu:', error);
     return NextResponse.json(
@@ -174,7 +263,7 @@ export async function POST(request: NextRequest) {
         error: 'Failed to create menu',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }
@@ -184,11 +273,11 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const authResult = await authenticateTenant(request);
-    if (!authResult.authenticated || !authResult.tenant) {
+    const authResult = await authenticateRequest(request);
+    if (!authResult.valid || !authResult.tenant) {
       return NextResponse.json(
         { success: false, error: authResult.error || 'Authentication failed' },
-        { status: 401 }
+        { status: 401, headers: CORS_HEADERS }
       );
     }
 
@@ -198,7 +287,7 @@ export async function PUT(request: NextRequest) {
     if (!menuId) {
       return NextResponse.json(
         { success: false, error: 'menuId is required' },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
@@ -210,7 +299,7 @@ export async function PUT(request: NextRequest) {
     if (!menuDoc.exists) {
       return NextResponse.json(
         { success: false, error: 'Menu not found' },
-        { status: 404 }
+        { status: 404, headers: CORS_HEADERS }
       );
     }
 
@@ -224,10 +313,13 @@ export async function PUT(request: NextRequest) {
     const updatedDoc = await menuRef.get();
     const updatedMenu = { id: updatedDoc.id, ...updatedDoc.data() };
 
-    return NextResponse.json({
-      success: true,
-      menu: updatedMenu,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        menu: updatedMenu,
+      },
+      { headers: CORS_HEADERS }
+    );
   } catch (error) {
     console.error('[Menus API] Error updating menu:', error);
     return NextResponse.json(
@@ -236,7 +328,7 @@ export async function PUT(request: NextRequest) {
         error: 'Failed to update menu',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }
@@ -246,11 +338,11 @@ export async function PUT(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const authResult = await authenticateTenant(request);
-    if (!authResult.authenticated || !authResult.tenant) {
+    const authResult = await authenticateRequest(request);
+    if (!authResult.valid || !authResult.tenant) {
       return NextResponse.json(
         { success: false, error: authResult.error || 'Authentication failed' },
-        { status: 401 }
+        { status: 401, headers: CORS_HEADERS }
       );
     }
 
@@ -260,7 +352,7 @@ export async function DELETE(request: NextRequest) {
     if (!menuId) {
       return NextResponse.json(
         { success: false, error: 'menuId is required' },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
@@ -269,7 +361,7 @@ export async function DELETE(request: NextRequest) {
     if (CORE_MENUS.includes(menuId)) {
       return NextResponse.json(
         { success: false, error: 'Cannot delete core system menus' },
-        { status: 403 }
+        { status: 403, headers: CORS_HEADERS }
       );
     }
 
@@ -277,10 +369,13 @@ export async function DELETE(request: NextRequest) {
     const db = getFirestore(getAdminApp());
     await db.collection('tenants').doc(tenantId).collection('menus').doc(menuId).delete();
 
-    return NextResponse.json({
-      success: true,
-      deleted: menuId,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        deleted: menuId,
+      },
+      { headers: CORS_HEADERS }
+    );
   } catch (error) {
     console.error('[Menus API] Error deleting menu:', error);
     return NextResponse.json(
@@ -289,7 +384,7 @@ export async function DELETE(request: NextRequest) {
         error: 'Failed to delete menu',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }
