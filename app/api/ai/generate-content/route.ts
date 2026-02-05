@@ -63,6 +63,16 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Generate Content] Tenant: ${tenant.id}, Prompt length: ${body.prompt.length}`);
 
+    // Build tenant-aware system instruction
+    let enhancedSystemInstruction = body.systemInstruction || '';
+
+    // Add service area context if available
+    if (tenant.serviceArea) {
+      const serviceAreaContext = `\n\nIMPORTANT SERVICE AREA CONTEXT:\nThis content is for ${tenant.businessName || 'the publication'} which serves ${tenant.serviceArea.city}, ${tenant.serviceArea.state}${tenant.serviceArea.region ? ` (${tenant.serviceArea.region})` : ''}.\nALL content must be relevant to and focused on this specific geographic area. Do NOT include content from other regions unless explicitly requested.`;
+      enhancedSystemInstruction += serviceAreaContext;
+      console.log(`[Generate Content] Added service area context: ${tenant.serviceArea.city}, ${tenant.serviceArea.state}`);
+    }
+
     // Generate content using Gemini
     const content = await generateContent(
       body.prompt,
@@ -71,7 +81,7 @@ export async function POST(request: NextRequest) {
         temperature: body.temperature,
         maxTokens: body.maxTokens,
       },
-      body.systemInstruction
+      enhancedSystemInstruction || undefined
     );
 
     return NextResponse.json(
