@@ -39,7 +39,7 @@ export function OnboardingChoice({ isOpen, onClose, onReserveSpot, onGetStarted 
                 <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-brand-blue-500 to-brand-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-brand-blue-500/30">
                   <MapPin className="h-7 w-7 text-white" />
                 </div>
-                <CardTitle className="text-2xl font-display">Reserve Your Spot</CardTitle>
+                <CardTitle className="text-2xl font-display">Reserve Your Place on the Map</CardTitle>
                 <CardDescription className="text-base">
                   Claim your territory on our growth map. No commitment required.
                 </CardDescription>
@@ -69,7 +69,7 @@ export function OnboardingChoice({ isOpen, onClose, onReserveSpot, onGetStarted 
                   className="w-full hover:bg-brand-blue-50 hover:border-brand-blue-500"
                   size="lg"
                 >
-                  Reserve My Spot
+                  Reserve Your Place
                 </Button>
               </CardContent>
             </Card>
@@ -113,7 +113,7 @@ export function OnboardingChoice({ isOpen, onClose, onReserveSpot, onGetStarted 
                   className="w-full shadow-lg shadow-brand-blue-500/30"
                   size="lg"
                 >
-                  Start Setup Now
+                  Get Started Today
                 </Button>
               </CardContent>
             </Card>
