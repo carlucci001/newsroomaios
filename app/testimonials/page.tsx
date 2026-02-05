@@ -11,6 +11,7 @@ import {
   Mail,
   Sparkles,
   CheckCircle2,
+  ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/layout/SiteHeader";

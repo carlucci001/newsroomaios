@@ -7,6 +7,7 @@ import {
   Building2,
   Mail,
   CheckCircle2,
+  ArrowRight,
   Sparkles,
   TrendingUp,
   BarChart3,
