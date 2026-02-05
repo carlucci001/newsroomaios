@@ -183,10 +183,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const menus = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const menus = snapshot.docs.map(doc => {
+      const menuData = doc.data();
+      // Filter out any null items that may have been stored
+      if (menuData.items && Array.isArray(menuData.items)) {
+        menuData.items = menuData.items.filter((item: any) => item != null);
+      }
+      return {
+        id: doc.id,
+        ...menuData,
+      };
+    });
 
     return NextResponse.json(
       {
@@ -332,7 +339,12 @@ export async function PUT(request: NextRequest) {
     await menuRef.update(updateData);
 
     const updatedDoc = await menuRef.get();
-    const updatedMenu = { id: updatedDoc.id, ...updatedDoc.data() };
+    const menuData = updatedDoc.data();
+    // Filter out any null items
+    if (menuData && menuData.items && Array.isArray(menuData.items)) {
+      menuData.items = menuData.items.filter((item: any) => item != null);
+    }
+    const updatedMenu = { id: updatedDoc.id, ...menuData };
 
     return NextResponse.json(
       {
