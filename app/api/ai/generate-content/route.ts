@@ -67,12 +67,11 @@ export async function POST(request: NextRequest) {
     const content = await generateContent(
       body.prompt,
       {
-        systemInstruction: body.systemInstruction,
         model: body.model || 'gemini-2.0-flash-exp',
         temperature: body.temperature,
-        maxOutputTokens: body.maxTokens,
-        responseMimeType: body.responseFormat === 'json' ? 'application/json' : 'text/plain',
-      }
+        maxTokens: body.maxTokens,
+      },
+      body.systemInstruction
     );
 
     return NextResponse.json(
