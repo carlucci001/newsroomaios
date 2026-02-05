@@ -205,9 +205,29 @@ export async function GET(request: NextRequest) {
     const menusRef = db.collection('tenants').doc(tenantId).collection('menus');
     const snapshot = await menusRef.orderBy('slug').get();
 
-    // If no menus exist, initialize with tenant-specific defaults
-    if (snapshot.empty) {
-      console.log(`[Menus API] Initializing default menus for tenant ${tenantId}`);
+    // Check if menus need regeneration (empty, or look incomplete/corrupted)
+    let needsRegeneration = snapshot.empty;
+
+    if (!needsRegeneration && !snapshot.empty) {
+      // Check if main-nav exists and has reasonable number of items
+      const mainNav = snapshot.docs.find(doc => doc.id === 'main-nav');
+      if (!mainNav) {
+        needsRegeneration = true;
+        console.log(`[Menus API] main-nav missing - forcing regeneration`);
+      } else {
+        const mainNavData = mainNav.data();
+        const itemCount = mainNavData.items?.length || 0;
+        // Main nav should have at least: Home (1) + Categories (6) + Directory, Blog, Community (3) = 10+
+        if (itemCount < 5) {
+          needsRegeneration = true;
+          console.log(`[Menus API] main-nav only has ${itemCount} items - forcing regeneration`);
+        }
+      }
+    }
+
+    // If menus need regeneration, rebuild them
+    if (needsRegeneration) {
+      console.log(`[Menus API] Regenerating menus for tenant ${tenantId}`);
 
       // Build menus from tenant's categories
       const defaultMenus = await buildDefaultMenus(tenantId, db);
