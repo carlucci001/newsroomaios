@@ -263,6 +263,16 @@ export async function GET(request: NextRequest) {
             needsRegeneration = true;
             console.log(`[Menus API] Found multi-word category labels - forcing regeneration with short labels`);
           }
+
+          // Check if main-nav has standard pages (Directory, Blog, Community) - these belong only in top-nav
+          const hasDuplicatePages = mainNavData.items.some((item: any) =>
+            item.path === '/directory' || item.path === '/blog' || item.path === '/community'
+          );
+
+          if (hasDuplicatePages) {
+            needsRegeneration = true;
+            console.log(`[Menus API] Found duplicate standard pages in main-nav - forcing regeneration`);
+          }
         }
       }
     }
