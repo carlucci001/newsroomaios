@@ -97,9 +97,9 @@ const DEFAULT_MENUS = [
     description: 'Primary navigation menu in the header',
     enabled: true,
     items: [
-      { label: 'Home', url: '/', type: 'internal' as const, enabled: true },
-      { label: 'About', url: '/about', type: 'internal' as const, enabled: true },
-      { label: 'Contact', url: '/contact', type: 'internal' as const, enabled: true },
+      { id: 'home', label: 'Home', path: '/', type: 'internal' as const, enabled: true, order: 0 },
+      { id: 'about', label: 'About', path: '/about', type: 'internal' as const, enabled: true, order: 1 },
+      { id: 'contact', label: 'Contact', path: '/contact', type: 'internal' as const, enabled: true, order: 2 },
     ],
   },
   {
@@ -109,7 +109,7 @@ const DEFAULT_MENUS = [
     description: 'Quick links in the top bar',
     enabled: true,
     items: [
-      { label: 'Advertise', url: '/advertise', type: 'internal' as const, enabled: true },
+      { id: 'advertise', label: 'Advertise', path: '/advertise', type: 'internal' as const, enabled: true, order: 0 },
     ],
   },
   {
@@ -119,9 +119,9 @@ const DEFAULT_MENUS = [
     description: 'Quick links in footer',
     enabled: true,
     items: [
-      { label: 'About Us', url: '/about', type: 'internal' as const, enabled: true },
-      { label: 'Contact', url: '/contact', type: 'internal' as const, enabled: true },
-      { label: 'Advertise', url: '/advertise', type: 'internal' as const, enabled: true },
+      { id: 'about-us', label: 'About Us', path: '/about', type: 'internal' as const, enabled: true, order: 0 },
+      { id: 'contact-footer', label: 'Contact', path: '/contact', type: 'internal' as const, enabled: true, order: 1 },
+      { id: 'advertise-footer', label: 'Advertise', path: '/advertise', type: 'internal' as const, enabled: true, order: 2 },
     ],
   },
   {
