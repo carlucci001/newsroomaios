@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/firebase';
 import { getAdminDb } from '@/lib/firebaseAdmin';
-import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 import { generateContent, NEWS_SYSTEM_INSTRUCTION } from '@/lib/gemini';
 import { buildArticlePrompt, validateSourceMaterial } from '@/lib/promptBuilder';
 import { parseArticleResponse, generateSlug } from '@/lib/articleParser';
@@ -264,10 +262,9 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    const articleRef = await addDoc(
-      collection(db, `tenants/${tenant.id}/articles`),
-      articleData
-    );
+    const articleRef = await db
+      .collection(`tenants/${tenant.id}/articles`)
+      .add(articleData);
 
     // Deduct credits
     await deductCredits(tenant.id, creditsNeeded, parsedArticle.title, articleRef.id);
@@ -359,10 +356,15 @@ async function authenticateRequest(request: NextRequest): Promise<{
  */
 async function getTenant(tenantId: string): Promise<Tenant | null> {
   try {
-    const db = getDb();
-    const tenantDoc = await getDoc(doc(db, 'tenants', tenantId));
+    const db = getAdminDb();
+    if (!db) {
+      console.error('[Get Tenant] Database not configured');
+      return null;
+    }
 
-    if (!tenantDoc.exists()) {
+    const tenantDoc = await db.collection('tenants').doc(tenantId).get();
+
+    if (!tenantDoc.exists) {
       return null;
     }
 
