@@ -1,4 +1,4 @@
-# Admin UI Components Guide
+well they do well they're a Walking Dead they can kill each other with The Walking dead# Admin UI Components Guide
 
 Your Newsroom AIOS back office now has a complete, professional UI system with charts, data tables, and real-time chat!
 

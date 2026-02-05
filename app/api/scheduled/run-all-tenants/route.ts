@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all active tenants
+    // Get all active tenants (include 'seeding' to handle stuck seeding status)
     const tenantsSnap = await db.collection('tenants')
-      .where('status', 'in', ['active', 'provisioning'])
+      .where('status', 'in', ['active', 'provisioning', 'seeding'])
       .get();
 
     if (tenantsSnap.empty) {
@@ -70,6 +70,31 @@ export async function GET(request: NextRequest) {
       try {
         // SEEDING: New tenants get 36 seed articles (6 per category)
         if (tenant.status === 'provisioning') {
+          console.log(`[Seeding] Checking if ${tenant.businessName} needs seeding`);
+
+          // CRITICAL FIX: Check if articles already exist to prevent duplicate seeding
+          const existingArticlesSnap = await db
+            .collection(`tenants/${tenant.id}/articles`)
+            .limit(1)
+            .get();
+
+          if (!existingArticlesSnap.empty) {
+            console.log(`[Seeding] ${tenant.businessName} already has articles - skipping seeding and marking active`);
+            await db.collection('tenants').doc(tenant.id).update({
+              status: 'active',
+              seededAt: new Date(),
+            });
+            tenantResult.errors.push('Already seeded - marked active');
+            results.push(tenantResult);
+            continue;
+          }
+
+          // CRITICAL FIX: Atomically mark tenant as 'seeding' to prevent concurrent runs
+          await db.collection('tenants').doc(tenant.id).update({
+            status: 'seeding',
+            seedingStartedAt: new Date(),
+          });
+
           console.log(`[Seeding] Starting seed for ${tenant.businessName}`);
           const seedResult = await seedTenantArticles(tenant, db);
           tenantResult.articlesGenerated = seedResult.articlesCreated;
@@ -84,6 +109,53 @@ export async function GET(request: NextRequest) {
           console.log(`[Seeding] Completed for ${tenant.businessName}: ${seedResult.articlesCreated} articles`);
           results.push(tenantResult);
           continue; // Skip regular journalist run for seeding pass
+        }
+
+        // CRITICAL FIX: Handle stuck seeding status (recovery mechanism)
+        if (tenant.status === 'seeding') {
+          const seedingStartedAt = tenant.seedingStartedAt;
+          const oneHourAgo = Date.now() - (60 * 60 * 1000);
+
+          // If seeding has been running for more than 1 hour, it's likely stuck
+          if (seedingStartedAt) {
+            const seedingStartTime = seedingStartedAt instanceof Date
+              ? seedingStartedAt.getTime()
+              : (seedingStartedAt as any).seconds * 1000;
+
+            if (seedingStartTime < oneHourAgo) {
+              console.warn(`[Seeding] ${tenant.businessName} has been seeding for over 1 hour - attempting recovery`);
+
+              // Check if articles were created
+              const existingArticlesSnap = await db
+                .collection(`tenants/${tenant.id}/articles`)
+                .limit(1)
+                .get();
+
+              if (!existingArticlesSnap.empty) {
+                // Articles exist, mark as active
+                console.log(`[Seeding] ${tenant.businessName} has articles - marking as active`);
+                await db.collection('tenants').doc(tenant.id).update({
+                  status: 'active',
+                  seededAt: new Date(),
+                });
+              } else {
+                // No articles, reset to provisioning to retry
+                console.log(`[Seeding] ${tenant.businessName} has no articles - resetting to provisioning for retry`);
+                await db.collection('tenants').doc(tenant.id).update({
+                  status: 'provisioning',
+                });
+              }
+
+              tenantResult.errors.push('Recovered from stuck seeding status');
+              results.push(tenantResult);
+              continue;
+            }
+          }
+
+          console.log(`[Seeding] ${tenant.businessName} is currently being seeded - skipping`);
+          tenantResult.errors.push('Seeding in progress');
+          results.push(tenantResult);
+          continue;
         }
 
         // REGULAR RUN: Active tenants run scheduled journalists
@@ -392,7 +464,31 @@ async function seedTenantArticles(
   const ARTICLES_PER_CATEGORY = 6;
   let articlesCreated = 0;
   const errors: string[] = [];
+
+  // CRITICAL FIX: Validate tenant configuration before seeding
+  if (!tenant.categories || tenant.categories.length === 0) {
+    errors.push('No categories configured - cannot seed articles');
+    console.error(`[Seed] ${tenant.businessName} has no categories configured!`);
+    return { articlesCreated: 0, errors };
+  }
+
+  if (!tenant.serviceArea?.city || !tenant.serviceArea?.state) {
+    errors.push('Service area not configured - cannot generate location-specific content');
+    console.error(`[Seed] ${tenant.businessName} missing service area configuration!`);
+    return { articlesCreated: 0, errors };
+  }
+
+  // Validate all categories have required fields
+  for (const category of tenant.categories) {
+    if (!category.id || !category.name || !category.slug) {
+      errors.push(`Category missing required fields: ${JSON.stringify(category)}`);
+      console.error(`[Seed] Invalid category configuration:`, category);
+      return { articlesCreated: 0, errors };
+    }
+  }
+
   const totalArticles = tenant.categories.length * ARTICLES_PER_CATEGORY;
+  console.log(`[Seed] Validation passed for ${tenant.businessName}: ${tenant.categories.length} categories, ${totalArticles} articles to create`);
 
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
