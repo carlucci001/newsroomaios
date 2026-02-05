@@ -210,26 +210,43 @@ async function seedLeads() {
   console.log('🌱 Seeding sample leads...\n');
 
   try {
-    for (const lead of sampleLeads) {
+    const now = new Date();
+
+    for (let i = 0; i < sampleLeads.length; i++) {
+      const lead = sampleLeads[i];
+
+      // Create varied timestamps - spread over past 30 days
+      // More recent activity = more realistic growth
+      const daysAgo = Math.floor(Math.random() * 30);
+      const hoursAgo = Math.floor(Math.random() * 24);
+      const minutesAgo = Math.floor(Math.random() * 60);
+
+      const timestamp = new Date(
+        now.getTime() -
+        (daysAgo * 24 * 60 * 60 * 1000) -
+        (hoursAgo * 60 * 60 * 1000) -
+        (minutesAgo * 60 * 1000)
+      );
+
       // Add timestamp
       const leadData = {
         ...lead,
-        createdAt: serverTimestamp(),
+        createdAt: timestamp,
         isSample: true  // Mark as sample data
       };
 
       // Create lead
       const leadRef = await addDoc(collection(db, 'leads'), leadData);
-      console.log(`✅ Created lead: ${lead.name} - ${lead.city}, ${lead.state}`);
+      console.log(`✅ Created lead: ${lead.name} - ${lead.city}, ${lead.state} (${daysAgo}d ago)`);
 
-      // Create corresponding activity
+      // Create corresponding activity with same timestamp
       await addDoc(collection(db, 'activities'), {
         type: 'reservation',
         leadId: leadRef.id,
         newspaperName: lead.newspaperName || 'New Territory',
         city: lead.city,
         state: lead.state,
-        timestamp: serverTimestamp(),
+        timestamp: timestamp,
         message: `🎯 ${lead.name} just reserved ${lead.city}, ${lead.state}!`,
         isSample: true
       });

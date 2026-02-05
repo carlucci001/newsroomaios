@@ -3,63 +3,65 @@
 import { useState } from 'react';
 import { Lead } from '@/types/lead';
 import { MapPin, Building2 } from 'lucide-react';
+import Image from 'next/image';
 
 interface InteractiveMapProps {
   leads: Lead[];
 }
 
-// US State coordinates (approximate center points for visualization)
+// US State coordinates (percentage-based positions calibrated to US map)
+// x: 0-100 (left to right), y: 0-100 (top to bottom)
 const stateCoordinates: Record<string, { x: number; y: number }> = {
-  'Alabama': { x: 650, y: 520 },
-  'Alaska': { x: 100, y: 650 },
-  'Arizona': { x: 200, y: 450 },
-  'Arkansas': { x: 550, y: 450 },
-  'California': { x: 100, y: 350 },
-  'Colorado': { x: 350, y: 350 },
-  'Connecticut': { x: 850, y: 250 },
-  'Delaware': { x: 800, y: 300 },
-  'Florida': { x: 750, y: 600 },
-  'Georgia': { x: 700, y: 500 },
-  'Hawaii': { x: 250, y: 650 },
-  'Idaho': { x: 200, y: 200 },
-  'Illinois': { x: 600, y: 300 },
-  'Indiana': { x: 650, y: 320 },
-  'Iowa': { x: 550, y: 280 },
-  'Kansas': { x: 500, y: 380 },
-  'Kentucky': { x: 650, y: 380 },
-  'Louisiana': { x: 550, y: 550 },
-  'Maine': { x: 900, y: 150 },
-  'Maryland': { x: 780, y: 320 },
-  'Massachusetts': { x: 850, y: 230 },
-  'Michigan': { x: 650, y: 230 },
-  'Minnesota': { x: 550, y: 180 },
-  'Mississippi': { x: 600, y: 520 },
-  'Missouri': { x: 550, y: 380 },
-  'Montana': { x: 300, y: 150 },
-  'Nebraska': { x: 450, y: 320 },
-  'Nevada': { x: 150, y: 320 },
-  'New Hampshire': { x: 850, y: 200 },
-  'New Jersey': { x: 820, y: 280 },
-  'New Mexico': { x: 320, y: 450 },
-  'New York': { x: 800, y: 230 },
-  'North Carolina': { x: 750, y: 420 },
-  'North Dakota': { x: 450, y: 180 },
-  'Ohio': { x: 700, y: 320 },
-  'Oklahoma': { x: 480, y: 450 },
-  'Oregon': { x: 120, y: 200 },
-  'Pennsylvania': { x: 760, y: 300 },
-  'Rhode Island': { x: 870, y: 250 },
-  'South Carolina': { x: 730, y: 470 },
-  'South Dakota': { x: 450, y: 250 },
-  'Tennessee': { x: 650, y: 430 },
-  'Texas': { x: 420, y: 530 },
-  'Utah': { x: 250, y: 320 },
-  'Vermont': { x: 830, y: 190 },
-  'Virginia': { x: 750, y: 370 },
-  'Washington': { x: 140, y: 130 },
-  'West Virginia': { x: 720, y: 350 },
-  'Wisconsin': { x: 600, y: 220 },
-  'Wyoming': { x: 320, y: 260 },
+  'Alabama': { x: 68, y: 68 },
+  'Alaska': { x: 10, y: 85 },
+  'Arizona': { x: 20, y: 60 },
+  'Arkansas': { x: 60, y: 63 },
+  'California': { x: 10, y: 55 },
+  'Colorado': { x: 35, y: 50 },
+  'Connecticut': { x: 88, y: 35 },
+  'Delaware': { x: 85, y: 42 },
+  'Florida': { x: 78, y: 80 },
+  'Georgia': { x: 73, y: 68 },
+  'Hawaii': { x: 22, y: 85 },
+  'Idaho': { x: 23, y: 30 },
+  'Illinois': { x: 64, y: 47 },
+  'Indiana': { x: 68, y: 46 },
+  'Iowa': { x: 60, y: 40 },
+  'Kansas': { x: 52, y: 50 },
+  'Kentucky': { x: 70, y: 52 },
+  'Louisiana': { x: 62, y: 74 },
+  'Maine': { x: 92, y: 22 },
+  'Maryland': { x: 83, y: 45 },
+  'Massachusetts': { x: 88, y: 32 },
+  'Michigan': { x: 69, y: 35 },
+  'Minnesota': { x: 60, y: 28 },
+  'Mississippi': { x: 63, y: 70 },
+  'Missouri': { x: 60, y: 50 },
+  'Montana': { x: 32, y: 25 },
+  'Nebraska': { x: 50, y: 42 },
+  'Nevada': { x: 18, y: 45 },
+  'New Hampshire': { x: 88, y: 28 },
+  'New Jersey': { x: 85, y: 42 },
+  'New Mexico': { x: 33, y: 62 },
+  'New York': { x: 84, y: 33 },
+  'North Carolina': { x: 78, y: 58 },
+  'North Dakota': { x: 50, y: 25 },
+  'Ohio': { x: 72, y: 45 },
+  'Oklahoma': { x: 52, y: 60 },
+  'Oregon': { x: 15, y: 32 },
+  'Pennsylvania': { x: 80, y: 42 },
+  'Rhode Island': { x: 89, y: 34 },
+  'South Carolina': { x: 76, y: 64 },
+  'South Dakota': { x: 50, y: 35 },
+  'Tennessee': { x: 68, y: 58 },
+  'Texas': { x: 48, y: 72 },
+  'Utah': { x: 27, y: 47 },
+  'Vermont': { x: 86, y: 28 },
+  'Virginia': { x: 80, y: 51 },
+  'Washington': { x: 17, y: 23 },
+  'West Virginia': { x: 76, y: 48 },
+  'Wisconsin': { x: 63, y: 32 },
+  'Wyoming': { x: 35, y: 38 },
 };
 
 export function InteractiveMap({ leads }: InteractiveMapProps) {
@@ -76,97 +78,84 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
   }, {} as Record<string, { lead: Lead; count: number }>);
 
   return (
-    <div className="relative bg-gradient-to-br from-brand-blue-50 to-white rounded-xl border-2 border-brand-blue-100 p-8">
-      {/* SVG Map Container */}
-      <svg
-        viewBox="0 0 1000 700"
-        className="w-full h-auto"
-        style={{ maxHeight: '600px' }}
-      >
-        {/* Background */}
-        <rect width="1000" height="700" fill="#f0f9ff" />
+    <div className="relative rounded-xl border-2 border-brand-blue-200 overflow-hidden bg-white">
+      {/* Map Container with real US map background */}
+      <div className="relative w-full" style={{ aspectRatio: '16/10', minHeight: '500px' }}>
+        {/* US Map Background Image */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Blank_US_Map_%28states_only%29.svg/1280px-Blank_US_Map_%28states_only%29.svg.png"
+            alt="US Map"
+            className="w-full h-full object-contain opacity-60"
+            style={{ filter: 'contrast(1.1)' }}
+          />
+        </div>
 
-        {/* Grid lines for visual appeal */}
-        <defs>
-          <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
-            <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#e0f2fe" strokeWidth="0.5"/>
-          </pattern>
-        </defs>
-        <rect width="1000" height="700" fill="url(#grid)" />
+        {/* Pins Container */}
+        <div className="absolute inset-0">{/* Map markers */}
 
-        {/* Map markers */}
-        {Object.entries(leadsByLocation).map(([location, { lead, count }]) => {
-          const coords = stateCoordinates[lead.state];
-          if (!coords) return null;
+          {/* Map markers */}
+          {Object.entries(leadsByLocation).map(([location, { lead, count }]) => {
+            const coords = stateCoordinates[lead.state];
+            if (!coords) return null;
 
-          // Add some randomness so pins don't overlap perfectly
-          const x = coords.x + (Math.random() - 0.5) * 40;
-          const y = coords.y + (Math.random() - 0.5) * 40;
-          const isReserved = lead.status === 'reserved';
+            // Use percentage-based positioning
+            // Add slight randomness to prevent perfect overlap (±2%)
+            const xPercent = coords.x + (Math.random() - 0.5) * 2;
+            const yPercent = coords.y + (Math.random() - 0.5) * 2;
+            const isReserved = lead.status === 'reserved';
 
-          return (
-            <g
-              key={location}
-              transform={`translate(${x}, ${y})`}
-              className="cursor-pointer transition-transform hover:scale-125"
-              onMouseEnter={() => setHoveredLead(lead)}
-              onMouseLeave={() => setHoveredLead(null)}
-            >
-              {/* Pin shadow */}
-              <circle
-                cx="0"
-                cy="25"
-                r="8"
-                fill="black"
-                opacity="0.2"
-              />
+            return (
+              <div
+                key={location}
+                className="absolute cursor-pointer transition-all hover:z-50"
+                style={{
+                  left: `${xPercent}%`,
+                  top: `${yPercent}%`,
+                  transform: 'translate(-50%, -50%)'
+                }}
+                onMouseEnter={() => setHoveredLead(lead)}
+                onMouseLeave={() => setHoveredLead(null)}
+              >
+                {/* Pin */}
+                <div className="relative">
+                  <MapPin
+                    className={`h-8 w-8 drop-shadow-lg ${
+                      isReserved ? 'text-blue-500' : 'text-green-500'
+                    }`}
+                    fill={isReserved ? '#3b82f6' : '#10b981'}
+                  />
 
-              {/* Pin */}
-              <circle
-                cx="0"
-                cy="0"
-                r="12"
-                fill={isReserved ? '#3b82f6' : '#10b981'}
-                stroke="white"
-                strokeWidth="2"
-                className="animate-pulse"
-              />
-
-              {/* Count badge */}
-              {count > 1 && (
-                <>
-                  <circle cx="8" cy="-8" r="8" fill="#ef4444" stroke="white" strokeWidth="1.5" />
-                  <text
-                    x="8"
-                    y="-5"
-                    textAnchor="middle"
-                    fill="white"
-                    fontSize="10"
-                    fontWeight="bold"
-                  >
-                    {count}
-                  </text>
-                </>
-              )}
-            </g>
-          );
-        })}
+                  {/* Count badge */}
+                  {count > 1 && (
+                    <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 border-2 border-white flex items-center justify-center">
+                      <span className="text-xs text-white font-bold">{count}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         {/* Legend */}
-        <g transform="translate(50, 620)">
-          <rect width="300" height="60" fill="white" opacity="0.9" rx="8" />
-          <circle cx="20" cy="20" r="8" fill="#3b82f6" />
-          <text x="35" y="25" fontSize="14" fill="#374151">Reserved Territory</text>
-          <circle cx="20" cy="45" r="8" fill="#10b981" />
-          <text x="35" y="50" fontSize="14" fill="#374151">Live Newspaper</text>
-        </g>
-      </svg>
+        <div className="absolute bottom-4 left-4 bg-white/95 rounded-lg shadow-lg p-4 border-2 border-brand-blue-100">
+          <div className="flex items-center gap-3 mb-2">
+            <MapPin className="h-5 w-5 text-blue-500" fill="#3b82f6" />
+            <span className="text-sm font-medium">Reserved Territory</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <MapPin className="h-5 w-5 text-green-500" fill="#10b981" />
+            <span className="text-sm font-medium">Live Newspaper</span>
+          </div>
+        </div>
+      </div>
 
       {/* Hover tooltip */}
       {hoveredLead && (
-        <div className="absolute top-4 right-4 bg-white rounded-lg shadow-2xl p-4 border-2 border-brand-blue-200 max-w-xs z-10 animate-fade-in">
+        <div className="absolute top-4 right-4 bg-white rounded-lg shadow-2xl p-4 border-2 border-brand-blue-200 max-w-xs z-50">
           <div className="flex items-start gap-3">
-            <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+            <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
               hoveredLead.status === 'reserved' ? 'bg-blue-100' : 'bg-green-100'
             }`}>
               {hoveredLead.status === 'reserved' ? (
@@ -185,7 +174,7 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
               {hoveredLead.county && (
                 <p className="text-xs text-muted-foreground">{hoveredLead.county}</p>
               )}
-              <p className="text-xs text-brand-blue-600 font-semibold mt-1">
+              <p className="text-xs font-semibold mt-1">
                 {hoveredLead.status === 'reserved' ? '🔵 Reserved' : '🟢 Live'}
               </p>
             </div>
@@ -195,10 +184,10 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
 
       {/* Empty state */}
       {leads.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <MapPin className="h-16 w-16 text-brand-blue-300 mx-auto mb-4" />
-            <p className="text-lg text-muted-foreground">
+        <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+          <div className="text-center p-8">
+            <MapPin className="h-16 w-16 text-brand-blue-400 mx-auto mb-4" />
+            <p className="text-xl font-semibold text-muted-foreground">
               Be the first to reserve your spot!
             </p>
           </div>

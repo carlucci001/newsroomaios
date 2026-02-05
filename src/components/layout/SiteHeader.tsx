@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Newspaper, ArrowRight, Menu, X } from 'lucide-react';
+import { Feather, ArrowRight, Menu, X } from 'lucide-react';
 
 interface SiteHeaderProps {
   onGetStarted?: () => void;
@@ -18,7 +18,7 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-brand-blue-600">
-              <Newspaper className="h-6 w-6 text-white" />
+              <Feather className="h-6 w-6 text-white" />
             </div>
             <span className="text-2xl font-display font-bold">
               Newsroom <span className="text-brand-blue-600">AIOS</span>

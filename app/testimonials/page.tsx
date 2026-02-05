@@ -3,8 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  ArrowRight,
-  Globe2,
   Target,
   Users,
   TrendingUp,
@@ -15,6 +13,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
+import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 
 export default function RevenuePotentialPage() {
@@ -46,40 +45,7 @@ export default function RevenuePotentialPage() {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-50 border-b border-border/40 backdrop-blur-xl bg-background/90 sticky top-0">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-brand-blue-600">
-              <Globe2 className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-2xl font-display font-bold">
-              Newsroom <span className="text-brand-blue-600">AIOS</span>
-            </span>
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/features" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">
-              Features
-            </Link>
-            <Link href="/how-it-works" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">
-              How It Works
-            </Link>
-            <Link href="/pricing" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">
-              Pricing
-            </Link>
-            <Link href="/testimonials" className="text-sm font-medium text-brand-blue-600 border-b-2 border-brand-blue-600">
-              Revenue Potential
-            </Link>
-            <Link href="/account/login">
-              <Button variant="ghost" size="sm">Sign In</Button>
-            </Link>
-            <Link href="/onboarding">
-              <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20">
-                Get Started <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <SiteHeader />
 
       {/* Hero Section */}
       <section className="relative pt-24 pb-20">
