@@ -88,51 +88,93 @@ export async function OPTIONS(request: NextRequest) {
   });
 }
 
-// Default menus that every tenant gets
-const DEFAULT_MENUS = [
-  {
-    id: 'main-nav',
-    name: 'Main Navigation',
-    slug: 'main-nav',
-    description: 'Primary navigation menu in the header',
-    enabled: true,
-    items: [
-      { id: 'home', label: 'Home', path: '/', type: 'internal' as const, enabled: true, order: 0 },
-      { id: 'about', label: 'About', path: '/about', type: 'internal' as const, enabled: true, order: 1 },
-      { id: 'contact', label: 'Contact', path: '/contact', type: 'internal' as const, enabled: true, order: 2 },
-    ],
-  },
-  {
-    id: 'top-nav',
-    name: 'Top Bar',
-    slug: 'top-nav',
-    description: 'Quick links in the top bar',
-    enabled: true,
-    items: [
-      { id: 'advertise', label: 'Advertise', path: '/advertise', type: 'internal' as const, enabled: true, order: 0 },
-    ],
-  },
-  {
-    id: 'footer-quick-links',
-    name: 'Footer - Quick Links',
-    slug: 'footer-quick-links',
-    description: 'Quick links in footer',
-    enabled: true,
-    items: [
-      { id: 'about-us', label: 'About Us', path: '/about', type: 'internal' as const, enabled: true, order: 0 },
-      { id: 'contact-footer', label: 'Contact', path: '/contact', type: 'internal' as const, enabled: true, order: 1 },
-      { id: 'advertise-footer', label: 'Advertise', path: '/advertise', type: 'internal' as const, enabled: true, order: 2 },
-    ],
-  },
-  {
-    id: 'footer-categories',
-    name: 'Footer - Categories',
-    slug: 'footer-categories',
-    description: 'Category links in footer',
-    enabled: true,
-    items: [],
-  },
-];
+/**
+ * Build default menus for a tenant based on their selected categories
+ * This runs on first menu access and creates menus with tenant-specific category links
+ */
+async function buildDefaultMenus(tenantId: string, db: any): Promise<any[]> {
+  // Fetch tenant record to get their categories
+  const tenantDoc = await db.collection('tenants').doc(tenantId).get();
+  if (!tenantDoc.exists) {
+    throw new Error('Tenant not found');
+  }
+
+  const tenant = tenantDoc.data();
+  const categories = tenant.categories || [];
+
+  console.log(`[Menus] Building default menus for ${tenant.businessName} with ${categories.length} categories`);
+
+  // Build category navigation items
+  const categoryNavItems = categories.map((cat: any, index: number) => ({
+    id: cat.id || cat.slug,
+    label: cat.name,
+    path: `/category/${cat.slug || cat.id}`,
+    type: 'internal' as const,
+    enabled: cat.enabled !== false,
+    order: index,
+  }));
+
+  // Build category footer items (same as nav, just for footer placement)
+  const categoryFooterItems = categories.map((cat: any, index: number) => ({
+    id: `${cat.id || cat.slug}-footer`,
+    label: cat.name,
+    path: `/category/${cat.slug || cat.id}`,
+    type: 'internal' as const,
+    enabled: cat.enabled !== false,
+    order: index,
+  }));
+
+  return [
+    {
+      id: 'main-nav',
+      name: 'Main Navigation',
+      slug: 'main-nav',
+      description: 'Primary navigation menu in the header',
+      enabled: true,
+      items: [
+        { id: 'home', label: 'Home', path: '/', type: 'internal' as const, enabled: true, order: 0 },
+        ...categoryNavItems,
+        { id: 'directory', label: 'Directory', path: '/directory', type: 'internal' as const, enabled: true, order: 100 },
+        { id: 'blog', label: 'Blog', path: '/blog', type: 'internal' as const, enabled: true, order: 101 },
+        { id: 'community', label: 'Community', path: '/community', type: 'internal' as const, enabled: true, order: 102 },
+      ],
+    },
+    {
+      id: 'top-nav',
+      name: 'Top Bar',
+      slug: 'top-nav',
+      description: 'Quick links in the top bar',
+      enabled: true,
+      items: [
+        { id: 'advertise', label: 'Advertise', path: '/advertise', type: 'internal' as const, enabled: true, order: 0 },
+        { id: 'directory-top', label: 'Directory', path: '/directory', type: 'internal' as const, enabled: true, order: 1 },
+      ],
+    },
+    {
+      id: 'footer-quick-links',
+      name: 'Footer - Quick Links',
+      slug: 'footer-quick-links',
+      description: 'Quick links in footer',
+      enabled: true,
+      items: [
+        { id: 'about-us', label: 'About Us', path: '/about', type: 'internal' as const, enabled: true, order: 0 },
+        { id: 'contact-footer', label: 'Contact', path: '/contact', type: 'internal' as const, enabled: true, order: 1 },
+        { id: 'advertise-footer', label: 'Advertise', path: '/advertise', type: 'internal' as const, enabled: true, order: 2 },
+        { id: 'directory-footer', label: 'Directory', path: '/directory', type: 'internal' as const, enabled: true, order: 3 },
+        { id: 'blog-footer', label: 'Blog', path: '/blog', type: 'internal' as const, enabled: true, order: 4 },
+        { id: 'community-footer', label: 'Community', path: '/community', type: 'internal' as const, enabled: true, order: 5 },
+      ],
+    },
+    {
+      id: 'footer-categories',
+      name: 'Footer - Categories',
+      slug: 'footer-categories',
+      description: 'Category links in footer',
+      enabled: true,
+      items: categoryFooterItems,
+    },
+  ];
+}
 
 /**
  * GET - Fetch all menus for a tenant
@@ -159,11 +201,15 @@ export async function GET(request: NextRequest) {
     const menusRef = db.collection('tenants').doc(tenantId).collection('menus');
     const snapshot = await menusRef.orderBy('slug').get();
 
-    // If no menus exist, initialize with defaults
+    // If no menus exist, initialize with tenant-specific defaults
     if (snapshot.empty) {
       console.log(`[Menus API] Initializing default menus for tenant ${tenantId}`);
+
+      // Build menus from tenant's categories
+      const defaultMenus = await buildDefaultMenus(tenantId, db);
+
       const batch = db.batch();
-      for (const menu of DEFAULT_MENUS) {
+      for (const menu of defaultMenus) {
         const menuRef = menusRef.doc(menu.id);
         batch.set(menuRef, {
           ...menu,
@@ -176,7 +222,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: true,
-          menus: DEFAULT_MENUS,
+          menus: defaultMenus,
           initialized: true,
         },
         { headers: CORS_HEADERS }
