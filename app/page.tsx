@@ -29,14 +29,17 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { OnboardingContent } from "@/components/onboarding/OnboardingContent";
 import { StatusContent } from "@/components/status/StatusContent";
 import { VideoModal } from "@/components/VideoModal";
+import { OnboardingChoice } from "@/components/onboarding/OnboardingChoice";
+import { LeadCaptureForm } from "@/components/onboarding/LeadCaptureForm";
 
-type PageView = 'home' | 'onboarding' | 'status';
+type PageView = 'home' | 'onboarding' | 'status' | 'leadCapture';
 
 export default function Home() {
   const [isVisible, setIsVisible] = useState(false);
   const [pageView, setPageView] = useState<PageView>('home');
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
   const pricingRef = useRef<HTMLDivElement>(null);
@@ -54,9 +57,28 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Open onboarding
+  // Open onboarding choice dialog
   const openOnboarding = () => {
+    setIsChoiceDialogOpen(true);
+  };
+
+  // Handle reserve spot choice
+  const handleReserveSpot = () => {
+    setIsChoiceDialogOpen(false);
+    setPageView('leadCapture');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Handle get started today choice
+  const handleGetStartedToday = () => {
+    setIsChoiceDialogOpen(false);
     setPageView('onboarding');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Handle lead capture success
+  const handleLeadCaptureSuccess = () => {
+    setPageView('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -134,7 +156,14 @@ export default function Home() {
       {/* Navigation */}
       <SiteHeader onGetStarted={openOnboarding} />
 
-      {/* Conditional Content: Home Page OR Onboarding OR Status */}
+      {/* Conditional Content: Home Page OR Onboarding OR Status OR Lead Capture */}
+      {pageView === 'leadCapture' && (
+        <LeadCaptureForm
+          onBack={goHome}
+          onSuccess={handleLeadCaptureSuccess}
+        />
+      )}
+
       {pageView === 'onboarding' && (
         <OnboardingContent
           onSuccess={handleOnboardingSuccess}
@@ -826,6 +855,90 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Growth Map CTA */}
+      <section className="relative py-32 observe-animation bg-gradient-to-b from-transparent via-brand-blue-50/30 to-transparent">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 border border-green-200/60 mb-6">
+              <MapPin className="h-4 w-4 text-green-600 animate-pulse" />
+              <span className="text-sm font-semibold text-green-700">Live Growth Map</span>
+            </div>
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-6">
+              Watch Our <span className="text-brand-blue-600">Nationwide Expansion</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-12">
+              See real-time reservations and launches happening across America. Your community could be next!
+            </p>
+          </div>
+
+          <div className="relative max-w-5xl mx-auto">
+            <div className="absolute -inset-4 bg-gradient-to-r from-brand-blue-500/20 to-green-500/20 rounded-3xl blur-3xl" />
+            <Card className="relative border-2 border-brand-blue-200 shadow-2xl overflow-hidden">
+              <CardContent className="p-0">
+                {/* Map Preview Image */}
+                <div className="relative bg-gradient-to-br from-brand-blue-50 to-green-50 p-12 min-h-[400px] flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="relative inline-block mb-8">
+                      <div className="absolute inset-0 bg-brand-blue-500/20 rounded-full blur-2xl" />
+                      <MapPin className="relative h-24 w-24 text-brand-blue-600 mx-auto animate-bounce" />
+                    </div>
+                    <h3 className="text-3xl font-display font-bold mb-4">
+                      Interactive US Map
+                    </h3>
+                    <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+                      Blue pins show reserved territories. Green pins show live newspapers. Watch the movement in real-time!
+                    </p>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                      <Link href="/growth-map">
+                        <Button size="lg" className="gap-2 shadow-xl shadow-brand-blue-500/30">
+                          <MapPin className="h-5 w-5" />
+                          View Live Growth Map
+                        </Button>
+                      </Link>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={openOnboarding}
+                        className="gap-2"
+                      >
+                        Reserve Your Spot
+                        <ArrowRight className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Activity Ticker */}
+                <div className="bg-gradient-to-r from-brand-blue-600 to-brand-blue-700 px-8 py-4">
+                  <div className="flex items-center justify-center gap-4 text-white">
+                    <TrendingUp className="h-5 w-5 animate-pulse" />
+                    <p className="text-sm font-semibold">
+                      🔥 Live Activity: Reservations happening right now across the country
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Stats */}
+          <div className="grid md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
+            <div className="text-center p-6 bg-white rounded-xl border-2 border-brand-blue-100">
+              <p className="text-4xl font-display font-bold text-brand-blue-600 mb-2">50+</p>
+              <p className="text-sm text-muted-foreground">Territory Goal Year 1</p>
+            </div>
+            <div className="text-center p-6 bg-white rounded-xl border-2 border-green-100">
+              <p className="text-4xl font-display font-bold text-green-600 mb-2">Live</p>
+              <p className="text-sm text-muted-foreground">Real-Time Updates</p>
+            </div>
+            <div className="text-center p-6 bg-white rounded-xl border-2 border-purple-100">
+              <p className="text-4xl font-display font-bold text-purple-600 mb-2">USA</p>
+              <p className="text-sm text-muted-foreground">Nationwide Coverage</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="relative py-32 observe-animation">
         <div className="max-w-5xl mx-auto px-6 text-center">
@@ -875,6 +988,14 @@ export default function Home() {
         isOpen={isVideoModalOpen}
         onClose={() => setIsVideoModalOpen(false)}
         videoSrc="/hero-video.mp4"
+      />
+
+      {/* Onboarding Choice Dialog */}
+      <OnboardingChoice
+        isOpen={isChoiceDialogOpen}
+        onClose={() => setIsChoiceDialogOpen(false)}
+        onReserveSpot={handleReserveSpot}
+        onGetStarted={handleGetStartedToday}
       />
 
       <style jsx>{`

@@ -30,6 +30,7 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
             <Link href="/features" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Features</Link>
             <Link href="/how-it-works" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">How It Works</Link>
             <Link href="/pricing" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Pricing</Link>
+            <Link href="/growth-map" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Growth Map</Link>
             <Link href="/testimonials" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Success Stories</Link>
             <Link href="/account/login">
               <Button variant="ghost" size="sm">Sign In</Button>
@@ -81,6 +82,13 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
               onClick={() => setMobileMenuOpen(false)}
             >
               Pricing
+            </Link>
+            <Link
+              href="/growth-map"
+              className="text-2xl font-medium hover:text-brand-blue-600 transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Growth Map
             </Link>
             <Link
               href="/testimonials"
