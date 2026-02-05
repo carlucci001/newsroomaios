@@ -40,13 +40,14 @@ export async function GET(request: NextRequest) {
     }
 
     const tenant = authResult.tenant!;
+    const tenantData: any = tenant; // Use any to access billing fields not in Tenant type
 
     // Calculate days until renewal
     let daysUntilRenewal = 0;
-    if (tenant.nextBillingDate) {
-      const nextBilling = tenant.nextBillingDate._seconds
-        ? new Date(tenant.nextBillingDate._seconds * 1000)
-        : new Date(tenant.nextBillingDate);
+    if (tenantData.nextBillingDate) {
+      const nextBilling = tenantData.nextBillingDate._seconds
+        ? new Date(tenantData.nextBillingDate._seconds * 1000)
+        : new Date(tenantData.nextBillingDate);
       const now = new Date();
       daysUntilRenewal = Math.max(0, Math.ceil((nextBilling.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
     }
@@ -56,15 +57,15 @@ export async function GET(request: NextRequest) {
       {
         success: true,
         balance: {
-          total: (tenant.subscriptionCredits || 0) + (tenant.topOffCredits || 0),
-          subscription: tenant.subscriptionCredits || 0,
-          topOff: tenant.topOffCredits || 0,
+          total: (tenantData.subscriptionCredits || 0) + (tenantData.topOffCredits || 0),
+          subscription: tenantData.subscriptionCredits || 0,
+          topOff: tenantData.topOffCredits || 0,
         },
-        plan: tenant.plan || 'starter',
-        status: tenant.licensingStatus || 'active',
+        plan: tenantData.plan || 'starter',
+        status: tenantData.licensingStatus || 'active',
         daysUntilRenewal,
-        nextBillingDate: tenant.nextBillingDate,
-        currentBillingStart: tenant.currentBillingStart,
+        nextBillingDate: tenantData.nextBillingDate,
+        currentBillingStart: tenantData.currentBillingStart,
       },
       { headers: CORS_HEADERS }
     );
