@@ -21,6 +21,7 @@ import {
   Award,
   ChevronRight,
   Quote,
+  MapPin,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
