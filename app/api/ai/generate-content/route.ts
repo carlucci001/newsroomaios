@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     const content = await generateContent(
       body.prompt,
       {
-        model: body.model || 'gemini-2.0-flash-exp',
+        model: body.model || 'gemini-2.0-flash-thinking-exp-01-21',
         temperature: body.temperature,
         maxTokens: body.maxTokens,
       },
