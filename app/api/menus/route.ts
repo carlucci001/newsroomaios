@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAdminApp, getAdminDb } from '@/lib/firebaseAdmin';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 import { Tenant } from '@/types/tenant';
 
 export const dynamic = 'force-dynamic';
@@ -150,7 +149,13 @@ export async function GET(request: NextRequest) {
     }
 
     const tenantId = authResult.tenant.id;
-    const db = getFirestore(getAdminApp());
+    const db = getAdminDb();
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not initialized' },
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
     const menusRef = db.collection('tenants').doc(tenantId).collection('menus');
     const snapshot = await menusRef.orderBy('slug').get();
 
@@ -227,7 +232,13 @@ export async function POST(request: NextRequest) {
     }
 
     const tenantId = authResult.tenant.id;
-    const db = getFirestore(getAdminApp());
+    const db = getAdminDb();
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not initialized' },
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
     const menusRef = db.collection('tenants').doc(tenantId).collection('menus');
 
     // Check if slug already exists
@@ -296,7 +307,13 @@ export async function PUT(request: NextRequest) {
     }
 
     const tenantId = authResult.tenant.id;
-    const db = getFirestore(getAdminApp());
+    const db = getAdminDb();
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not initialized' },
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
     const menuRef = db.collection('tenants').doc(tenantId).collection('menus').doc(menuId);
     const menuDoc = await menuRef.get();
 
@@ -370,7 +387,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     const tenantId = authResult.tenant.id;
-    const db = getFirestore(getAdminApp());
+    const db = getAdminDb();
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database not initialized' },
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
     await db.collection('tenants').doc(tenantId).collection('menus').doc(menuId).delete();
 
     return NextResponse.json(
