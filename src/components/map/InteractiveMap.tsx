@@ -78,9 +78,9 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
   }, {} as Record<string, { lead: Lead; count: number }>);
 
   return (
-    <div className="relative rounded-xl border-2 border-brand-blue-200 overflow-hidden bg-white">
+    <div className="relative rounded-lg md:rounded-xl border-2 border-brand-blue-200 overflow-hidden bg-white">
       {/* Map Container with real US map background */}
-      <div className="relative w-full" style={{ aspectRatio: '16/10', minHeight: '500px' }}>
+      <div className="relative w-full" style={{ aspectRatio: '16/10', minHeight: '300px' }}>
         {/* US Map Background Image */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100">
           <img
@@ -120,7 +120,7 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
                 {/* Pin */}
                 <div className="relative">
                   <MapPin
-                    className={`h-8 w-8 drop-shadow-lg ${
+                    className={`h-6 w-6 md:h-8 md:w-8 drop-shadow-lg ${
                       isReserved ? 'text-blue-500' : 'text-green-500'
                     }`}
                     fill={isReserved ? '#3b82f6' : '#10b981'}
@@ -128,8 +128,8 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
 
                   {/* Count badge */}
                   {count > 1 && (
-                    <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 border-2 border-white flex items-center justify-center">
-                      <span className="text-xs text-white font-bold">{count}</span>
+                    <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 h-4 w-4 md:h-6 md:w-6 rounded-full bg-red-500 border-2 border-white flex items-center justify-center">
+                      <span className="text-[10px] md:text-xs text-white font-bold">{count}</span>
                     </div>
                   )}
                 </div>
@@ -139,21 +139,21 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
         </div>
 
         {/* Legend */}
-        <div className="absolute bottom-4 left-4 bg-white/95 rounded-lg shadow-lg p-4 border-2 border-brand-blue-100">
-          <div className="flex items-center gap-3 mb-2">
-            <MapPin className="h-5 w-5 text-blue-500" fill="#3b82f6" />
-            <span className="text-sm font-medium">Reserved Territory</span>
+        <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 bg-white/95 rounded-lg shadow-lg p-2 md:p-4 border-2 border-brand-blue-100">
+          <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+            <MapPin className="h-4 w-4 md:h-5 md:w-5 text-blue-500" fill="#3b82f6" />
+            <span className="text-xs md:text-sm font-medium">Reserved</span>
           </div>
-          <div className="flex items-center gap-3">
-            <MapPin className="h-5 w-5 text-green-500" fill="#10b981" />
-            <span className="text-sm font-medium">Live Newspaper</span>
+          <div className="flex items-center gap-2 md:gap-3">
+            <MapPin className="h-4 w-4 md:h-5 md:w-5 text-green-500" fill="#10b981" />
+            <span className="text-xs md:text-sm font-medium">Live</span>
           </div>
         </div>
       </div>
 
-      {/* Hover tooltip */}
+      {/* Hover tooltip - hidden on mobile/touch devices */}
       {hoveredLead && (
-        <div className="absolute top-4 right-4 bg-white rounded-lg shadow-2xl p-4 border-2 border-brand-blue-200 max-w-xs z-50">
+        <div className="hidden md:block absolute top-4 right-4 bg-white rounded-lg shadow-2xl p-4 border-2 border-brand-blue-200 max-w-xs z-50 animate-in fade-in-0 slide-in-from-top-2 duration-200">
           <div className="flex items-start gap-3">
             <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
               hoveredLead.status === 'reserved' ? 'bg-blue-100' : 'bg-green-100'

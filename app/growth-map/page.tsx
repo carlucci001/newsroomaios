@@ -86,24 +86,24 @@ export default function GrowthMapPage() {
 
       <SiteHeader onGetStarted={() => {}} />
 
-      <main className="relative flex-1 py-12">
-        <div className="max-w-7xl mx-auto px-6">
+      <main className="relative flex-1 py-6 md:py-12">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
           {/* Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-blue-50 border border-brand-blue-200/60 mb-6">
+          <div className="text-center mb-8 md:mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-blue-50 border border-brand-blue-200/60 mb-4 md:mb-6">
               <TrendingUp className="h-4 w-4 text-brand-blue-600" />
               <span className="text-sm font-semibold text-brand-blue-700">Live Growth Map</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-display font-bold mb-4">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold mb-3 md:mb-4 px-4">
               Watch Our <span className="text-brand-blue-600">Nationwide Expansion</span>
             </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-base md:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
               See where newspapers are reserving territories and launching across America in real-time.
             </p>
           </div>
 
           {/* Stats Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
             <Card className="border-2 hover:border-brand-blue-500/50 transition-all">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
@@ -154,24 +154,24 @@ export default function GrowthMapPage() {
           </div>
 
           {/* Map and Activity Feed */}
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
             {/* Map */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 order-1">
               <Card className="border-2 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-2xl font-display">Interactive Growth Map</CardTitle>
-                  <CardDescription>
-                    Blue pins = Reserved territories • Green pins = Live newspapers
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl md:text-2xl font-display">Interactive Growth Map</CardTitle>
+                  <CardDescription className="text-sm">
+                    Blue pins = Reserved • Green pins = Live
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-2 md:p-6">
                   <InteractiveMap leads={leads} />
                 </CardContent>
               </Card>
             </div>
 
             {/* Activity Feed */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 order-2">
               <ActivityFeed activities={activities} />
             </div>
           </div>
