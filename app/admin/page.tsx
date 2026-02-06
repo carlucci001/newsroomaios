@@ -34,6 +34,7 @@ import {
   ArrowRightOutlined,
   CheckCircleOutlined,
   MessageOutlined,
+  UserAddOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
@@ -374,6 +375,29 @@ export default function AdminDashboard() {
                     <PlusOutlined style={{ fontSize: '24px', color: 'white' }} />
                   </div>
                   <Text strong>Add Newspaper</Text>
+                </Card>
+              </Link>
+            </Col>
+
+            <Col xs={12} sm={8} lg={4}>
+              <Link href="/admin/leads">
+                <Card
+                  hoverable
+                  style={{ textAlign: 'center' }}
+                >
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: '#722ed1',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px'
+                  }}>
+                    <UserAddOutlined style={{ fontSize: '24px', color: 'white' }} />
+                  </div>
+                  <Text strong>Manage Leads</Text>
                 </Card>
               </Link>
             </Col>

@@ -20,6 +20,7 @@ import {
   X,
   Newspaper,
   ExternalLink,
+  Users,
 } from 'lucide-react';
 
 interface NavItem {
@@ -30,6 +31,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { label: 'Leads', href: '/admin/leads', icon: Users },
   { label: 'Tenants', href: '/admin/tenants', icon: Building2 },
   { label: 'Credits', href: '/admin/credits', icon: Coins },
   { label: 'Updates', href: '/admin/updates', icon: Upload },
