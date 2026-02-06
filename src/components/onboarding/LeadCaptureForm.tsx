@@ -70,14 +70,15 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
 
   if (isSuccess) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-20">
-        <Card className="border-2 border-brand-blue-500 shadow-2xl">
+      <div className="relative z-10 min-h-screen bg-background py-12">
+        <div className="max-w-2xl mx-auto px-6 py-20">
+          <Card className="border-2 border-brand-blue-500 shadow-2xl bg-white">
           <CardContent className="pt-12 pb-12 text-center">
             <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="h-12 w-12 text-green-600" />
             </div>
-            <h2 className="text-3xl font-display font-bold mb-4">Spot Reserved! 🎉</h2>
-            <p className="text-xl text-muted-foreground mb-4">
+            <h2 className="text-3xl font-display font-bold mb-4 text-foreground">Spot Reserved! 🎉</h2>
+            <p className="text-xl mb-4 text-gray-700">
               We've reserved your spot for <span className="font-semibold text-brand-blue-600">{formData.city}, {formData.state}</span>
             </p>
             <p className="text-muted-foreground mb-6">
@@ -90,6 +91,7 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     );
   }
