@@ -16,6 +16,16 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
   const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
   const router = useRouter();
 
+  const handleGetStartedClick = () => {
+    if (onGetStarted) {
+      // Use the provided callback (e.g., from home page)
+      onGetStarted();
+    } else {
+      // Default behavior for other pages
+      setIsChoiceDialogOpen(true);
+    }
+  };
+
   return (
     <>
       <nav className="relative z-50 border-b border-border/40 backdrop-blur-xl bg-background/90 sticky top-0">
@@ -41,7 +51,7 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
             </Link>
             <Button
               size="sm"
-              onClick={() => setIsChoiceDialogOpen(true)}
+              onClick={handleGetStartedClick}
               className="gap-2 shadow-lg shadow-brand-blue-500/20 bg-brand-blue-600 text-white hover:bg-brand-blue-700"
             >
               Get Started <ArrowRight className="h-4 w-4" />
@@ -103,7 +113,7 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
             <Button
               size="lg"
               onClick={() => {
-                setIsChoiceDialogOpen(true);
+                handleGetStartedClick();
                 setMobileMenuOpen(false);
               }}
               className="gap-2 shadow-lg shadow-brand-blue-500/20 w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700"
