@@ -11,14 +11,27 @@ import { getDb } from '@/lib/firebase';
 import { collection, query, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { Lead, LeadActivity } from '@/types/lead';
 
+// Normalize state names to title case (e.g. "OHIO" → "Ohio", "north carolina" → "North Carolina")
+function normalizeState(state: string): string {
+  return state
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 export default function GrowthMapPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [liveTenants, setLiveTenants] = useState<Lead[]>([]);
   const [activities, setActivities] = useState<LeadActivity[]>([]);
   const [stats, setStats] = useState({
     totalReservations: 0,
     livePapers: 0,
     thisMonth: 0
   });
+
+  // Combine leads + live tenants for the map
+  const allMapPins = [...leads, ...liveTenants];
 
   useEffect(() => {
     const db = getDb();
@@ -46,12 +59,30 @@ export default function GrowthMapPage() {
       }));
     });
 
-    // Subscribe to tenants for live papers count
+    // Subscribe to tenants - show active ones on the map as green pins
     const tenantsQuery = query(collection(db, 'tenants'));
     const unsubscribeTenants = onSnapshot(tenantsQuery, (snapshot) => {
+      const activeTenants: Lead[] = [];
+      snapshot.docs.forEach(doc => {
+        const tenant = doc.data();
+        if (tenant.status === 'active' && tenant.serviceArea) {
+          activeTenants.push({
+            id: doc.id,
+            name: tenant.ownerEmail || tenant.businessName,
+            email: tenant.ownerEmail || '',
+            newspaperName: tenant.businessName,
+            city: tenant.serviceArea.city || '',
+            state: normalizeState(tenant.serviceArea.state || ''),
+            status: 'converted' as const,
+            source: 'direct' as const,
+            createdAt: tenant.createdAt,
+          });
+        }
+      });
+      setLiveTenants(activeTenants);
       setStats(prev => ({
         ...prev,
-        livePapers: snapshot.size
+        livePapers: activeTenants.length
       }));
     });
 
@@ -165,7 +196,7 @@ export default function GrowthMapPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-2 md:p-6">
-                  <InteractiveMap leads={leads} />
+                  <InteractiveMap leads={allMapPins} />
                 </CardContent>
               </Card>
             </div>

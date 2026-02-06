@@ -103,7 +103,7 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
             // Add slight randomness to prevent perfect overlap (±2%)
             const xPercent = coords.x + (Math.random() - 0.5) * 2;
             const yPercent = coords.y + (Math.random() - 0.5) * 2;
-            const isReserved = lead.status === 'reserved';
+            const isReserved = lead.status === 'reserved' || lead.status === 'contacted';
 
             return (
               <div
@@ -182,8 +182,8 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
         </div>
       )}
 
-      {/* Empty state */}
-      {leads.length === 0 && (
+      {/* Empty state - only show if no pins at all */}
+      {Object.keys(leadsByLocation).length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm">
           <div className="text-center p-8">
             <MapPin className="h-16 w-16 text-brand-blue-400 mx-auto mb-4" />
