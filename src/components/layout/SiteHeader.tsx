@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Feather, ArrowRight, Menu, X } from 'lucide-react';
+import { OnboardingChoice } from '@/components/onboarding/OnboardingChoice';
 
 interface SiteHeaderProps {
   onGetStarted?: () => void;
@@ -11,6 +13,8 @@ interface SiteHeaderProps {
 
 export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <>
@@ -35,17 +39,13 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
             <Link href="/account/login">
               <Button variant="ghost" size="sm">Sign In</Button>
             </Link>
-            {onGetStarted ? (
-              <Button size="sm" onClick={onGetStarted} className="gap-2 shadow-lg shadow-brand-blue-500/20 bg-brand-blue-600 text-white hover:bg-brand-blue-700">
-                Get Started <ArrowRight className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Link href="/onboarding">
-                <Button size="sm" className="gap-2 shadow-lg shadow-brand-blue-500/20 bg-brand-blue-600 text-white hover:bg-brand-blue-700">
-                  Get Started <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            )}
+            <Button
+              size="sm"
+              onClick={() => setIsChoiceDialogOpen(true)}
+              className="gap-2 shadow-lg shadow-brand-blue-500/20 bg-brand-blue-600 text-white hover:bg-brand-blue-700"
+            >
+              Get Started <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -100,27 +100,33 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
             <Link href="/account/login" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="outline" size="lg" className="w-full">Sign In</Button>
             </Link>
-            {onGetStarted ? (
-              <Button
-                size="lg"
-                onClick={() => {
-                  onGetStarted();
-                  setMobileMenuOpen(false);
-                }}
-                className="gap-2 shadow-lg shadow-brand-blue-500/20 w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700"
-              >
-                Get Started <ArrowRight className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Link href="/onboarding" onClick={() => setMobileMenuOpen(false)}>
-                <Button size="lg" className="gap-2 shadow-lg shadow-brand-blue-500/20 w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700">
-                  Get Started <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            )}
+            <Button
+              size="lg"
+              onClick={() => {
+                setIsChoiceDialogOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              className="gap-2 shadow-lg shadow-brand-blue-500/20 w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700"
+            >
+              Get Started <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       )}
+
+      {/* Onboarding Choice Dialog */}
+      <OnboardingChoice
+        isOpen={isChoiceDialogOpen}
+        onClose={() => setIsChoiceDialogOpen(false)}
+        onReserveSpot={() => {
+          setIsChoiceDialogOpen(false);
+          router.push('/?view=leadCapture');
+        }}
+        onGetStarted={() => {
+          setIsChoiceDialogOpen(false);
+          router.push('/onboarding');
+        }}
+      />
     </>
   );
 }
