@@ -31,6 +31,8 @@ import {
   DollarOutlined,
   CheckCircleOutlined,
   SaveOutlined,
+  ToolOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -45,6 +47,7 @@ interface PlatformSettings {
   gitHubRepo: string;
   gitHubToken?: string;
   notificationEmail: string;
+  maintenanceMode?: boolean;
 }
 
 const defaultSettings: PlatformSettings = {
@@ -55,6 +58,7 @@ const defaultSettings: PlatformSettings = {
   stripeEnabled: false,
   gitHubRepo: 'carlucci001/wnct-next',
   notificationEmail: '',
+  maintenanceMode: false,
 };
 
 export default function SettingsPage() {
@@ -126,6 +130,94 @@ export default function SettingsPage() {
   }
 
   const tabItems = [
+    {
+      key: 'maintenance',
+      label: (
+        <span>
+          <ToolOutlined /> Maintenance
+        </span>
+      ),
+      children: (
+        <Space vertical size="large" style={{ width: '100%' }}>
+          <Alert
+            message="Maintenance Mode Control"
+            description="When enabled, the public site will show a maintenance page. Admin routes will remain accessible."
+            type="info"
+            showIcon
+          />
+
+          <Card>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div style={{
+                  padding: '12px',
+                  background: settings.maintenanceMode ? '#fff2e8' : '#f0f5ff',
+                  borderRadius: '8px'
+                }}>
+                  {settings.maintenanceMode ? (
+                    <WarningOutlined style={{ fontSize: '24px', color: '#fa8c16' }} />
+                  ) : (
+                    <CheckCircleOutlined style={{ fontSize: '24px', color: '#52c41a' }} />
+                  )}
+                </div>
+                <div>
+                  <Text strong style={{ display: 'block', fontSize: '16px' }}>
+                    {settings.maintenanceMode ? 'Site is in Maintenance Mode' : 'Site is Online'}
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                    {settings.maintenanceMode
+                      ? 'Public visitors see the maintenance page'
+                      : 'Public site is accessible to all visitors'}
+                  </Text>
+                </div>
+              </div>
+              <Switch
+                checked={settings.maintenanceMode}
+                onChange={(checked) => setSettings({ ...settings, maintenanceMode: checked })}
+              />
+            </div>
+          </Card>
+
+          {settings.maintenanceMode && (
+            <Alert
+              message="Maintenance Mode Active"
+              description="The public site is currently showing the maintenance page. Admin users can still access /admin routes."
+              type="warning"
+              showIcon
+              icon={<WarningOutlined />}
+            />
+          )}
+
+          <Card>
+            <Space vertical size="middle" style={{ width: '100%' }}>
+              <div>
+                <Text strong style={{ display: 'block', marginBottom: '8px' }}>About Maintenance Mode</Text>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li><Text type="secondary">Public site displays a professional maintenance page</Text></li>
+                  <li><Text type="secondary">Admin routes (/admin/*) remain fully accessible</Text></li>
+                  <li><Text type="secondary">API routes continue to function normally</Text></li>
+                  <li><Text type="secondary">Changes take effect immediately after saving</Text></li>
+                  <li><Text type="secondary">Environment variable (NEXT_PUBLIC_MAINTENANCE_MODE) takes priority if set</Text></li>
+                </ul>
+              </div>
+            </Space>
+          </Card>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '16px', borderTop: '1px solid #d9d9d9' }}>
+            <Button
+              type="primary"
+              size="large"
+              icon={<SaveOutlined />}
+              onClick={saveSettings}
+              loading={saving}
+              danger={settings.maintenanceMode}
+            >
+              {settings.maintenanceMode ? 'Enable Maintenance Mode' : 'Save Changes'}
+            </Button>
+          </div>
+        </Space>
+      ),
+    },
     {
       key: 'general',
       label: (
