@@ -36,9 +36,10 @@ export default function GrowthMapPage() {
   useEffect(() => {
     const db = getDb();
 
-    // Subscribe to leads
-    const leadsQuery = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
+    // Subscribe to leads (no orderBy to avoid index issues)
+    const leadsQuery = query(collection(db, 'leads'));
     const unsubscribeLeads = onSnapshot(leadsQuery, (snapshot) => {
+      console.log('[GrowthMap] Leads loaded:', snapshot.size);
       const leadsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -49,7 +50,7 @@ export default function GrowthMapPage() {
       const now = new Date();
       const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const thisMonthCount = leadsData.filter(
-        lead => lead.createdAt?.toDate() >= thisMonthStart
+        lead => lead.createdAt?.toDate?.() >= thisMonthStart
       ).length;
 
       setStats(prev => ({
@@ -57,14 +58,18 @@ export default function GrowthMapPage() {
         totalReservations: leadsData.length,
         thisMonth: thisMonthCount
       }));
+    }, (error) => {
+      console.error('[GrowthMap] Leads listener error:', error);
     });
 
     // Subscribe to tenants - show active ones on the map as green pins
     const tenantsQuery = query(collection(db, 'tenants'));
     const unsubscribeTenants = onSnapshot(tenantsQuery, (snapshot) => {
+      console.log('[GrowthMap] Tenants loaded:', snapshot.size);
       const activeTenants: Lead[] = [];
       snapshot.docs.forEach(doc => {
         const tenant = doc.data();
+        console.log('[GrowthMap] Tenant:', tenant.businessName, 'status:', tenant.status, 'serviceArea:', JSON.stringify(tenant.serviceArea));
         if (tenant.status === 'active' && tenant.serviceArea) {
           activeTenants.push({
             id: doc.id,
@@ -79,11 +84,14 @@ export default function GrowthMapPage() {
           });
         }
       });
+      console.log('[GrowthMap] Active tenants for map:', activeTenants.length, activeTenants.map(t => t.city + ', ' + t.state));
       setLiveTenants(activeTenants);
       setStats(prev => ({
         ...prev,
         livePapers: activeTenants.length
       }));
+    }, (error) => {
+      console.error('[GrowthMap] Tenants listener error:', error);
     });
 
     // Subscribe to recent activities (we'll create these when leads are added)
