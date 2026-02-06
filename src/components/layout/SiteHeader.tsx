@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Feather, ArrowRight, Menu, X } from 'lucide-react';
 import { OnboardingChoice } from '@/components/onboarding/OnboardingChoice';
@@ -15,6 +15,7 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleGetStartedClick = () => {
     if (onGetStarted) {
@@ -41,18 +42,78 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/features" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Features</Link>
-            <Link href="/how-it-works" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">How It Works</Link>
-            <Link href="/pricing" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Pricing</Link>
-            <Link href="/growth-map" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Growth Map</Link>
-            <Link href="/testimonials" className="text-sm font-medium hover:text-brand-blue-600 transition-colors">Success Stories</Link>
+            <Link
+              href="/features"
+              className={`text-sm font-medium transition-all active:scale-95 relative group ${
+                pathname === '/features'
+                  ? 'text-brand-blue-600 font-semibold'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+            >
+              Features
+              {pathname === '/features' && (
+                <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
+              )}
+            </Link>
+            <Link
+              href="/how-it-works"
+              className={`text-sm font-medium transition-all active:scale-95 relative group ${
+                pathname === '/how-it-works'
+                  ? 'text-brand-blue-600 font-semibold'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+            >
+              How It Works
+              {pathname === '/how-it-works' && (
+                <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
+              )}
+            </Link>
+            <Link
+              href="/pricing"
+              className={`text-sm font-medium transition-all active:scale-95 relative group ${
+                pathname === '/pricing'
+                  ? 'text-brand-blue-600 font-semibold'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+            >
+              Pricing
+              {pathname === '/pricing' && (
+                <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
+              )}
+            </Link>
+            <Link
+              href="/growth-map"
+              className={`text-sm font-medium transition-all active:scale-95 relative group ${
+                pathname === '/growth-map'
+                  ? 'text-brand-blue-600 font-semibold'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+            >
+              Growth Map
+              {pathname === '/growth-map' && (
+                <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
+              )}
+            </Link>
+            <Link
+              href="/testimonials"
+              className={`text-sm font-medium transition-all active:scale-95 relative group ${
+                pathname === '/testimonials'
+                  ? 'text-brand-blue-600 font-semibold'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+            >
+              Success Stories
+              {pathname === '/testimonials' && (
+                <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
+              )}
+            </Link>
             <Link href="/account/login">
-              <Button variant="ghost" size="sm">Sign In</Button>
+              <Button variant="ghost" size="sm" className="transition-all active:scale-95">Sign In</Button>
             </Link>
             <Button
               size="sm"
               onClick={handleGetStartedClick}
-              className="gap-2 shadow-lg shadow-brand-blue-500/20 bg-brand-blue-600 text-white hover:bg-brand-blue-700"
+              className="gap-2 shadow-lg shadow-brand-blue-500/20 bg-brand-blue-600 text-white hover:bg-brand-blue-700 transition-all active:scale-95 active:shadow-md"
             >
               Get Started <ArrowRight className="h-4 w-4" />
             </Button>
@@ -61,7 +122,7 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg bg-brand-blue-600 text-white hover:bg-brand-blue-700 transition-colors"
+            className="md:hidden p-2 rounded-lg bg-brand-blue-600 text-white hover:bg-brand-blue-700 transition-all active:scale-95 active:bg-brand-blue-800"
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -70,45 +131,80 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-background/95 backdrop-blur-sm">
-          <div className="flex flex-col items-center justify-center h-full gap-8 p-6">
+        <div className="md:hidden fixed inset-0 z-40 bg-background/95 backdrop-blur-sm animate-in fade-in-0 duration-200">
+          <div className="flex flex-col items-center justify-center h-full gap-8 p-6 animate-in slide-in-from-top-4 duration-300">
             <Link
               href="/features"
-              className="text-2xl font-medium hover:text-brand-blue-600 transition-colors"
+              className={`text-2xl font-medium transition-all active:scale-95 relative ${
+                pathname === '/features'
+                  ? 'text-brand-blue-600 font-bold scale-105'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Features
+              {pathname === '/features' && (
+                <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
+              )}
             </Link>
             <Link
               href="/how-it-works"
-              className="text-2xl font-medium hover:text-brand-blue-600 transition-colors"
+              className={`text-2xl font-medium transition-all active:scale-95 relative ${
+                pathname === '/how-it-works'
+                  ? 'text-brand-blue-600 font-bold scale-105'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
               onClick={() => setMobileMenuOpen(false)}
             >
               How It Works
+              {pathname === '/how-it-works' && (
+                <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
+              )}
             </Link>
             <Link
               href="/pricing"
-              className="text-2xl font-medium hover:text-brand-blue-600 transition-colors"
+              className={`text-2xl font-medium transition-all active:scale-95 relative ${
+                pathname === '/pricing'
+                  ? 'text-brand-blue-600 font-bold scale-105'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Pricing
+              {pathname === '/pricing' && (
+                <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
+              )}
             </Link>
             <Link
               href="/growth-map"
-              className="text-2xl font-medium hover:text-brand-blue-600 transition-colors"
+              className={`text-2xl font-medium transition-all active:scale-95 relative ${
+                pathname === '/growth-map'
+                  ? 'text-brand-blue-600 font-bold scale-105'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Growth Map
+              {pathname === '/growth-map' && (
+                <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
+              )}
             </Link>
             <Link
               href="/testimonials"
-              className="text-2xl font-medium hover:text-brand-blue-600 transition-colors"
+              className={`text-2xl font-medium transition-all active:scale-95 relative ${
+                pathname === '/testimonials'
+                  ? 'text-brand-blue-600 font-bold scale-105'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Success Stories
+              {pathname === '/testimonials' && (
+                <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
+              )}
             </Link>
             <Link href="/account/login" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="outline" size="lg" className="w-full">Sign In</Button>
+              <Button variant="outline" size="lg" className="w-full transition-all active:scale-95">Sign In</Button>
             </Link>
             <Button
               size="lg"
@@ -116,7 +212,7 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
                 handleGetStartedClick();
                 setMobileMenuOpen(false);
               }}
-              className="gap-2 shadow-lg shadow-brand-blue-500/20 w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700"
+              className="gap-2 shadow-lg shadow-brand-blue-500/20 w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700 transition-all active:scale-95 active:shadow-md"
             >
               Get Started <ArrowRight className="h-4 w-4" />
             </Button>

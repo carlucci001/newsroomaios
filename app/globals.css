@@ -110,4 +110,83 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Better click responsiveness and visual feedback */
+  button,
+  a,
+  [role="button"],
+  [type="button"],
+  [type="submit"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply cursor-pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  /* Ensure all interactive elements have pointer cursor */
+  button:not(:disabled),
+  a:not([aria-disabled="true"]),
+  [role="button"]:not([aria-disabled="true"]) {
+    @apply cursor-pointer;
+  }
+
+  /* Disabled state */
+  button:disabled,
+  a[aria-disabled="true"],
+  [role="button"][aria-disabled="true"] {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  /* Improve link and button press feedback - immediate response */
+  a:active,
+  button:active:not(:disabled),
+  [role="button"]:active:not([aria-disabled="true"]) {
+    transform: scale(0.98);
+    transition: transform 0.02s ease-out;
+  }
+
+  /* Make hover transitions faster for more responsive feel */
+  button,
+  a,
+  [role="button"] {
+    transition-duration: 0.1s;
+  }
+
+  /* Remove default tap highlight on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better focus styles */
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible {
+    @apply ring-2 ring-brand-blue-500 ring-offset-2;
+    outline: none;
+  }
+
+  /* Ant Design Card hover effects - make more responsive */
+  .ant-card-hoverable:active {
+    transform: scale(0.98);
+    transition: transform 0.02s ease-out;
+  }
+
+  /* Make table rows more responsive */
+  .ant-table-row:active {
+    opacity: 0.7;
+    transition: opacity 0.02s ease-out;
+  }
+
+  /* Button active states for better feedback */
+  .ant-btn:active {
+    transform: scale(0.98);
+    transition: transform 0.02s ease-out;
+  }
 }

@@ -330,7 +330,7 @@ export default function LeadsManagement() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto' }}>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="large" style={{ width: '100%' }}>
         {/* Header */}
         <div>
           <Title level={2} style={{ margin: 0 }}>Leads Management</Title>
@@ -472,10 +472,10 @@ export default function LeadsManagement() {
       >
         {selectedLead && (
           <div>
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Space orientation="vertical" size="large" style={{ width: '100%' }}>
               {/* Contact Information */}
               <Card size="small" title="Contact Information">
-                <Space direction="vertical" style={{ width: '100%' }}>
+                <Space orientation="vertical" style={{ width: '100%' }}>
                   <div>
                     <Text strong>Name:</Text> <Text>{selectedLead.name}</Text>
                   </div>
@@ -492,7 +492,7 @@ export default function LeadsManagement() {
 
               {/* Territory Information */}
               <Card size="small" title="Territory Information">
-                <Space direction="vertical" style={{ width: '100%' }}>
+                <Space orientation="vertical" style={{ width: '100%' }}>
                   {selectedLead.newspaperName && (
                     <div>
                       <Text strong>Newspaper Name:</Text> <Text>{selectedLead.newspaperName}</Text>
@@ -551,7 +551,7 @@ export default function LeadsManagement() {
 
               {/* Metadata */}
               <Card size="small" title="Metadata">
-                <Space direction="vertical" style={{ width: '100%', fontSize: '12px' }}>
+                <Space orientation="vertical" style={{ width: '100%', fontSize: '12px' }}>
                   <div>
                     <Text type="secondary">Source:</Text> <Tag>{selectedLead.source}</Tag>
                   </div>

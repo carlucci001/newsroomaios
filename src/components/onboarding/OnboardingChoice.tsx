@@ -31,7 +31,7 @@ export function OnboardingChoice({ isOpen, onClose, onReserveSpot, onGetStarted 
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* Reserve Your Spot */}
-            <Card className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-xl cursor-pointer group relative overflow-hidden">
+            <Card className="border-2 hover:border-brand-blue-500/50 transition-all hover:shadow-xl active:scale-98 cursor-pointer group relative overflow-hidden">
               <div className="absolute top-4 right-4 bg-brand-blue-100 text-brand-blue-700 text-xs font-semibold px-3 py-1 rounded-full">
                 No Credit Card
               </div>
@@ -66,7 +66,7 @@ export function OnboardingChoice({ isOpen, onClose, onReserveSpot, onGetStarted 
                 <Button
                   onClick={onReserveSpot}
                   variant="outline"
-                  className="w-full hover:bg-brand-blue-50 hover:border-brand-blue-500"
+                  className="w-full hover:bg-brand-blue-50 hover:border-brand-blue-500 transition-all active:scale-95"
                   size="lg"
                 >
                   Reserve Your Place
@@ -75,7 +75,7 @@ export function OnboardingChoice({ isOpen, onClose, onReserveSpot, onGetStarted 
             </Card>
 
             {/* Get Started Today */}
-            <Card className="border-2 border-brand-blue-500 shadow-xl transition-all hover:shadow-2xl cursor-pointer group relative overflow-hidden">
+            <Card className="border-2 border-brand-blue-500 shadow-xl transition-all hover:shadow-2xl active:scale-98 cursor-pointer group relative overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-blue-500 to-brand-blue-600" />
               <div className="absolute top-4 right-4 bg-brand-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
                 Recommended
@@ -110,7 +110,7 @@ export function OnboardingChoice({ isOpen, onClose, onReserveSpot, onGetStarted 
                 </ul>
                 <Button
                   onClick={onGetStarted}
-                  className="w-full shadow-lg shadow-brand-blue-500/30"
+                  className="w-full shadow-lg shadow-brand-blue-500/30 transition-all active:scale-95 active:shadow-md"
                   size="lg"
                 >
                   Get Started Today
