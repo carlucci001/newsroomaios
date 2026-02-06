@@ -95,17 +95,18 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12">
-      <Button
-        onClick={onBack}
-        variant="ghost"
-        className="mb-6 gap-2"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Options
-      </Button>
+    <div className="relative z-10 min-h-screen bg-background py-12">
+      <div className="max-w-3xl mx-auto px-6">
+        <Button
+          onClick={onBack}
+          variant="ghost"
+          className="mb-6 gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Options
+        </Button>
 
-      <Card className="border-2 shadow-xl bg-white">
+        <Card className="border-2 shadow-xl bg-white">
         <CardHeader className="text-center pb-6">
           <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-brand-blue-500 to-brand-blue-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-blue-500/30">
             <MapPin className="h-8 w-8 text-white" />
@@ -234,6 +235,7 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
