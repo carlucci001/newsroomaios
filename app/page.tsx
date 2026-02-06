@@ -96,6 +96,8 @@ export default function Home() {
     } else if (viewParam === 'status' && idParam) {
       setTenantId(idParam);
       setPageView('status');
+    } else if (viewParam === 'leadCapture') {
+      setPageView('leadCapture');
     }
 
     // Clear URL params after reading them
