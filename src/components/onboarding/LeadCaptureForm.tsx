@@ -105,13 +105,13 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
         Back to Options
       </Button>
 
-      <Card className="border-2 shadow-xl">
+      <Card className="border-2 shadow-xl bg-white">
         <CardHeader className="text-center pb-6">
           <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-brand-blue-500 to-brand-blue-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-blue-500/30">
             <MapPin className="h-8 w-8 text-white" />
           </div>
-          <CardTitle className="text-3xl font-display">Reserve Your Spot</CardTitle>
-          <CardDescription className="text-base">
+          <CardTitle className="text-3xl font-display text-foreground">Reserve Your Spot</CardTitle>
+          <CardDescription className="text-base text-muted-foreground">
             Claim your territory on our growth map. Takes 30 seconds. No credit card needed.
           </CardDescription>
         </CardHeader>
@@ -120,10 +120,10 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Contact Information */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Contact Information</h3>
+              <h3 className="font-semibold text-lg text-foreground">Contact Information</h3>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Your Name *</label>
+                <label className="block text-sm font-semibold mb-2 text-foreground">Your Name *</label>
                 <Input
                   required
                   value={formData.name}
@@ -133,7 +133,7 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Email *</label>
+                <label className="block text-sm font-semibold mb-2 text-foreground">Email *</label>
                 <Input
                   required
                   type="email"
@@ -144,7 +144,7 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Phone (Optional)</label>
+                <label className="block text-sm font-semibold mb-2 text-foreground">Phone (Optional)</label>
                 <Input
                   type="tel"
                   value={formData.phone}
@@ -156,10 +156,10 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
 
             {/* Territory Information */}
             <div className="space-y-4 pt-4 border-t">
-              <h3 className="font-semibold text-lg">Territory Details</h3>
+              <h3 className="font-semibold text-lg text-foreground">Territory Details</h3>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Newspaper Name (Optional)</label>
+                <label className="block text-sm font-semibold mb-2 text-foreground">Newspaper Name (Optional)</label>
                 <Input
                   value={formData.newspaperName}
                   onChange={(e) => handleChange('newspaperName', e.target.value)}
@@ -170,7 +170,7 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">City *</label>
+                  <label className="block text-sm font-semibold mb-2 text-foreground">City *</label>
                   <Input
                     required
                     value={formData.city}
@@ -180,7 +180,7 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">County (Optional)</label>
+                  <label className="block text-sm font-semibold mb-2 text-foreground">County (Optional)</label>
                   <Input
                     value={formData.county}
                     onChange={(e) => handleChange('county', e.target.value)}
@@ -190,7 +190,7 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">State *</label>
+                <label className="block text-sm font-semibold mb-2 text-foreground">State *</label>
                 <Input
                   required
                   value={formData.state}
@@ -200,7 +200,7 @@ export function LeadCaptureForm({ onBack, onSuccess }: LeadCaptureFormProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Additional Notes (Optional)</label>
+                <label className="block text-sm font-semibold mb-2 text-foreground">Additional Notes (Optional)</label>
                 <Input
                   value={formData.notes}
                   onChange={(e) => handleChange('notes', e.target.value)}
