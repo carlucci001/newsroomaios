@@ -158,10 +158,7 @@ async function buildDefaultMenus(tenantId: string, db: any): Promise<any[]> {
       slug: 'main-nav',
       description: 'Primary navigation menu in the header',
       enabled: true,
-      items: [
-        { id: 'home', label: 'Home', path: '/', type: 'internal' as const, enabled: true, order: 0 },
-        ...categoryNavItems,
-      ],
+      items: categoryNavItems,
     },
     {
       id: 'top-nav',
@@ -241,7 +238,7 @@ export async function GET(request: NextRequest) {
       } else {
         const mainNavData = mainNav.data();
         const itemCount = mainNavData.items?.length || 0;
-        // Main nav should have at least: Home (1) + Categories (6) + Directory, Blog, Community (3) = 10+
+        // Main nav should have at least a few category items
         if (itemCount < 5) {
           needsRegeneration = true;
           console.log(`[Menus API] main-nav only has ${itemCount} items - forcing regeneration`);
@@ -262,6 +259,16 @@ export async function GET(request: NextRequest) {
           if (hasLongLabels) {
             needsRegeneration = true;
             console.log(`[Menus API] Found multi-word category labels - forcing regeneration with short labels`);
+          }
+
+          // Check if main-nav has Home link - Home belongs ONLY in top-nav, never in main-nav
+          const hasHomeInMainNav = mainNavData.items.some((item: any) =>
+            item.path === '/' || item.id === 'home' || (item.label && item.label.toLowerCase() === 'home')
+          );
+
+          if (hasHomeInMainNav) {
+            needsRegeneration = true;
+            console.log(`[Menus API] Found Home in main-nav - forcing regeneration (Home belongs only in top-nav)`);
           }
 
           // Check if main-nav has standard pages (Directory, Blog, Community) - these belong only in top-nav
