@@ -119,7 +119,9 @@ export function buildArticlePrompt(context: PromptContext): string {
   }
 
   // --- SOURCE MATERIAL ---
-  if (sourceContent) {
+  const isLimitedSource = sourceQuality.richness === 'limited';
+
+  if (sourceContent && !isLimitedSource) {
     prompt += `SOURCE MATERIAL:\n`;
     prompt += `Title: ${sourceContent.title}\n`;
     if (sourceName) {
@@ -142,8 +144,43 @@ export function buildArticlePrompt(context: PromptContext): string {
     prompt += `SPECIFIC INSTRUCTIONS FOR THIS ARTICLE:\n${articleSpecificPrompt}\n\n`;
   }
 
-  // --- ANTI-HALLUCINATION PROTOCOL ---
-  prompt += `
+  // When source material is limited/empty, switch to local interest mode
+  if (isLimitedSource) {
+    const regionName = serviceArea.region ? ` (${serviceArea.region})` : '';
+    prompt += `
+LOCAL INTEREST ARTICLE MODE:
+
+No breaking news source was found for this beat. Instead, write an original, engaging
+local-interest article about ${categoryName} in ${serviceArea.city}${regionName}, ${serviceArea.state}.
+
+GUIDELINES:
+- Use your general knowledge of ${serviceArea.city} and the surrounding area
+- Write about real landmarks, geography, culture, history, seasonal activities, or community life
+- Focus on evergreen topics that would genuinely interest local residents
+- Write in warm, community-newspaper style — informative and inviting
+- Do NOT mention that no news was found or that sources were unavailable
+- Do NOT write about news being unavailable — write a real article
+- Target: 5-7 paragraphs (${lengthModerate} words)
+${targetWordCount ? `- Target word count: ${targetWordCount}` : ''}
+
+TOPIC IDEAS BY BEAT:
+- Local News: city history, notable landmarks, community traditions, seasonal changes
+- Sports: local sports culture, popular outdoor activities, recreational facilities
+- Business: local economy, notable industries, small business culture, downtown scene
+- Weather: seasonal weather patterns, best times to visit, outdoor activity planning
+- Community: volunteer opportunities, local organizations, festivals, farmers markets
+- Opinion: what makes the community special, quality of life, local pride
+
+${writingStyle ? `WRITING STYLE: ${writingStyle}\n` : ''}
+${aggressiveness && aggressiveness !== 'neutral' ? `EDITORIAL TONE: ${
+  aggressiveness === 'aggressive'
+    ? 'Write with strong, assertive language.'
+    : 'Write with measured, careful language.'
+}\n` : ''}
+TASK: Write an engaging, original local-interest article about ${categoryName} in ${serviceArea.city}.`;
+  } else {
+    // --- ANTI-HALLUCINATION PROTOCOL (for articles with real sources) ---
+    prompt += `
 MANDATORY ANTI-FABRICATION PROTOCOL:
 
 You MUST follow these HARD CONSTRAINTS (violations will block publication):
@@ -193,11 +230,8 @@ You MUST follow these HARD CONSTRAINTS (violations will block publication):
      : sourceQuality.richness === 'moderate'
      ? `- Target: 5-8 paragraphs (${lengthModerate} words) - you have moderate source material
    - Cover main points with supporting details`
-     : sourceQuality.richness === 'adequate'
-     ? `- Target: 4-7 paragraphs (${lengthAdequate} words) - you have adequate source material
-   - Cover essential points concisely`
-     : `- Target: 3-4 paragraphs (${lengthLimited} words) - source material is limited
-   - Focus on core facts only`}
+     : `- Target: 4-7 paragraphs (${lengthAdequate} words) - you have adequate source material
+   - Cover essential points concisely`}
    ${targetWordCount ? `- Target word count: ${targetWordCount}` : ''}
    - DO NOT pad with filler or unsupported background
 
@@ -213,7 +247,8 @@ ${aggressiveness && aggressiveness !== 'neutral' ? `8. EDITORIAL TONE: ${
     ? 'Write with strong, assertive language. Use punchy, attention-grabbing headlines. Lead with the most impactful angle. Be direct and bold in your statements.'
     : 'Write with measured, careful language. Avoid sensationalism. Prefer hedged statements over bold claims. Use qualifying language where appropriate.'
 }\n` : ''}
-TASK: Write a factual news article based STRICTLY on the source material above.
+TASK: Write a factual news article based STRICTLY on the source material above.`;
+  }
 
 FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
 
