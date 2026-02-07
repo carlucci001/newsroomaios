@@ -250,6 +250,8 @@ ${aggressiveness && aggressiveness !== 'neutral' ? `8. EDITORIAL TONE: ${
 TASK: Write a factual news article based STRICTLY on the source material above.`;
   }
 
+  prompt += `
+
 FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
 
 TITLE: [Write a SPECIFIC news headline that answers "What happened?" - NOT generic phrases]
