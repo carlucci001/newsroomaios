@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Lead } from '@/types/lead';
-import { MapPin, Newspaper, ExternalLink } from 'lucide-react';
+import { MapPin, ExternalLink, Globe } from 'lucide-react';
 
 interface InteractiveMapProps {
   leads: Lead[];
@@ -144,20 +144,14 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
               }}
             >
               {isLive ? (
-                /* Live newspaper - green pin with newspaper icon */
+                /* Live newspaper - green dot */
                 <div className="relative">
-                  <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-green-500 border-2 border-white shadow-lg flex items-center justify-center">
-                    <Newspaper className="h-4 w-4 md:h-5 md:w-5 text-white" />
-                  </div>
-                  {/* Pulse ring */}
+                  <div className="h-4 w-4 md:h-5 md:w-5 rounded-full bg-green-500 border-2 border-white shadow-lg" />
                   <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-20" />
                 </div>
               ) : (
-                /* Reserved territory - blue map pin */
-                <MapPin
-                  className="h-5 w-5 md:h-6 md:w-6 text-blue-500 drop-shadow-md"
-                  fill="#3b82f6"
-                />
+                /* Reserved territory - blue dot */
+                <div className="h-3 w-3 md:h-4 md:w-4 rounded-full bg-blue-500 border-2 border-white shadow-md" />
               )}
             </div>
           ))}
@@ -166,52 +160,60 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
         {/* Legend */}
         <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 bg-white/95 rounded-lg shadow-lg p-2 md:p-4 border-2 border-brand-blue-100">
           <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-            <MapPin className="h-4 w-4 md:h-5 md:w-5 text-blue-500" fill="#3b82f6" />
+            <div className="h-3 w-3 md:h-4 md:w-4 rounded-full bg-blue-500 border-2 border-white shadow-sm" />
             <span className="text-xs md:text-sm font-medium">Reserved</span>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="h-4 w-4 md:h-5 md:w-5 rounded-full bg-green-500 flex items-center justify-center">
-              <Newspaper className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
-            </div>
+            <div className="h-3 w-3 md:h-4 md:w-4 rounded-full bg-green-500 border-2 border-white shadow-sm" />
             <span className="text-xs md:text-sm font-medium">Live Newspaper</span>
           </div>
         </div>
       </div>
 
-      {/* Hover tooltip */}
+      {/* Hover card */}
       {hoveredLead && (
-        <div className="hidden md:block absolute top-4 right-4 bg-white rounded-lg shadow-2xl p-4 border-2 border-brand-blue-200 max-w-xs z-50">
-          <div className="flex items-start gap-3">
-            {hoveredLead.status === 'converted' ? (
-              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-                <Newspaper className="h-5 w-5 text-green-600" />
-              </div>
+        <div className="hidden md:block absolute top-4 right-4 bg-white rounded-xl shadow-2xl border border-gray-200 w-72 overflow-hidden z-50">
+          {/* Thumbnail area */}
+          <div className={`h-24 flex items-center justify-center ${
+            hoveredLead.status === 'converted'
+              ? 'bg-gradient-to-br from-green-500 to-emerald-600'
+              : 'bg-gradient-to-br from-blue-500 to-indigo-600'
+          }`}>
+            <span className="text-5xl font-bold text-white/90">
+              {(hoveredLead.newspaperName || hoveredLead.city || 'N')[0].toUpperCase()}
+            </span>
+          </div>
+
+          {/* Details */}
+          <div className="p-4">
+            <h4 className="font-bold text-base text-gray-900 leading-tight">
+              {hoveredLead.newspaperName || 'New Territory'}
+            </h4>
+            <p className="text-sm text-gray-500 mt-1">
+              {hoveredLead.city}, {hoveredLead.state}
+            </p>
+            {hoveredLead.county && (
+              <p className="text-xs text-gray-400">{hoveredLead.county}</p>
+            )}
+
+            {hoveredLead.status === 'converted' && hoveredLead.siteUrl ? (
+              <a
+                href={hoveredLead.siteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Globe className="h-4 w-4" />
+                Visit Site
+                <ExternalLink className="h-3 w-3" />
+              </a>
             ) : (
-              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                <MapPin className="h-5 w-5 text-blue-600" />
+              <div className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg">
+                <MapPin className="h-4 w-4" />
+                Territory Reserved
               </div>
             )}
-            <div>
-              <h4 className="font-semibold text-sm">
-                {hoveredLead.newspaperName || 'New Territory'}
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                {hoveredLead.city}, {hoveredLead.state}
-              </p>
-              {hoveredLead.county && (
-                <p className="text-xs text-muted-foreground">{hoveredLead.county}</p>
-              )}
-              {hoveredLead.status === 'converted' && hoveredLead.siteUrl ? (
-                <div className="flex items-center gap-1 mt-1.5 text-green-600">
-                  <ExternalLink className="h-3 w-3" />
-                  <span className="text-xs font-semibold">Click to visit</span>
-                </div>
-              ) : (
-                <p className="text-xs font-semibold mt-1 text-blue-600">
-                  Territory Reserved
-                </p>
-              )}
-            </div>
           </div>
         </div>
       )}
