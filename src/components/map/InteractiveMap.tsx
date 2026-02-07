@@ -1,16 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Lead } from '@/types/lead';
-import { MapPin, Building2 } from 'lucide-react';
-import Image from 'next/image';
+import { MapPin, Newspaper, ExternalLink } from 'lucide-react';
 
 interface InteractiveMapProps {
   leads: Lead[];
 }
 
 // US State coordinates (percentage-based positions calibrated to US map)
-// x: 0-100 (left to right), y: 0-100 (top to bottom)
 const stateCoordinates: Record<string, { x: number; y: number }> = {
   'Alabama': { x: 68, y: 68 },
   'Alaska': { x: 10, y: 85 },
@@ -64,29 +62,57 @@ const stateCoordinates: Record<string, { x: number; y: number }> = {
   'Wyoming': { x: 35, y: 38 },
 };
 
+// Deterministic offset based on string hash to prevent jitter on re-render
+function hashOffset(str: string, index: number): number {
+  let hash = 0;
+  const s = str + index;
+  for (let i = 0; i < s.length; i++) {
+    hash = ((hash << 5) - hash) + s.charCodeAt(i);
+    hash |= 0;
+  }
+  return ((hash % 100) / 100) * 4 - 2; // returns -2 to +2
+}
+
 export function InteractiveMap({ leads }: InteractiveMapProps) {
   const [hoveredLead, setHoveredLead] = useState<Lead | null>(null);
 
-  // Group leads by location to show count
-  // Live tenants (status 'converted') take priority over reserved leads
-  const leadsByLocation = leads.reduce((acc, lead) => {
-    const key = `${lead.city}, ${lead.state}`;
-    const isLive = lead.status === 'converted';
-    if (!acc[key]) {
-      acc[key] = { lead, count: 0 };
-    } else if (isLive) {
-      // Live tenant overwrites a reserved lead at same location
-      acc[key].lead = lead;
-    }
-    acc[key].count++;
-    return acc;
-  }, {} as Record<string, { lead: Lead; count: number }>);
+  // Compute stable pin positions once per data change
+  const pins = useMemo(() => {
+    return leads
+      .map((lead, index) => {
+        const coords = stateCoordinates[lead.state];
+        if (!coords) return null;
+
+        const isLive = lead.status === 'converted';
+        const key = `${lead.id || ''}-${lead.city}-${lead.state}-${index}`;
+
+        return {
+          lead,
+          isLive,
+          key,
+          x: coords.x + hashOffset(key, 0),
+          y: coords.y + hashOffset(key, 1),
+        };
+      })
+      .filter(Boolean) as Array<{
+        lead: Lead;
+        isLive: boolean;
+        key: string;
+        x: number;
+        y: number;
+      }>;
+  }, [leads]);
+
+  // Render reserved (blue) pins first, then live (green) on top
+  const sortedPins = useMemo(() => {
+    return [...pins].sort((a, b) => (a.isLive ? 1 : 0) - (b.isLive ? 1 : 0));
+  }, [pins]);
 
   return (
     <div className="relative rounded-lg md:rounded-xl border-2 border-brand-blue-200 overflow-hidden bg-white">
-      {/* Map Container with real US map background */}
+      {/* Map Container */}
       <div className="relative w-full" style={{ aspectRatio: '16/10', minHeight: '300px' }}>
-        {/* US Map Background Image */}
+        {/* US Map Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100">
           <img
             src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Blank_US_Map_%28states_only%29.svg/1280px-Blank_US_Map_%28states_only%29.svg.png"
@@ -96,51 +122,45 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
           />
         </div>
 
-        {/* Pins Container */}
-        <div className="absolute inset-0">{/* Map markers */}
-
-          {/* Map markers */}
-          {Object.entries(leadsByLocation).map(([location, { lead, count }]) => {
-            const coords = stateCoordinates[lead.state];
-            if (!coords) return null;
-
-            // Use percentage-based positioning
-            // Add slight randomness to prevent perfect overlap (±2%)
-            const xPercent = coords.x + (Math.random() - 0.5) * 2;
-            const yPercent = coords.y + (Math.random() - 0.5) * 2;
-            const isReserved = lead.status === 'reserved' || lead.status === 'contacted';
-
-            return (
-              <div
-                key={location}
-                className="absolute cursor-pointer transition-all hover:z-50"
-                style={{
-                  left: `${xPercent}%`,
-                  top: `${yPercent}%`,
-                  transform: 'translate(-50%, -50%)'
-                }}
-                onMouseEnter={() => setHoveredLead(lead)}
-                onMouseLeave={() => setHoveredLead(null)}
-              >
-                {/* Pin */}
+        {/* Pins */}
+        <div className="absolute inset-0">
+          {sortedPins.map(({ lead, isLive, key, x, y }) => (
+            <div
+              key={key}
+              className={`absolute transition-transform duration-150 ${
+                isLive ? 'z-20 cursor-pointer hover:scale-125' : 'z-10 cursor-default hover:scale-110'
+              }`}
+              style={{
+                left: `${x}%`,
+                top: `${y}%`,
+                transform: 'translate(-50%, -50%)',
+              }}
+              onMouseEnter={() => setHoveredLead(lead)}
+              onMouseLeave={() => setHoveredLead(null)}
+              onClick={() => {
+                if (isLive && lead.siteUrl) {
+                  window.open(lead.siteUrl, '_blank', 'noopener,noreferrer');
+                }
+              }}
+            >
+              {isLive ? (
+                /* Live newspaper - green pin with newspaper icon */
                 <div className="relative">
-                  <MapPin
-                    className={`h-6 w-6 md:h-8 md:w-8 drop-shadow-lg ${
-                      isReserved ? 'text-blue-500' : 'text-green-500'
-                    }`}
-                    fill={isReserved ? '#3b82f6' : '#10b981'}
-                  />
-
-                  {/* Count badge */}
-                  {count > 1 && (
-                    <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 h-4 w-4 md:h-6 md:w-6 rounded-full bg-red-500 border-2 border-white flex items-center justify-center">
-                      <span className="text-[10px] md:text-xs text-white font-bold">{count}</span>
-                    </div>
-                  )}
+                  <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-green-500 border-2 border-white shadow-lg flex items-center justify-center">
+                    <Newspaper className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                  </div>
+                  {/* Pulse ring */}
+                  <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-20" />
                 </div>
-              </div>
-            );
-          })}
+              ) : (
+                /* Reserved territory - blue map pin */
+                <MapPin
+                  className="h-5 w-5 md:h-6 md:w-6 text-blue-500 drop-shadow-md"
+                  fill="#3b82f6"
+                />
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Legend */}
@@ -150,25 +170,27 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
             <span className="text-xs md:text-sm font-medium">Reserved</span>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
-            <MapPin className="h-4 w-4 md:h-5 md:w-5 text-green-500" fill="#10b981" />
-            <span className="text-xs md:text-sm font-medium">Live</span>
+            <div className="h-4 w-4 md:h-5 md:w-5 rounded-full bg-green-500 flex items-center justify-center">
+              <Newspaper className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
+            </div>
+            <span className="text-xs md:text-sm font-medium">Live Newspaper</span>
           </div>
         </div>
       </div>
 
-      {/* Hover tooltip - hidden on mobile/touch devices */}
+      {/* Hover tooltip */}
       {hoveredLead && (
-        <div className="hidden md:block absolute top-4 right-4 bg-white rounded-lg shadow-2xl p-4 border-2 border-brand-blue-200 max-w-xs z-50 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+        <div className="hidden md:block absolute top-4 right-4 bg-white rounded-lg shadow-2xl p-4 border-2 border-brand-blue-200 max-w-xs z-50">
           <div className="flex items-start gap-3">
-            <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
-              hoveredLead.status === 'reserved' ? 'bg-blue-100' : 'bg-green-100'
-            }`}>
-              {hoveredLead.status === 'reserved' ? (
+            {hoveredLead.status === 'converted' ? (
+              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
+                <Newspaper className="h-5 w-5 text-green-600" />
+              </div>
+            ) : (
+              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
                 <MapPin className="h-5 w-5 text-blue-600" />
-              ) : (
-                <Building2 className="h-5 w-5 text-green-600" />
-              )}
-            </div>
+              </div>
+            )}
             <div>
               <h4 className="font-semibold text-sm">
                 {hoveredLead.newspaperName || 'New Territory'}
@@ -179,16 +201,23 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
               {hoveredLead.county && (
                 <p className="text-xs text-muted-foreground">{hoveredLead.county}</p>
               )}
-              <p className="text-xs font-semibold mt-1">
-                {hoveredLead.status === 'reserved' ? '🔵 Reserved' : '🟢 Live'}
-              </p>
+              {hoveredLead.status === 'converted' && hoveredLead.siteUrl ? (
+                <div className="flex items-center gap-1 mt-1.5 text-green-600">
+                  <ExternalLink className="h-3 w-3" />
+                  <span className="text-xs font-semibold">Click to visit</span>
+                </div>
+              ) : (
+                <p className="text-xs font-semibold mt-1 text-blue-600">
+                  Territory Reserved
+                </p>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Empty state - only show if no pins at all */}
-      {Object.keys(leadsByLocation).length === 0 && (
+      {/* Empty state */}
+      {leads.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm">
           <div className="text-center p-8">
             <MapPin className="h-16 w-16 text-brand-blue-400 mx-auto mb-4" />

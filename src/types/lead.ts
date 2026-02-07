@@ -12,6 +12,7 @@ export interface Lead {
   notes?: string;
   status: 'reserved' | 'contacted' | 'converted' | 'inactive';
   source: 'website_reservation' | 'direct' | 'referral' | 'other';
+  siteUrl?: string;
   createdAt: Timestamp;
   updatedAt?: Timestamp;
   contactedAt?: Timestamp;
