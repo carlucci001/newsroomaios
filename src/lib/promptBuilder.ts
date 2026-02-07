@@ -77,9 +77,15 @@ export function buildArticlePrompt(context: PromptContext): string {
     sourceContent,
     targetWordCount,
     writingStyle,
+    aggressiveness,
+    articleLengthConfig,
   } = context;
 
   const sourceQuality = assessSourceQuality(sourceContent);
+  const lengthRich = articleLengthConfig?.richSourceWords || '650-900';
+  const lengthModerate = articleLengthConfig?.moderateSourceWords || '520-715';
+  const lengthAdequate = articleLengthConfig?.adequateSourceWords || '390-585';
+  const lengthLimited = articleLengthConfig?.limitedSourceWords || '260-390';
   const sourceName = sourceContent?.sourceName || 'News Reports';
   const isWebSearch = sourceName === 'News Reports';
 
@@ -182,15 +188,15 @@ You MUST follow these HARD CONSTRAINTS (violations will block publication):
 5. LENGTH CONSTRAINT:
    - Write ONLY what the source supports
    ${sourceQuality.richness === 'rich'
-     ? `- Target: 8-10 paragraphs (650-900 words) - you have rich source material
+     ? `- Target: 8-10 paragraphs (${lengthRich} words) - you have rich source material
    - Develop each key point thoroughly with all available details`
      : sourceQuality.richness === 'moderate'
-     ? `- Target: 5-8 paragraphs (520-715 words) - you have moderate source material
+     ? `- Target: 5-8 paragraphs (${lengthModerate} words) - you have moderate source material
    - Cover main points with supporting details`
      : sourceQuality.richness === 'adequate'
-     ? `- Target: 4-7 paragraphs (390-585 words) - you have adequate source material
+     ? `- Target: 4-7 paragraphs (${lengthAdequate} words) - you have adequate source material
    - Cover essential points concisely`
-     : `- Target: 3-4 paragraphs (260-390 words) - source material is limited
+     : `- Target: 3-4 paragraphs (${lengthLimited} words) - source material is limited
    - Focus on core facts only`}
    ${targetWordCount ? `- Target word count: ${targetWordCount}` : ''}
    - DO NOT pad with filler or unsupported background
@@ -202,7 +208,11 @@ You MUST follow these HARD CONSTRAINTS (violations will block publication):
    - It is BETTER to admit gaps than to fabricate
 
 ${writingStyle ? `7. WRITING STYLE: ${writingStyle}\n` : ''}
-
+${aggressiveness && aggressiveness !== 'neutral' ? `8. EDITORIAL TONE: ${
+  aggressiveness === 'aggressive'
+    ? 'Write with strong, assertive language. Use punchy, attention-grabbing headlines. Lead with the most impactful angle. Be direct and bold in your statements.'
+    : 'Write with measured, careful language. Avoid sensationalism. Prefer hedged statements over bold claims. Use qualifying language where appropriate.'
+}\n` : ''}
 TASK: Write a factual news article based STRICTLY on the source material above.
 
 FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:

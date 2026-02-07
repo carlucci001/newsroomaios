@@ -5,6 +5,7 @@ import { buildArticlePrompt, validateSourceMaterial } from '@/lib/promptBuilder'
 import { parseArticleResponse, generateSlug } from '@/lib/articleParser';
 import { generateArticleImage } from '@/lib/imageGeneration';
 import { searchNews, generateSearchQuery } from '@/lib/webSearch';
+import { getAIConfig } from '@/lib/aiConfigService';
 import { GenerateArticleRequest, GenerateArticleResponse, PromptContext, SourceContent } from '@/types/generation';
 import { Tenant, NewsCategory } from '@/types/tenant';
 import { CREDIT_COSTS } from '@/types/credits';
@@ -82,6 +83,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Load platform AI config (cached, 5-min TTL)
+    const aiConfig = await getAIConfig();
+
     // If web search is requested, fetch source content from the web
     let sourceContent: SourceContent | undefined = body.sourceContent;
     if (body.useWebSearch && !sourceContent) {
@@ -94,6 +98,13 @@ export async function POST(request: NextRequest) {
       );
       const searchResult = await searchNews(searchQuery, {
         focusArea: category.name,
+        config: {
+          model: aiConfig.webSearch.model,
+          maxTokens: aiConfig.webSearch.maxTokens,
+          temperature: aiConfig.webSearch.temperature,
+          searchDomainFilter: aiConfig.webSearch.searchDomainFilter,
+          searchRecencyFilter: aiConfig.webSearch.searchRecencyFilter,
+        },
       });
       if (searchResult) {
         sourceContent = searchResult;
@@ -148,23 +159,32 @@ export async function POST(request: NextRequest) {
       categoryDirective: category.directive,
       articleSpecificPrompt: body.articleSpecificPrompt,
       journalistName: body.journalistName,
-      sourceContent, // Use fetched source content (from web search or provided)
-      targetWordCount: body.targetWordCount,
-      writingStyle: body.writingStyle,
+      sourceContent,
+      targetWordCount: body.targetWordCount || aiConfig.articleLength.targetWordCount,
+      writingStyle: body.writingStyle || aiConfig.tone.writingStyle,
+      aggressiveness: aiConfig.tone.aggressiveness,
+      articleLengthConfig: {
+        richSourceWords: aiConfig.articleLength.richSourceWords,
+        moderateSourceWords: aiConfig.articleLength.moderateSourceWords,
+        adequateSourceWords: aiConfig.articleLength.adequateSourceWords,
+        limitedSourceWords: aiConfig.articleLength.limitedSourceWords,
+      },
     };
 
     // Build the prompt
     const prompt = buildArticlePrompt(promptContext);
 
-    // Generate article with Gemini
+    // Generate article with Gemini (tenant overrides > platform config > code defaults)
     const aiResponse = await generateContent(
       prompt,
       {
-        model: tenant.aiSettings?.defaultModel || 'gemini-2.0-flash',
-        temperature: tenant.aiSettings?.defaultTemperature || 0.1,
-        maxTokens: 2800,
+        model: tenant.aiSettings?.defaultModel || aiConfig.gemini.model,
+        temperature: tenant.aiSettings?.defaultTemperature ?? aiConfig.gemini.temperature,
+        maxTokens: aiConfig.gemini.maxTokens,
+        topP: aiConfig.gemini.topP,
+        topK: aiConfig.gemini.topK,
       },
-      NEWS_SYSTEM_INSTRUCTION
+      aiConfig.tone.customSystemInstruction || NEWS_SYSTEM_INSTRUCTION
     );
 
     // Parse the response
@@ -255,7 +275,7 @@ export async function POST(request: NextRequest) {
         articleSpecific: body.articleSpecificPrompt || null,
       },
       generationMetadata: {
-        model: tenant.aiSettings?.defaultModel || 'gemini-2.0-flash',
+        model: tenant.aiSettings?.defaultModel || aiConfig.gemini.model,
         generationTimeMs: Date.now() - startTime,
         usedWebSearch: body.useWebSearch || false,
         imageMethod: imageResult.method,
@@ -285,7 +305,7 @@ export async function POST(request: NextRequest) {
       creditsUsed: creditsNeeded,
       creditsRemaining: creditCheck.creditsRemaining - creditsNeeded,
       generationTimeMs,
-      model: tenant.aiSettings?.defaultModel || 'gemini-2.0-flash',
+      model: tenant.aiSettings?.defaultModel || aiConfig.gemini.model,
     };
 
     // Add CORS headers to success response

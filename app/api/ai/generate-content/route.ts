@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { generateContent } from '@/lib/gemini';
+import { getAIConfig } from '@/lib/aiConfigService';
 import { Tenant } from '@/types/tenant';
 
 // Platform secret for internal calls
@@ -73,15 +74,18 @@ export async function POST(request: NextRequest) {
       console.log(`[Generate Content] Added service area context: ${tenant.serviceArea.city}, ${tenant.serviceArea.state}`);
     }
 
+    // Load platform AI config (cached, 5-min TTL)
+    const aiConfig = await getAIConfig();
+
     // Generate content using Gemini
     const content = await generateContent(
       body.prompt,
       {
-        model: body.model || 'gemini-2.0-flash',
-        temperature: body.temperature,
-        maxTokens: body.maxTokens,
+        model: body.model || aiConfig.gemini.model,
+        temperature: body.temperature ?? aiConfig.gemini.temperature,
+        maxTokens: body.maxTokens || aiConfig.gemini.maxTokens,
       },
-      enhancedSystemInstruction || undefined
+      enhancedSystemInstruction || aiConfig.tone.customSystemInstruction || undefined
     );
 
     return NextResponse.json(

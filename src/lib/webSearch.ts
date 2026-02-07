@@ -36,14 +36,23 @@ interface PerplexityResponse {
 /**
  * Search for news using Perplexity's API
  */
+export interface WebSearchConfig {
+  model?: string;
+  maxTokens?: number;
+  temperature?: number;
+  searchDomainFilter?: string[];
+  searchRecencyFilter?: string;
+}
+
 export async function searchNews(
   query: string,
   options: {
     maxResults?: number;
     focusArea?: string;
+    config?: WebSearchConfig;
   } = {}
 ): Promise<SourceContent | null> {
-  const { maxResults = 5, focusArea } = options;
+  const { maxResults = 5, focusArea, config } = options;
 
   if (!PERPLEXITY_API_KEY) {
     console.warn('[WebSearch] No Perplexity API key configured, using fallback');
@@ -96,12 +105,12 @@ Important:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar',
+        model: config?.model || 'sonar',
         messages,
-        max_tokens: 1500,
-        temperature: 0.1,
-        search_domain_filter: ['news'],
-        search_recency_filter: 'week',
+        max_tokens: config?.maxTokens || 1500,
+        temperature: config?.temperature ?? 0.1,
+        search_domain_filter: config?.searchDomainFilter || ['news'],
+        search_recency_filter: config?.searchRecencyFilter || 'week',
       }),
     });
 

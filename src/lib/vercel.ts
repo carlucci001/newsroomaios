@@ -63,7 +63,7 @@ class VercelService {
   constructor() {
     this.apiToken = process.env.VERCEL_API_TOKEN || '';
     this.teamId = process.env.VERCEL_TEAM_ID;
-    this.gitRepoUrl = process.env.WNCT_GIT_REPO_URL || 'https://github.com/your-org/wnct-next';
+    this.gitRepoUrl = process.env.WNCT_GIT_REPO_URL || 'https://github.com/carlucci001/wnct-template';
   }
 
   private async fetch(
@@ -254,14 +254,12 @@ class VercelService {
       NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
       NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
 
-      // Firebase Admin SDK (for server-side admin APIs)
-      FIREBASE_ADMIN_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
-      FIREBASE_ADMIN_CLIENT_EMAIL: process.env.FIREBASE_ADMIN_CLIENT_EMAIL || '',
-      FIREBASE_ADMIN_PRIVATE_KEY: process.env.FIREBASE_ADMIN_PRIVATE_KEY || '',
-
-      // OPTION C: Tenants NO LONGER receive AI API keys
-      // They call platform API which uses platform's keys
-      // (Removed: GEMINI_API_KEY, PERPLEXITY_API_KEY, PEXELS_API_KEY, etc.)
+      // AI API keys (required by wnct-template for article generation, fact-checking, etc.)
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+      PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY || '',
+      PEXELS_API_KEY: process.env.PEXELS_API_KEY || '',
+      ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || '',
+      GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY || '',
 
       // Tenant-specific config
       NEXT_PUBLIC_SITE_NAME: businessName,
@@ -269,8 +267,11 @@ class VercelService {
       NEXT_PUBLIC_SERVICE_AREA_STATE: serviceArea.state,
 
       // Platform connection (OPTION C: Centralized API)
-      PLATFORM_API_URL: process.env.NEXT_PUBLIC_BASE_URL || 'https://newsroomaios.com',
+      PLATFORM_API_URL: (process.env.NEXT_PUBLIC_BASE_URL || '').startsWith('http://localhost')
+        ? 'https://www.newsroomaios.com'
+        : (process.env.NEXT_PUBLIC_BASE_URL || 'https://www.newsroomaios.com'),
       TENANT_API_KEY: apiKey, // Unique key for this tenant to call platform APIs
+      NEXT_PUBLIC_TENANT_API_KEY: apiKey, // Client-side access to tenant API key
       PLATFORM_SECRET: process.env.PLATFORM_SECRET || '', // For internal platform calls
     };
 

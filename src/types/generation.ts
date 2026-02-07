@@ -85,4 +85,11 @@ export interface PromptContext {
   sourceContent?: SourceContent;
   targetWordCount?: number;
   writingStyle?: string;
+  aggressiveness?: 'aggressive' | 'neutral' | 'conservative';
+  articleLengthConfig?: {
+    richSourceWords?: string;
+    moderateSourceWords?: string;
+    adequateSourceWords?: string;
+    limitedSourceWords?: string;
+  };
 }
