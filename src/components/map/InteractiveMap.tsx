@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { Lead } from '@/types/lead';
 import { MapPin, ExternalLink, Globe } from 'lucide-react';
 
@@ -73,8 +73,26 @@ function hashOffset(str: string, index: number): number {
   return ((hash % 100) / 100) * 4 - 2; // returns -2 to +2
 }
 
+// Build a screenshot thumbnail URL for a live site
+function getSiteThumbnailUrl(siteUrl: string): string {
+  // Use thum.io free screenshot service
+  return `https://image.thum.io/get/width/600/${siteUrl}`;
+}
+
 export function InteractiveMap({ leads }: InteractiveMapProps) {
   const [hoveredLead, setHoveredLead] = useState<Lead | null>(null);
+  const [thumbError, setThumbError] = useState(false);
+  const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnter = useCallback((lead: Lead) => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    if (hoveredLead?.id !== lead.id) setThumbError(false);
+    setHoveredLead(lead);
+  }, [hoveredLead?.id]);
+
+  const handleMouseLeave = useCallback(() => {
+    hoverTimeout.current = setTimeout(() => setHoveredLead(null), 200);
+  }, []);
 
   // Compute stable pin positions once per data change
   const pins = useMemo(() => {
@@ -127,32 +145,33 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
           {sortedPins.map(({ lead, isLive, key, x, y }) => (
             <div
               key={key}
-              className={`absolute transition-transform duration-150 ${
-                isLive ? 'z-20 cursor-pointer hover:scale-125' : 'z-10 cursor-default hover:scale-110'
+              className={`absolute ${
+                isLive ? 'z-20 cursor-pointer' : 'z-10 cursor-default'
               }`}
               style={{
                 left: `${x}%`,
                 top: `${y}%`,
                 transform: 'translate(-50%, -50%)',
               }}
-              onMouseEnter={() => setHoveredLead(lead)}
-              onMouseLeave={() => setHoveredLead(null)}
+              onMouseEnter={() => handleMouseEnter(lead)}
+              onMouseLeave={handleMouseLeave}
               onClick={() => {
                 if (isLive && lead.siteUrl) {
                   window.open(lead.siteUrl, '_blank', 'noopener,noreferrer');
                 }
               }}
             >
-              {isLive ? (
-                /* Live newspaper - green dot */
-                <div className="relative">
-                  <div className="h-4 w-4 md:h-5 md:w-5 rounded-full bg-green-500 border-2 border-white shadow-lg" />
-                  <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-20" />
-                </div>
-              ) : (
-                /* Reserved territory - blue dot */
-                <div className="h-3 w-3 md:h-4 md:w-4 rounded-full bg-blue-500 border-2 border-white shadow-md" />
-              )}
+              {/* Larger invisible hit area to prevent flicker */}
+              <div className="p-3 -m-3">
+                {isLive ? (
+                  <div className="relative w-fit">
+                    <div className="h-4 w-4 md:h-5 md:w-5 rounded-full bg-green-500 border-2 border-white shadow-lg transition-transform duration-150 hover:scale-125" />
+                    <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-20" />
+                  </div>
+                ) : (
+                  <div className="h-3 w-3 md:h-4 md:w-4 rounded-full bg-blue-500 border-2 border-white shadow-md transition-transform duration-150 hover:scale-110" />
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -172,16 +191,27 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
 
       {/* Hover card */}
       {hoveredLead && (
-        <div className="hidden md:block absolute top-4 right-4 bg-white rounded-xl shadow-2xl border border-gray-200 w-72 overflow-hidden z-50">
+        <div className="hidden md:block absolute top-4 right-4 bg-white rounded-xl shadow-2xl border border-gray-200 w-72 overflow-hidden z-50 pointer-events-none">
           {/* Thumbnail area */}
-          <div className={`h-24 flex items-center justify-center ${
-            hoveredLead.status === 'converted'
-              ? 'bg-gradient-to-br from-green-500 to-emerald-600'
-              : 'bg-gradient-to-br from-blue-500 to-indigo-600'
-          }`}>
-            <span className="text-5xl font-bold text-white/90">
-              {(hoveredLead.newspaperName || hoveredLead.city || 'N')[0].toUpperCase()}
-            </span>
+          <div className="relative h-36 bg-gray-100 overflow-hidden">
+            {hoveredLead.status === 'converted' && hoveredLead.siteUrl && !thumbError ? (
+              <img
+                src={getSiteThumbnailUrl(hoveredLead.siteUrl)}
+                alt={hoveredLead.newspaperName || 'Newspaper preview'}
+                className="w-full h-full object-cover object-top"
+                onError={() => setThumbError(true)}
+              />
+            ) : (
+              <div className={`w-full h-full flex items-center justify-center ${
+                hoveredLead.status === 'converted'
+                  ? 'bg-gradient-to-br from-green-500 to-emerald-600'
+                  : 'bg-gradient-to-br from-blue-500 to-indigo-600'
+              }`}>
+                <span className="text-5xl font-bold text-white/90">
+                  {(hoveredLead.newspaperName || hoveredLead.city || 'N')[0].toUpperCase()}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Details */}
@@ -197,17 +227,11 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
             )}
 
             {hoveredLead.status === 'converted' && hoveredLead.siteUrl ? (
-              <a
-                href={hoveredLead.siteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <div className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg">
                 <Globe className="h-4 w-4" />
                 Visit Site
                 <ExternalLink className="h-3 w-3" />
-              </a>
+              </div>
             ) : (
               <div className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg">
                 <MapPin className="h-4 w-4" />
