@@ -68,10 +68,15 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
   const [hoveredLead, setHoveredLead] = useState<Lead | null>(null);
 
   // Group leads by location to show count
+  // Live tenants (status 'converted') take priority over reserved leads
   const leadsByLocation = leads.reduce((acc, lead) => {
     const key = `${lead.city}, ${lead.state}`;
+    const isLive = lead.status === 'converted';
     if (!acc[key]) {
       acc[key] = { lead, count: 0 };
+    } else if (isLive) {
+      // Live tenant overwrites a reserved lead at same location
+      acc[key].lead = lead;
     }
     acc[key].count++;
     return acc;
