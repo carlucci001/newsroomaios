@@ -260,6 +260,7 @@ class VercelService {
       PEXELS_API_KEY: process.env.PEXELS_API_KEY || '',
       ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || '',
       GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY || '',
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
 
       // Tenant-specific config
       NEXT_PUBLIC_SITE_NAME: businessName,

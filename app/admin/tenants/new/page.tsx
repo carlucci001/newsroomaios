@@ -1,5 +1,6 @@
 'use client';
 
+import 'antd/dist/reset.css';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
@@ -7,15 +8,27 @@ import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
 import { DEFAULT_PLANS } from '@/types/credits';
 import { createDefaultJournalists, createDefaultContentSources } from '@/types/aiJournalist';
-import { PageContainer } from '@/components/layouts/PageContainer';
-import { PageHeader } from '@/components/layouts/PageHeader';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ArrowLeft, Info, Building2, Globe, Mail, MapPin, CreditCard, Clock } from 'lucide-react';
+import {
+  Card,
+  Typography,
+  Button,
+  Input,
+  Select,
+  Form,
+  Row,
+  Col,
+  Alert,
+  Space,
+} from 'antd';
+import {
+  ArrowLeftOutlined,
+  InfoCircleOutlined,
+  SaveOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
+
+const { Title, Text } = Typography;
 
 const DEFAULT_CATEGORIES = [
   { id: 'local-news', name: 'Local News', slug: 'local-news', directive: 'Local community news and events', enabled: true },
@@ -31,18 +44,16 @@ export default function NewTenantPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [form, setForm] = useState({
+  const [formData, setFormData] = useState({
     businessName: '',
     domain: '',
     ownerEmail: '',
     city: '',
     state: '',
     planId: 'starter',
-    trialDays: 14,
   });
 
-  async function createTenant(e: React.FormEvent) {
-    e.preventDefault();
+  async function createTenant() {
     setError('');
     setLoading(true);
 
@@ -50,7 +61,7 @@ export default function NewTenantPage() {
       const db = getDb();
 
       // Check if domain already exists
-      const domainQuery = query(collection(db, 'tenants'), where('domain', '==', form.domain));
+      const domainQuery = query(collection(db, 'tenants'), where('domain', '==', formData.domain));
       const domainSnap = await getDocs(domainQuery);
       if (!domainSnap.empty) {
         setError('A newspaper with this domain already exists');
@@ -59,7 +70,7 @@ export default function NewTenantPage() {
       }
 
       // Create slug from business name
-      const slug = form.businessName
+      const slug = formData.businessName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
@@ -69,14 +80,14 @@ export default function NewTenantPage() {
 
       // Create tenant
       const tenantData: Omit<Tenant, 'id'> = {
-        businessName: form.businessName,
+        businessName: formData.businessName,
         slug,
-        domain: form.domain,
-        ownerEmail: form.ownerEmail,
+        domain: formData.domain,
+        ownerEmail: formData.ownerEmail,
         apiKey,
         serviceArea: {
-          city: form.city,
-          state: form.state,
+          city: formData.city,
+          state: formData.state,
         },
         categories: DEFAULT_CATEGORIES,
         status: 'provisioning',
@@ -87,7 +98,7 @@ export default function NewTenantPage() {
       const tenantRef = await addDoc(collection(db, 'tenants'), tenantData);
 
       // Create credit allocation
-      const plan = DEFAULT_PLANS.find((p) => p.id === form.planId) || DEFAULT_PLANS[0];
+      const plan = DEFAULT_PLANS.find((p) => p.id === formData.planId) || DEFAULT_PLANS[0];
       const now = new Date();
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
@@ -109,7 +120,7 @@ export default function NewTenantPage() {
       // Auto-provision AI journalists (one per category)
       const journalists = createDefaultJournalists(
         tenantRef.id,
-        form.businessName,
+        formData.businessName,
         DEFAULT_CATEGORIES
       );
       for (const journalist of journalists) {
@@ -117,7 +128,7 @@ export default function NewTenantPage() {
       }
 
       // Auto-provision content sources (local news feeds)
-      const sources = createDefaultContentSources(tenantRef.id, form.city, form.state);
+      const sources = createDefaultContentSources(tenantRef.id, formData.city, formData.state);
       for (const source of sources) {
         await addDoc(collection(db, 'contentSources'), source);
       }
@@ -133,214 +144,142 @@ export default function NewTenantPage() {
   }
 
   return (
-    <PageContainer maxWidth="lg">
-      <PageHeader
-        title="Add New Newspaper"
-        subtitle="Provision a new tenant for the Paper Partner Program"
-        action={
+    <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto' }}>
+      <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <Title level={2} style={{ margin: 0 }}>Add New Newspaper</Title>
+            <Text type="secondary">Provision a new tenant for the Paper Partner Program</Text>
+          </div>
           <Link href="/admin/tenants">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
+            <Button icon={<ArrowLeftOutlined />}>Back</Button>
           </Link>
-        }
-      />
+        </div>
 
-      {/* Form */}
-      <form onSubmit={createTenant} className="space-y-6">
         {error && (
-          <Card className="border-danger-200 bg-danger-50">
-            <CardContent className="pt-6">
-              <p className="text-sm text-danger-600">{error}</p>
-            </CardContent>
-          </Card>
+          <Alert type="error" showIcon title={error} closable onClose={() => setError('')} />
         )}
 
-        {/* Newspaper Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Newspaper Details</CardTitle>
-            <CardDescription>Basic information about the newspaper</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="businessName" className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-gray-400" />
-                Newspaper Name *
-              </Label>
+        <Form layout="vertical" onFinish={createTenant}>
+          {/* Newspaper Details */}
+          <Card title={<Title level={4} style={{ margin: 0 }}>Newspaper Details</Title>} style={{ marginBottom: 16 }}>
+            <Form.Item label={<Text strong>Newspaper Name</Text>} required>
               <Input
-                id="businessName"
-                value={form.businessName}
-                onChange={(e) => setForm({ ...form, businessName: e.target.value })}
+                value={formData.businessName}
+                onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                 placeholder="Mountain View Times"
+                size="large"
                 required
-                className="mt-1"
               />
-            </div>
+            </Form.Item>
 
-            <div>
-              <Label htmlFor="domain" className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-gray-400" />
-                Domain *
-              </Label>
+            <Form.Item
+              label={<Text strong>Domain</Text>}
+              extra={<Text type="secondary" style={{ fontSize: 12 }}>The domain where this newspaper will be hosted</Text>}
+              required
+            >
               <Input
-                id="domain"
-                value={form.domain}
-                onChange={(e) => setForm({ ...form, domain: e.target.value })}
+                value={formData.domain}
+                onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
                 placeholder="mountainviewtimes.com"
+                size="large"
                 required
-                className="mt-1"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                The domain where this newspaper will be hosted
-              </p>
-            </div>
+            </Form.Item>
 
-            <div>
-              <Label htmlFor="ownerEmail" className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-gray-400" />
-                Owner Email *
-              </Label>
+            <Form.Item label={<Text strong>Owner Email</Text>} required>
               <Input
-                id="ownerEmail"
                 type="email"
-                value={form.ownerEmail}
-                onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })}
+                value={formData.ownerEmail}
+                onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
                 placeholder="owner@example.com"
+                size="large"
                 required
-                className="mt-1"
               />
-            </div>
-          </CardContent>
-        </Card>
+            </Form.Item>
+          </Card>
 
-        {/* Service Area */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Service Area</CardTitle>
-            <CardDescription>Geographic coverage region</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="city" className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  City *
-                </Label>
-                <Input
-                  id="city"
-                  value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
-                  placeholder="Mountain View"
-                  required
-                  className="mt-1"
-                />
-              </div>
+          {/* Service Area */}
+          <Card title={<Title level={4} style={{ margin: 0 }}>Service Area</Title>} style={{ marginBottom: 16 }}>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label={<Text strong>City</Text>} required>
+                  <Input
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    placeholder="Mountain View"
+                    size="large"
+                    required
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label={<Text strong>State</Text>} required>
+                  <Input
+                    value={formData.state}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    placeholder="CA"
+                    size="large"
+                    required
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
 
-              <div>
-                <Label htmlFor="state">State *</Label>
-                <Input
-                  id="state"
-                  value={form.state}
-                  onChange={(e) => setForm({ ...form, state: e.target.value })}
-                  placeholder="CA"
-                  required
-                  className="mt-1"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Subscription */}
+          <Card title={<Title level={4} style={{ margin: 0 }}>Subscription</Title>} style={{ marginBottom: 16 }}>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label={<Text strong>Plan</Text>}>
+                  <Select
+                    value={formData.planId}
+                    onChange={(value) => setFormData({ ...formData, planId: value })}
+                    size="large"
+                    options={DEFAULT_PLANS.map((plan) => ({
+                      value: plan.id,
+                      label: `${plan.name} - $${plan.pricePerMonth}/mo (${plan.monthlyCredits.toLocaleString()} credits)`,
+                    }))}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
 
-        {/* Subscription */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Subscription</CardTitle>
-            <CardDescription>Plan and trial configuration</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="planId" className="flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-gray-400" />
-                  Plan
-                </Label>
-                <select
-                  id="planId"
-                  value={form.planId}
-                  onChange={(e) => setForm({ ...form, planId: e.target.value })}
-                  className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  {DEFAULT_PLANS.map((plan) => (
-                    <option key={plan.id} value={plan.id}>
-                      {plan.name} - ${plan.pricePerMonth}/mo ({plan.monthlyCredits.toLocaleString()} credits)
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Info Card */}
+          <Alert
+            type="info"
+            showIcon
+            icon={<InfoCircleOutlined />}
+            title={<Text strong>What happens automatically?</Text>}
+            description={
+              <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+                <li>Tenant created with credits allocated</li>
+                <li>6 AI journalists auto-provisioned (one per category)</li>
+                <li>Content sources configured for their location</li>
+                <li>Master cron will start generating articles immediately</li>
+              </ul>
+            }
+            style={{ marginBottom: 16 }}
+          />
 
-              <div>
-                <Label htmlFor="trialDays" className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  Trial Period (days)
-                </Label>
-                <Input
-                  id="trialDays"
-                  type="number"
-                  value={form.trialDays}
-                  onChange={(e) => setForm({ ...form, trialDays: parseInt(e.target.value) })}
-                  min={0}
-                  max={90}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Info Card */}
-        <Card className="border-brand-200 bg-brand-50">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-brand-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-brand-900 mb-2">What happens automatically?</p>
-                <ul className="text-sm text-brand-800 space-y-1">
-                  <li className="flex items-start gap-2">
-                    <span className="text-brand-600 mt-1">•</span>
-                    <span>Tenant created with credits allocated</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-brand-600 mt-1">•</span>
-                    <span>6 AI journalists auto-provisioned (one per category)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-brand-600 mt-1">•</span>
-                    <span>Content sources configured for their location</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-brand-600 mt-1">•</span>
-                    <span>Master cron will start generating articles immediately</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <div className="flex justify-end gap-4">
-          <Link href="/admin/tenants">
-            <Button type="button" variant="outline">
-              Cancel
+          {/* Actions */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <Link href="/admin/tenants">
+              <Button size="large">Cancel</Button>
+            </Link>
+            <Button
+              type="primary"
+              htmlType="submit"
+              size="large"
+              loading={loading}
+              icon={loading ? <LoadingOutlined /> : <SaveOutlined />}
+            >
+              {loading ? 'Creating...' : 'Create Newspaper'}
             </Button>
-          </Link>
-          <Button type="submit" disabled={loading} variant="primary">
-            {loading ? 'Creating...' : 'Create Newspaper'}
-          </Button>
-        </div>
-      </form>
-    </PageContainer>
+          </div>
+        </Form>
+      </Space>
+    </div>
   );
 }

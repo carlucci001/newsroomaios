@@ -29,6 +29,12 @@ import {
   EditOutlined,
   FileTextOutlined,
   SaveOutlined,
+  KeyOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -115,9 +121,23 @@ export default function AISettingsPage() {
   const [config, setConfig] = useState<AIConfig>(defaultConfig);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [keyInputs, setKeyInputs] = useState<Record<string, string>>({});
+  const [keyStatus, setKeyStatus] = useState<Record<string, { configured: boolean; masked: string | null }>>({});
+  const [savingKeys, setSavingKeys] = useState(false);
+  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
+  const [testingKey, setTestingKey] = useState<string | null>(null);
+
+  const API_KEY_DEFS = [
+    { name: 'gemini', field: 'geminiApiKey', envVar: 'GEMINI_API_KEY', label: 'Gemini', description: 'Google AI - article generation, image generation, chat, fact-checking' },
+    { name: 'openai', field: 'openaiApiKey', envVar: 'OPENAI_API_KEY', label: 'OpenAI', description: 'DALL-E banner generation, GPT fallback' },
+    { name: 'pexels', field: 'pexelsApiKey', envVar: 'PEXELS_API_KEY', label: 'Pexels', description: 'Free stock photo search for article images' },
+    { name: 'elevenlabs', field: 'elevenLabsApiKey', envVar: 'ELEVENLABS_API_KEY', label: 'ElevenLabs', description: 'Text-to-speech audio for articles' },
+    { name: 'perplexity', field: 'perplexityApiKey', envVar: 'PERPLEXITY_API_KEY', label: 'Perplexity', description: 'Web search and real-time research' },
+  ];
 
   useEffect(() => {
     loadConfig();
+    loadKeyStatus();
   }, []);
 
   async function loadConfig() {
@@ -138,6 +158,109 @@ export default function AISettingsPage() {
       message.error('Failed to load AI settings');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadKeyStatus() {
+    try {
+      const db = getDb();
+      const snapshot = await getDoc(doc(db, 'settings', 'apiKeys'));
+      const data = snapshot.exists() ? snapshot.data() : {};
+      const status: Record<string, { configured: boolean; masked: string | null }> = {};
+      for (const { name, field } of API_KEY_DEFS) {
+        const val = data[field];
+        if (val && val.trim() !== '') {
+          status[name] = { configured: true, masked: '••••••••' + val.slice(-4) };
+        } else {
+          status[name] = { configured: false, masked: null };
+        }
+      }
+      setKeyStatus(status);
+    } catch (error) {
+      console.error('Failed to load API key status:', error);
+    }
+  }
+
+  async function saveApiKeys() {
+    const keysToSave: Record<string, string> = {};
+    for (const { name, field } of API_KEY_DEFS) {
+      const val = keyInputs[name];
+      if (val && val.trim() !== '') {
+        keysToSave[field] = val.trim();
+      }
+    }
+    if (Object.keys(keysToSave).length === 0) {
+      message.error('Enter at least one API key to save.');
+      return;
+    }
+    setSavingKeys(true);
+    try {
+      const db = getDb();
+      await setDoc(doc(db, 'settings', 'apiKeys'), keysToSave, { merge: true });
+      message.success(`${Object.keys(keysToSave).length} API key(s) saved successfully.`);
+      setKeyInputs({});
+      await loadKeyStatus();
+    } catch (error) {
+      console.error('Failed to save API keys:', error);
+      message.error('Failed to save API keys.');
+    } finally {
+      setSavingKeys(false);
+    }
+  }
+
+  async function testApiKey(name: string) {
+    // Get the key to test - either newly entered or saved
+    const db = getDb();
+    let keyToTest = keyInputs[name]?.trim();
+    if (!keyToTest) {
+      const snapshot = await getDoc(doc(db, 'settings', 'apiKeys'));
+      const data = snapshot.exists() ? snapshot.data() : {};
+      const def = API_KEY_DEFS.find(d => d.name === name);
+      keyToTest = def ? data[def.field] : undefined;
+    }
+    if (!keyToTest) {
+      message.error(`No ${name} API key to test. Enter or save one first.`);
+      return;
+    }
+    setTestingKey(name);
+    try {
+      let testUrl = '';
+      let testOpts: RequestInit = {};
+      if (name === 'gemini') {
+        testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${keyToTest}`;
+        testOpts = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: 'Test' }] }], generationConfig: { maxOutputTokens: 5 } }),
+        };
+      } else if (name === 'openai') {
+        testUrl = 'https://api.openai.com/v1/models';
+        testOpts = { headers: { 'Authorization': `Bearer ${keyToTest}` } };
+      } else if (name === 'pexels') {
+        testUrl = 'https://api.pexels.com/v1/search?query=test&per_page=1';
+        testOpts = { headers: { 'Authorization': keyToTest } };
+      } else if (name === 'elevenlabs') {
+        testUrl = 'https://api.elevenlabs.io/v1/voices';
+        testOpts = { headers: { 'xi-api-key': keyToTest } };
+      } else if (name === 'perplexity') {
+        testUrl = 'https://api.perplexity.ai/chat/completions';
+        testOpts = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${keyToTest}` },
+          body: JSON.stringify({ model: 'sonar', messages: [{ role: 'user', content: 'Test' }], max_tokens: 5 }),
+        };
+      }
+      const response = await fetch(testUrl, testOpts);
+      if (response.ok) {
+        message.success(`${name} API key is valid!`);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        message.error(`${name} test failed: ${errorData.error?.message || response.statusText}`);
+      }
+    } catch (error: any) {
+      message.error(`${name} test failed: ${error.message}`);
+    } finally {
+      setTestingKey(null);
     }
   }
 
@@ -196,6 +319,80 @@ export default function AISettingsPage() {
 
   const tabItems = [
     {
+      key: 'keys',
+      label: (
+        <span>
+          <KeyOutlined style={{ marginRight: 8 }} />
+          API Keys
+        </span>
+      ),
+      children: (
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+          <Alert
+            type="info"
+            showIcon
+            message="Manage API keys for all AI services. These keys are used by all tenant newspapers."
+          />
+
+          {API_KEY_DEFS.map(({ name, label, description }) => {
+            const status = keyStatus[name];
+            const hasInput = Boolean(keyInputs[name]?.trim());
+            return (
+              <div key={name}>
+                <Row gutter={16} align="middle">
+                  <Col span={4}>
+                    <Text strong>{label}</Text>
+                    <br />
+                    <Text type="secondary" style={{ fontSize: 12 }}>{description}</Text>
+                  </Col>
+                  <Col flex="auto">
+                    <Input.Password
+                      placeholder={status?.configured ? status.masked || 'Configured' : 'Enter API key...'}
+                      value={keyInputs[name] || ''}
+                      onChange={(e) => setKeyInputs(prev => ({ ...prev, [name]: e.target.value }))}
+                      iconRender={(visible) => visible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+                      style={{ fontFamily: 'monospace' }}
+                    />
+                  </Col>
+                  <Col>
+                    {hasInput ? (
+                      <Text type="warning" strong>New</Text>
+                    ) : status?.configured ? (
+                      <Text type="success"><CheckCircleOutlined /> Saved</Text>
+                    ) : (
+                      <Text type="danger"><CloseCircleOutlined /> Missing</Text>
+                    )}
+                  </Col>
+                  <Col>
+                    <Button
+                      size="small"
+                      onClick={() => testApiKey(name)}
+                      loading={testingKey === name}
+                    >
+                      Test
+                    </Button>
+                  </Col>
+                </Row>
+              </div>
+            );
+          })}
+
+          <div style={{ marginTop: 16 }}>
+            <Button
+              type="primary"
+              icon={savingKeys ? <LoadingOutlined /> : <SaveOutlined />}
+              onClick={saveApiKeys}
+              loading={savingKeys}
+              disabled={Object.values(keyInputs).every(v => !v?.trim())}
+              size="large"
+            >
+              Save API Keys
+            </Button>
+          </div>
+        </Space>
+      ),
+    },
+    {
       key: 'model',
       label: (
         <span>
@@ -204,7 +401,7 @@ export default function AISettingsPage() {
         </span>
       ),
       children: (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <Alert
             type="info"
             showIcon
@@ -324,7 +521,7 @@ export default function AISettingsPage() {
         </span>
       ),
       children: (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <Alert
             type="info"
             showIcon
@@ -431,7 +628,7 @@ export default function AISettingsPage() {
         </span>
       ),
       children: (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <Alert
             type="info"
             showIcon
@@ -534,7 +731,7 @@ export default function AISettingsPage() {
         </span>
       ),
       children: (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <Alert
             type="info"
             showIcon

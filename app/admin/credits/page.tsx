@@ -441,6 +441,58 @@ export default function CreditsPage() {
           </Col>
         </Row>
 
+        <Card title={<Title level={4} style={{ margin: 0 }}>Average Production Costs (Platform)</Title>}
+              extra={<Tag color="blue">Internal — Not visible to tenants</Tag>}
+        >
+          <Text type="secondary" style={{ display: 'block', marginBottom: '16px' }}>
+            Estimated average dollar cost to the platform per operation, based on API usage and token consumption.
+          </Text>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={8}>
+              <Card size="small" style={{ textAlign: 'center' }}>
+                <Statistic
+                  title={<Text strong>Generate a Story</Text>}
+                  value={0.037}
+                  precision={3}
+                  prefix="$"
+                  styles={{ content: { fontSize: '28px', color: '#3b82f6' } }}
+                />
+                <Text type="secondary" style={{ fontSize: '11px', display: 'block', marginTop: '8px' }}>
+                  Avg across Gemini + Perplexity web search
+                </Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card size="small" style={{ textAlign: 'center' }}>
+                <Statistic
+                  title={<Text strong>Produce an Image</Text>}
+                  value={0.012}
+                  precision={3}
+                  prefix="$"
+                  styles={{ content: { fontSize: '28px', color: '#52c41a' } }}
+                />
+                <Text type="secondary" style={{ fontSize: '11px', display: 'block', marginTop: '8px' }}>
+                  Avg across Pexels search + AI image generation
+                </Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card size="small" style={{ textAlign: 'center' }}>
+                <Statistic
+                  title={<Text strong>Add a Directory Listing</Text>}
+                  value={0.009}
+                  precision={3}
+                  prefix="$"
+                  styles={{ content: { fontSize: '28px', color: '#faad14' } }}
+                />
+                <Text type="secondary" style={{ fontSize: '11px', display: 'block', marginTop: '8px' }}>
+                  Avg Google Places API lookup + data enrichment
+                </Text>
+              </Card>
+            </Col>
+          </Row>
+        </Card>
+
         <Card title={<Title level={4} style={{ margin: 0 }}>Recent Activity</Title>}>
           <Table
             columns={transactionColumns}
