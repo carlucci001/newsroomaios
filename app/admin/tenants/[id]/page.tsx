@@ -1,32 +1,49 @@
 'use client';
 
+import 'antd/dist/reset.css';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc, orderBy, limit } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
 import { TenantCredits, CreditUsage, CreditTransaction, DEFAULT_PLANS } from '@/types/credits';
-import { PageContainer } from '@/components/layouts/PageContainer';
-import { PageHeader } from '@/components/layouts/PageHeader';
-import { StatCard } from '@/components/ui/stat-card';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { ProgressBar } from '@/components/ui/progress-bar';
 import Link from 'next/link';
 import {
-  ArrowLeft,
-  Coins,
-  TrendingUp,
-  Activity,
-  MapPin,
-  Mail,
-  Globe,
-  Calendar,
-  Layers,
-} from 'lucide-react';
+  Card,
+  Typography,
+  Row,
+  Col,
+  Statistic,
+  Tag,
+  Button,
+  Input,
+  Select,
+  Tabs,
+  Progress,
+  Table,
+  Empty,
+  Spin,
+  Space,
+  Descriptions,
+  Form,
+  InputNumber,
+  message,
+} from 'antd';
+import {
+  ArrowLeftOutlined,
+  MailOutlined,
+  GlobalOutlined,
+  EnvironmentOutlined,
+  AppstoreOutlined,
+  CalendarOutlined,
+  DollarOutlined,
+  RiseOutlined,
+  WarningOutlined,
+  SaveOutlined,
+  LinkOutlined,
+} from '@ant-design/icons';
+
+const { Title, Text } = Typography;
 
 export default function TenantDetailPage() {
   const params = useParams();
@@ -39,7 +56,6 @@ export default function TenantDetailPage() {
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'credits' | 'settings'>('overview');
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -60,7 +76,6 @@ export default function TenantDetailPage() {
     try {
       const db = getDb();
 
-      // First fetch tenant to check if it exists
       const tenantDoc = await getDoc(doc(db, 'tenants', tenantId));
       if (!tenantDoc.exists()) {
         router.push('/admin/tenants');
@@ -79,7 +94,6 @@ export default function TenantDetailPage() {
         hardLimit: 0,
       });
 
-      // Fetch credits, usage, and transactions in parallel for faster loading
       const creditsQuery = query(collection(db, 'tenantCredits'), where('tenantId', '==', tenantId));
       const usageQuery = query(
         collection(db, 'creditUsage'),
@@ -96,11 +110,10 @@ export default function TenantDetailPage() {
 
       const [creditsSnap, usageSnap, txSnap] = await Promise.all([
         getDocs(creditsQuery),
-        getDocs(usageQuery).catch(() => null), // Collection might not exist
-        getDocs(txQuery).catch(() => null),    // Collection might not exist
+        getDocs(usageQuery).catch(() => null),
+        getDocs(txQuery).catch(() => null),
       ]);
 
-      // Process credits
       if (!creditsSnap.empty) {
         const creditData = { id: creditsSnap.docs[0].id, ...creditsSnap.docs[0].data() } as TenantCredits;
         setCredits(creditData);
@@ -111,12 +124,10 @@ export default function TenantDetailPage() {
         }));
       }
 
-      // Process usage
       if (usageSnap) {
         setUsage(usageSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as CreditUsage[]);
       }
 
-      // Process transactions
       if (txSnap) {
         setTransactions(txSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as CreditTransaction[]);
       }
@@ -134,7 +145,6 @@ export default function TenantDetailPage() {
     try {
       const db = getDb();
 
-      // Update tenant
       await updateDoc(doc(db, 'tenants', tenantId), {
         businessName: editForm.businessName,
         domain: editForm.domain,
@@ -143,7 +153,6 @@ export default function TenantDetailPage() {
         licensingStatus: editForm.licensingStatus,
       });
 
-      // Update credit limits if credits exist
       if (credits) {
         await updateDoc(doc(db, 'tenantCredits', credits.id), {
           softLimit: editForm.softLimit,
@@ -152,8 +161,10 @@ export default function TenantDetailPage() {
       }
 
       await fetchTenantData();
+      message.success('Tenant settings saved');
     } catch (error) {
       console.error('Failed to save tenant:', error);
+      message.error('Failed to save changes');
     } finally {
       setSaving(false);
     }
@@ -162,9 +173,10 @@ export default function TenantDetailPage() {
   async function allocateCredits() {
     if (!tenant) return;
 
-    const plan = DEFAULT_PLANS.find((p) => p.id === 'starter') || DEFAULT_PLANS[0];
+    const plan = DEFAULT_PLANS.find((p) => p.id === (tenant as any).plan) || DEFAULT_PLANS[0];
     const now = new Date();
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const nextBilling = new Date(now);
+    nextBilling.setMonth(nextBilling.getMonth() + 1);
 
     try {
       const db = getDb();
@@ -172,7 +184,7 @@ export default function TenantDetailPage() {
         tenantId,
         planId: plan.id,
         cycleStartDate: now,
-        cycleEndDate: endOfMonth,
+        cycleEndDate: nextBilling,
         monthlyAllocation: plan.monthlyCredits,
         creditsUsed: 0,
         creditsRemaining: plan.monthlyCredits,
@@ -184,15 +196,17 @@ export default function TenantDetailPage() {
       });
 
       await fetchTenantData();
+      message.success('Credits allocated');
     } catch (error) {
       console.error('Failed to allocate credits:', error);
+      message.error('Failed to allocate credits');
     }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-600"></div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" />
       </div>
     );
   }
@@ -201,342 +215,334 @@ export default function TenantDetailPage() {
     return null;
   }
 
-  return (
-    <PageContainer maxWidth="2xl">
-      <PageHeader
-        title={tenant.businessName}
-        subtitle={tenant.domain}
-        action={
-          <div className="flex items-center gap-2">
-            <Link href="/admin/tenants">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </Button>
-            </Link>
-            <Badge
-              variant={
-                tenant.status === 'active' ? 'success' :
-                tenant.status === 'suspended' ? 'danger' :
-                'warning'
-              }
-            >
-              {tenant.status}
-            </Badge>
-            <Badge
-              variant={
-                tenant.licensingStatus === 'active' ? 'success' :
-                tenant.licensingStatus === 'trial' ? 'warning' :
-                'default'
-              }
-            >
-              {tenant.licensingStatus}
-            </Badge>
-          </div>
-        }
-      />
+  const formatDate = (dateVal: any) => {
+    if (!dateVal) return 'N/A';
+    if (dateVal instanceof Date) return dateVal.toLocaleDateString();
+    if (dateVal?.seconds) return new Date(dateVal.seconds * 1000).toLocaleDateString();
+    if (dateVal?._seconds) return new Date(dateVal._seconds * 1000).toLocaleDateString();
+    return new Date(dateVal).toLocaleDateString();
+  };
 
-      {/* Tabs */}
-      <div className="border-b">
-        <nav className="flex space-x-8">
-          {[
-            { id: 'overview', label: 'Overview' },
-            { id: 'credits', label: 'Credits & Usage' },
-            { id: 'settings', label: 'Settings' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === tab.id
-                  ? 'border-brand-600 text-brand-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
+  const formatTimestamp = (dateVal: any) => {
+    if (!dateVal) return 'N/A';
+    if (dateVal instanceof Date) return dateVal.toLocaleString();
+    if (dateVal?.seconds) return new Date(dateVal.seconds * 1000).toLocaleString();
+    if (dateVal?._seconds) return new Date(dateVal._seconds * 1000).toLocaleString();
+    return new Date(dateVal).toLocaleString();
+  };
 
-      {/* Content */}
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  const creditPercentage = credits
+    ? Math.round((credits.creditsRemaining / credits.monthlyAllocation) * 100)
+    : 0;
+
+  const usageColumns = [
+    {
+      title: 'Action',
+      dataIndex: 'action',
+      key: 'action',
+      render: (action: string) => (
+        <Text strong style={{ textTransform: 'capitalize' }}>{action.replace(/_/g, ' ')}</Text>
+      ),
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      ellipsis: true,
+      render: (text: string) => <Text type="secondary">{text}</Text>,
+    },
+    {
+      title: 'Credits',
+      dataIndex: 'creditsUsed',
+      key: 'creditsUsed',
+      align: 'right' as const,
+      render: (val: number) => <Text strong style={{ color: '#ff4d4f' }}>-{val}</Text>,
+    },
+    {
+      title: 'Time',
+      dataIndex: 'timestamp',
+      key: 'timestamp',
+      render: (val: any) => <Text type="secondary" style={{ fontSize: '12px' }}>{formatTimestamp(val)}</Text>,
+    },
+  ];
+
+  const tabItems = [
+    {
+      key: 'overview',
+      label: 'Overview',
+      children: (
+        <Row gutter={[16, 16]} style={{ marginTop: '16px' }}>
           {/* Info Card */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Newspaper Information</CardTitle>
-                <CardDescription>Basic details and configuration</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="flex items-start gap-3">
-                    <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500">Owner Email</p>
-                      <p className="text-sm font-medium text-gray-900">{tenant.ownerEmail}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Globe className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500">Domain</p>
-                      <p className="text-sm font-medium text-gray-900">{tenant.domain}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500">Service Area</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {tenant.serviceArea.city}, {tenant.serviceArea.state}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Layers className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500">Categories</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {tenant.categories?.length || 0} configured
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500">Created</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {tenant.createdAt instanceof Date
-                          ? tenant.createdAt.toLocaleDateString()
-                          : new Date((tenant.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
+          <Col xs={24} lg={16}>
+            <Card title={<Title level={5} style={{ margin: 0 }}>Newspaper Information</Title>}>
+              <Descriptions column={{ xs: 1, md: 2 }} size="middle">
+                <Descriptions.Item label={<><MailOutlined /> Owner Email</>}>
+                  {tenant.ownerEmail}
+                </Descriptions.Item>
+                <Descriptions.Item label={<><GlobalOutlined /> Domain</>}>
+                  {tenant.domain}
+                </Descriptions.Item>
+                <Descriptions.Item label={<><EnvironmentOutlined /> Service Area</>}>
+                  {tenant.serviceArea.city}, {tenant.serviceArea.state}
+                  {tenant.serviceArea.region && ` (${tenant.serviceArea.region})`}
+                </Descriptions.Item>
+                <Descriptions.Item label={<><AppstoreOutlined /> Categories</>}>
+                  {tenant.categories?.length || 0} configured
+                </Descriptions.Item>
+                <Descriptions.Item label={<><CalendarOutlined /> Created</>}>
+                  {formatDate(tenant.createdAt)}
+                </Descriptions.Item>
+                <Descriptions.Item label={<><LinkOutlined /> Site URL</>}>
+                  {tenant.siteUrl ? (
+                    <a href={tenant.siteUrl} target="_blank" rel="noopener noreferrer">
+                      {tenant.siteUrl}
+                    </a>
+                  ) : 'Not deployed'}
+                </Descriptions.Item>
+              </Descriptions>
             </Card>
-          </div>
+          </Col>
 
           {/* Credits Summary */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Credit Balance</CardTitle>
-                <CardDescription>Current allocation</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {credits ? (
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <p className="text-4xl font-bold text-gray-900">
-                        {credits.creditsRemaining.toLocaleString()}
-                      </p>
-                      <p className="text-sm text-gray-500">credits remaining</p>
-                    </div>
-                    <ProgressBar
-                      value={credits.creditsRemaining}
-                      max={credits.monthlyAllocation}
-                      color={
-                        credits.status === 'exhausted' ? 'danger' :
-                        credits.status === 'warning' ? 'warning' :
-                        'success'
-                      }
-                    />
-                    <div className="flex justify-between text-sm text-gray-500">
-                      <span>{credits.creditsUsed.toLocaleString()} used</span>
-                      <span>{credits.monthlyAllocation.toLocaleString()} total</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <Coins className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 mb-4">No credits allocated</p>
-                    <Button onClick={allocateCredits} size="sm" variant="primary">
-                      Allocate Credits
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'credits' && (
-        <div className="space-y-6">
-          {/* Credit Stats */}
-          {credits && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <StatCard
-                label="Allocated"
-                value={credits.monthlyAllocation.toLocaleString()}
-                icon={<Coins className="w-6 h-6" />}
-                color="brand"
-              />
-              <StatCard
-                label="Used"
-                value={credits.creditsUsed.toLocaleString()}
-                icon={<TrendingUp className="w-6 h-6" />}
-                color="warning"
-              />
-              <StatCard
-                label="Remaining"
-                value={credits.creditsRemaining.toLocaleString()}
-                icon={<Coins className="w-6 h-6" />}
-                color="success"
-              />
-              <StatCard
-                label="Overage"
-                value={credits.overageCredits.toLocaleString()}
-                icon={<Activity className="w-6 h-6" />}
-                color={credits.overageCredits > 0 ? 'danger' : 'gray'}
-              />
-            </div>
-          )}
-
-          {/* Recent Usage */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Usage</CardTitle>
-              <CardDescription>Credit consumption activity</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="divide-y">
-                {usage.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-gray-500">No usage recorded</div>
-                ) : (
-                  usage.map((u) => (
-                    <div key={u.id} className="py-3 flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900">{u.action.replace(/_/g, ' ')}</p>
-                        <p className="text-sm text-gray-500 truncate max-w-md">{u.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-gray-900">-{u.creditsUsed}</p>
-                        <p className="text-xs text-gray-500">
-                          {u.timestamp instanceof Date
-                            ? u.timestamp.toLocaleString()
-                            : new Date((u.timestamp as any)?.seconds * 1000 || Date.now()).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === 'settings' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Tenant Settings</CardTitle>
-            <CardDescription>Update tenant configuration</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="businessName">Business Name</Label>
-                <Input
-                  id="businessName"
-                  value={editForm.businessName}
-                  onChange={(e) => setEditForm({ ...editForm, businessName: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="domain">Domain</Label>
-                <Input
-                  id="domain"
-                  value={editForm.domain}
-                  onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="ownerEmail">Owner Email</Label>
-                <Input
-                  id="ownerEmail"
-                  type="email"
-                  value={editForm.ownerEmail}
-                  onChange={(e) => setEditForm({ ...editForm, ownerEmail: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <select
-                  id="status"
-                  value={editForm.status}
-                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                  className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="active">Active</option>
-                  <option value="provisioning">Provisioning</option>
-                  <option value="seeding">Seeding</option>
-                  <option value="suspended">Suspended</option>
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="licensingStatus">License Status</Label>
-                <select
-                  id="licensingStatus"
-                  value={editForm.licensingStatus}
-                  onChange={(e) => setEditForm({ ...editForm, licensingStatus: e.target.value })}
-                  className="mt-1 w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="trial">Trial</option>
-                  <option value="active">Active</option>
-                  <option value="past_due">Past Due</option>
-                  <option value="canceled">Canceled</option>
-                </select>
-              </div>
-            </div>
-
-            {credits && (
-              <div className="pt-6 border-t">
-                <h4 className="font-medium text-gray-900 mb-4">Credit Limits</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="softLimit">Soft Limit (Warning)</Label>
-                    <Input
-                      id="softLimit"
-                      type="number"
-                      value={editForm.softLimit}
-                      onChange={(e) => setEditForm({ ...editForm, softLimit: parseInt(e.target.value) })}
-                      className="mt-1"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Send warning when this usage is reached</p>
-                  </div>
-                  <div>
-                    <Label htmlFor="hardLimit">Hard Limit (Stop)</Label>
-                    <Input
-                      id="hardLimit"
-                      type="number"
-                      value={editForm.hardLimit}
-                      onChange={(e) => setEditForm({ ...editForm, hardLimit: parseInt(e.target.value) })}
-                      className="mt-1"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Stop AI operations at this limit (0 = no limit)</p>
+          <Col xs={24} lg={8}>
+            <Card title={<Title level={5} style={{ margin: 0 }}>Credit Balance</Title>}>
+              {credits ? (
+                <div style={{ textAlign: 'center' }}>
+                  <Statistic
+                    value={credits.creditsRemaining}
+                    suffix={<Text type="secondary" style={{ fontSize: '14px' }}>remaining</Text>}
+                    styles={{ content: { fontSize: '36px' } }}
+                  />
+                  <Progress
+                    percent={creditPercentage}
+                    strokeColor={
+                      credits.status === 'exhausted' ? '#ff4d4f' :
+                      credits.status === 'warning' ? '#faad14' :
+                      '#52c41a'
+                    }
+                    style={{ marginTop: '16px' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>{credits.creditsUsed.toLocaleString()} used</Text>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>{credits.monthlyAllocation.toLocaleString()} total</Text>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                  <DollarOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
+                  <div><Text type="secondary">No credits allocated</Text></div>
+                  <Button type="primary" onClick={allocateCredits} style={{ marginTop: '16px' }}>
+                    Allocate Credits
+                  </Button>
+                </div>
+              )}
+            </Card>
+          </Col>
+        </Row>
+      ),
+    },
+    {
+      key: 'credits',
+      label: 'Credits & Usage',
+      children: (
+        <div style={{ marginTop: '16px' }}>
+          {credits && (
+            <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
+              <Col xs={24} sm={12} lg={6}>
+                <Card>
+                  <Statistic
+                    title={<Text strong style={{ fontSize: '14px' }}>Allocated</Text>}
+                    value={credits.monthlyAllocation}
+                    prefix={<DollarOutlined style={{ color: '#3b82f6' }} />}
+                    styles={{ content: { fontSize: '28px' } }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card>
+                  <Statistic
+                    title={<Text strong style={{ fontSize: '14px' }}>Used</Text>}
+                    value={credits.creditsUsed}
+                    prefix={<RiseOutlined style={{ color: '#faad14' }} />}
+                    styles={{ content: { fontSize: '28px' } }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card>
+                  <Statistic
+                    title={<Text strong style={{ fontSize: '14px' }}>Remaining</Text>}
+                    value={credits.creditsRemaining}
+                    prefix={<DollarOutlined style={{ color: '#52c41a' }} />}
+                    styles={{ content: { fontSize: '28px' } }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card>
+                  <Statistic
+                    title={<Text strong style={{ fontSize: '14px' }}>Overage</Text>}
+                    value={credits.overageCredits}
+                    prefix={<WarningOutlined style={{ color: credits.overageCredits > 0 ? '#ff4d4f' : '#52c41a' }} />}
+                    styles={{ content: { fontSize: '28px' } }}
+                  />
+                </Card>
+              </Col>
+            </Row>
+          )}
+
+          <Card title={<Title level={5} style={{ margin: 0 }}>Recent Usage</Title>}>
+            <Table
+              columns={usageColumns}
+              dataSource={usage.map((u) => ({ ...u, key: u.id }))}
+              pagination={{ pageSize: 10 }}
+              locale={{ emptyText: <Empty description="No usage recorded" /> }}
+            />
+          </Card>
+        </div>
+      ),
+    },
+    {
+      key: 'settings',
+      label: 'Settings',
+      children: (
+        <Card title={<Title level={5} style={{ margin: 0 }}>Tenant Settings</Title>} style={{ marginTop: '16px' }}>
+          <Form layout="vertical" style={{ maxWidth: '800px' }}>
+            <Row gutter={[16, 0]}>
+              <Col xs={24} md={12}>
+                <Form.Item label="Business Name">
+                  <Input
+                    value={editForm.businessName}
+                    onChange={(e) => setEditForm({ ...editForm, businessName: e.target.value })}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label="Domain">
+                  <Input
+                    value={editForm.domain}
+                    onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label="Owner Email">
+                  <Input
+                    type="email"
+                    value={editForm.ownerEmail}
+                    onChange={(e) => setEditForm({ ...editForm, ownerEmail: e.target.value })}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label="Status">
+                  <Select
+                    value={editForm.status}
+                    onChange={(val) => setEditForm({ ...editForm, status: val })}
+                    options={[
+                      { label: 'Active', value: 'active' },
+                      { label: 'Provisioning', value: 'provisioning' },
+                      { label: 'Seeding', value: 'seeding' },
+                      { label: 'Suspended', value: 'suspended' },
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label="License Status">
+                  <Select
+                    value={editForm.licensingStatus}
+                    onChange={(val) => setEditForm({ ...editForm, licensingStatus: val })}
+                    options={[
+                      { label: 'Active', value: 'active' },
+                      { label: 'Past Due', value: 'past_due' },
+                      { label: 'Canceled', value: 'canceled' },
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            {credits && (
+              <>
+                <Title level={5} style={{ marginTop: '24px' }}>Credit Limits</Title>
+                <Row gutter={[16, 0]}>
+                  <Col xs={24} md={12}>
+                    <Form.Item label="Soft Limit (Warning)" help="Send warning when this usage is reached">
+                      <InputNumber
+                        value={editForm.softLimit}
+                        onChange={(val) => setEditForm({ ...editForm, softLimit: val || 0 })}
+                        style={{ width: '100%' }}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item label="Hard Limit (Stop)" help="Stop AI operations at this limit (0 = no limit)">
+                      <InputNumber
+                        value={editForm.hardLimit}
+                        onChange={(val) => setEditForm({ ...editForm, hardLimit: val || 0 })}
+                        style={{ width: '100%' }}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </>
             )}
 
-            <div className="pt-6 border-t flex justify-end gap-4">
-              <Button variant="outline" onClick={() => router.push('/admin/tenants')}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px', borderTop: '1px solid #f0f0f0', paddingTop: '24px' }}>
+              <Button onClick={() => router.push('/admin/tenants')}>
                 Cancel
               </Button>
-              <Button onClick={saveTenant} disabled={saving} variant="primary">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <Button type="primary" icon={<SaveOutlined />} onClick={saveTenant} loading={saving}>
+                Save Changes
               </Button>
             </div>
-          </CardContent>
+          </Form>
         </Card>
-      )}
-    </PageContainer>
+      ),
+    },
+  ];
+
+  return (
+    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto', minHeight: '100vh' }}>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+              <Link href="/admin/tenants">
+                <Button icon={<ArrowLeftOutlined />} type="text">Back</Button>
+              </Link>
+              <Title level={2} style={{ margin: 0 }}>{tenant.businessName}</Title>
+            </div>
+            <Space>
+              <Text type="secondary">{tenant.domain}</Text>
+              <Tag color={
+                tenant.status === 'active' ? 'success' :
+                tenant.status === 'suspended' ? 'error' :
+                'warning'
+              }>
+                {tenant.status.toUpperCase()}
+              </Tag>
+              <Tag color={
+                tenant.licensingStatus === 'active' ? 'success' :
+                tenant.licensingStatus === 'past_due' ? 'error' :
+                'default'
+              }>
+                {tenant.licensingStatus.toUpperCase()}
+              </Tag>
+            </Space>
+          </div>
+          {tenant.siteUrl && (
+            <a href={tenant.siteUrl} target="_blank" rel="noopener noreferrer">
+              <Button type="primary" icon={<GlobalOutlined />}>Visit Site</Button>
+            </a>
+          )}
+        </div>
+
+        {/* Tabs */}
+        <Tabs items={tabItems} size="large" />
+      </Space>
+    </div>
   );
 }
