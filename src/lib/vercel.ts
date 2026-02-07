@@ -176,20 +176,23 @@ class VercelService {
   /**
    * Trigger a new deployment
    */
-  async triggerDeployment(projectId: string): Promise<VercelDeployment | null> {
+  async triggerDeployment(projectName: string, repoId?: number): Promise<VercelDeployment | null> {
     try {
-      const response = await this.fetch('/v13/deployments', 'POST', {
-        name: projectId,
+      const body: Record<string, unknown> = {
+        name: projectName,
         target: 'production',
         gitSource: {
           type: 'github',
           ref: 'master',
+          ...(repoId ? { repoId } : {}),
         },
-      });
+      };
+
+      const response = await this.fetch('/v13/deployments', 'POST', body);
 
       if (!response.ok) {
         const error = await response.json();
-        console.error('Failed to trigger deployment:', error);
+        console.error('Failed to trigger deployment:', JSON.stringify(error));
         return null;
       }
 
@@ -284,8 +287,9 @@ class VercelService {
       console.warn(`[Vercel] Warning: Failed to assign subdomain ${subdomain}`);
     }
 
-    // Step 4: Trigger initial deployment
-    const deployment = await this.triggerDeployment(project.id);
+    // Step 4: Trigger initial deployment (repoId required by Vercel API v13)
+    const repoId = project.link?.repoId;
+    const deployment = await this.triggerDeployment(`newspaper-${slug}`, repoId);
 
     if (!deployment) {
       return {
