@@ -3,11 +3,7 @@
 import 'antd/dist/reset.css';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
-import { getDb } from '@/lib/firebase';
-import { Tenant } from '@/types/tenant';
 import { DEFAULT_PLANS } from '@/types/credits';
-import { createDefaultJournalists, createDefaultContentSources } from '@/types/aiJournalist';
 import Link from 'next/link';
 import {
   Card,
@@ -58,83 +54,31 @@ export default function NewTenantPage() {
     setLoading(true);
 
     try {
-      const db = getDb();
+      const res = await fetch('/api/tenants/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessName: formData.businessName,
+          ownerEmail: formData.ownerEmail,
+          domain: formData.domain,
+          serviceArea: {
+            city: formData.city,
+            state: formData.state,
+          },
+          selectedCategories: DEFAULT_CATEGORIES,
+          plan: formData.planId,
+        }),
+      });
 
-      // Check if domain already exists
-      const domainQuery = query(collection(db, 'tenants'), where('domain', '==', formData.domain));
-      const domainSnap = await getDocs(domainQuery);
-      if (!domainSnap.empty) {
-        setError('A newspaper with this domain already exists');
-        setLoading(false);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to create newspaper');
         return;
       }
 
-      // Create slug from business name
-      const slug = formData.businessName
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-
-      // Generate unique API key
-      const apiKey = `${slug}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-
-      // Create tenant
-      const tenantData: Omit<Tenant, 'id'> = {
-        businessName: formData.businessName,
-        slug,
-        domain: formData.domain,
-        ownerEmail: formData.ownerEmail,
-        apiKey,
-        serviceArea: {
-          city: formData.city,
-          state: formData.state,
-        },
-        categories: DEFAULT_CATEGORIES,
-        status: 'provisioning',
-        licensingStatus: 'active',
-        createdAt: new Date(),
-      };
-
-      const tenantRef = await addDoc(collection(db, 'tenants'), tenantData);
-
-      // Create credit allocation
-      const plan = DEFAULT_PLANS.find((p) => p.id === formData.planId) || DEFAULT_PLANS[0];
-      const now = new Date();
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-      await addDoc(collection(db, 'tenantCredits'), {
-        tenantId: tenantRef.id,
-        planId: plan.id,
-        cycleStartDate: now,
-        cycleEndDate: endOfMonth,
-        monthlyAllocation: plan.monthlyCredits,
-        creditsUsed: 0,
-        creditsRemaining: plan.monthlyCredits,
-        overageCredits: 0,
-        softLimit: Math.floor(plan.monthlyCredits * 0.8),
-        hardLimit: 0,
-        status: 'active',
-        softLimitWarned: false,
-      });
-
-      // Auto-provision AI journalists (one per category)
-      const journalists = createDefaultJournalists(
-        tenantRef.id,
-        formData.businessName,
-        DEFAULT_CATEGORIES
-      );
-      for (const journalist of journalists) {
-        await addDoc(collection(db, 'aiJournalists'), journalist);
-      }
-
-      // Auto-provision content sources (local news feeds)
-      const sources = createDefaultContentSources(tenantRef.id, formData.city, formData.state);
-      for (const source of sources) {
-        await addDoc(collection(db, 'contentSources'), source);
-      }
-
       // Redirect to tenant detail page
-      router.push(`/admin/tenants/${tenantRef.id}`);
+      router.push(`/admin/tenants/${data.tenantId}`);
     } catch (err: any) {
       console.error('Failed to create tenant:', err);
       setError(err.message || 'Failed to create newspaper');
