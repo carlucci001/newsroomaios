@@ -112,7 +112,7 @@ export default function TenantsPage() {
   const stats = {
     total: tenants.length,
     active: tenants.filter((t) => t.status === 'active').length,
-    trial: tenants.filter((t) => t.licensingStatus === 'trial').length,
+    deployed: tenants.filter((t) => t.status === 'active' && (t as any).siteUrl).length,
     suspended: tenants.filter((t) => t.status === 'suspended').length,
   };
 
@@ -210,8 +210,8 @@ export default function TenantsPage() {
       sorter: (a, b) => a.status.localeCompare(b.status),
       filters: [
         { text: 'Active', value: 'active' },
-        { text: 'Trial', value: 'trial' },
         { text: 'Suspended', value: 'suspended' },
+        { text: 'Provisioning', value: 'provisioning' },
         { text: 'Seeding', value: 'seeding' },
       ],
       onFilter: (value, record) => record.status === value,
@@ -333,9 +333,9 @@ export default function TenantsPage() {
           <Col xs={24} sm={12} lg={6}>
             <Card>
               <Statistic
-                title={<Text strong style={{ fontSize: '14px' }}>In Trial</Text>}
-                value={stats.trial}
-                prefix={<ClockCircleOutlined style={{ color: '#faad14' }} />}
+                title={<Text strong style={{ fontSize: '14px' }}>Deployed</Text>}
+                value={stats.deployed}
+                prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
                 styles={{ content: { fontSize: '28px' } }}
               />
             </Card>

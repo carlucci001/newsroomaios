@@ -80,9 +80,8 @@ export default function NewTenantPage() {
         },
         categories: DEFAULT_CATEGORIES,
         status: 'provisioning',
-        licensingStatus: 'trial',
+        licensingStatus: 'active',
         createdAt: new Date(),
-        trialEndsAt: new Date(Date.now() + form.trialDays * 24 * 60 * 60 * 1000),
       };
 
       const tenantRef = await addDoc(collection(db, 'tenants'), tenantData);

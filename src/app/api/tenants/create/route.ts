@@ -63,9 +63,8 @@ export async function POST(request: NextRequest) {
       serviceArea,
       categories: selectedCategories,
       status: 'provisioning',
-      licensingStatus: 'trial',
+      licensingStatus: 'active',
       createdAt: new Date(),
-      trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
     };
 
     await setDoc(doc(tenantsRef, tenantId), tenantData);

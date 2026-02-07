@@ -42,7 +42,7 @@ const { Title, Text, Paragraph } = Typography;
 interface DashboardStats {
   totalTenants: number;
   activeTenants: number;
-  trialTenants: number;
+  deployedTenants: number;
   suspendedTenants: number;
   totalCreditsUsed: number;
   totalRevenue: number;
@@ -70,7 +70,7 @@ export default function AdminDashboard() {
 
         // Calculate tenant stats
         const activeTenants = tenants.filter((t) => t.status === 'active').length;
-        const trialTenants = tenants.filter((t) => t.licensingStatus === 'trial').length;
+        const deployedTenants = tenants.filter((t) => t.status === 'active' && t.siteUrl).length;
         const suspendedTenants = tenants.filter((t) => t.status === 'suspended').length;
 
         // Get recent tenants (last 5)
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
         setStats({
           totalTenants: tenants.length,
           activeTenants,
-          trialTenants,
+          deployedTenants,
           suspendedTenants,
           totalCreditsUsed,
           totalRevenue: 0,
@@ -191,11 +191,11 @@ export default function AdminDashboard() {
           <Col xs={24} sm={12} lg={6}>
             <Card>
               <Statistic
-                title={<Text strong style={{ fontSize: '14px' }}>Trial Period</Text>}
-                value={stats.trialTenants}
-                prefix={<ClockCircleOutlined style={{ color: '#faad14' }} />}
+                title={<Text strong style={{ fontSize: '14px' }}>Deployed Sites</Text>}
+                value={stats.deployedTenants}
+                prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
                 styles={{ content: { fontSize: '32px' } }}
-                suffix={<Text type="secondary" style={{ fontSize: '14px' }}>in trial</Text>}
+                suffix={<Text type="secondary" style={{ fontSize: '14px' }}>live</Text>}
               />
             </Card>
           </Col>

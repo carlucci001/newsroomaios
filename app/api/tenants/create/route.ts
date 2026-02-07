@@ -77,9 +77,8 @@ export async function POST(request: NextRequest) {
       serviceArea,
       categories: selectedCategories,
       status: 'provisioning',
-      licensingStatus: 'trial',
+      licensingStatus: 'active',
       createdAt: new Date(),
-      trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
     };
 
     await db.collection('tenants').doc(tenantId).set(tenantData);
@@ -113,6 +112,23 @@ export async function POST(request: NextRequest) {
         planName: selectedPlan.name,
         billingCycle: 'monthly',
       },
+    });
+
+    // Create tenantCredits document (used by credit check/deduct APIs and admin panel)
+    await db.collection('tenantCredits').doc(tenantId).set({
+      tenantId: tenantId,
+      planId: selectedPlan.id,
+      cycleStartDate: now,
+      cycleEndDate: nextBillingDate,
+      monthlyAllocation: selectedPlan.monthlyCredits,
+      creditsUsed: 0,
+      creditsRemaining: selectedPlan.monthlyCredits,
+      overageCredits: 0,
+      hardLimit: 0,
+      softLimit: Math.floor(selectedPlan.monthlyCredits * 0.8),
+      softLimitWarned: false,
+      status: 'active',
+      nextBillingDate: nextBillingDate,
     });
 
     console.log(`[Tenant Create] Allocated ${selectedPlan.monthlyCredits} credits to ${tenantId} (${selectedPlan.name} plan)`);
