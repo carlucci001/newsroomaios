@@ -45,6 +45,7 @@ export default function NewTenantPage() {
     domain: '',
     ownerEmail: '',
     city: '',
+    county: '',
     state: '',
     planId: 'starter',
   });
@@ -64,6 +65,7 @@ export default function NewTenantPage() {
           serviceArea: {
             city: formData.city,
             state: formData.state,
+            region: formData.county,
           },
           selectedCategories: DEFAULT_CATEGORIES,
           plan: formData.planId,
@@ -146,7 +148,7 @@ export default function NewTenantPage() {
           {/* Service Area */}
           <Card title={<Title level={4} style={{ margin: 0 }}>Service Area</Title>} style={{ marginBottom: 16 }}>
             <Row gutter={16}>
-              <Col span={12}>
+              <Col span={8}>
                 <Form.Item label={<Text strong>City</Text>} required>
                   <Input
                     value={formData.city}
@@ -157,12 +159,27 @@ export default function NewTenantPage() {
                   />
                 </Form.Item>
               </Col>
-              <Col span={12}>
+              <Col span={8}>
+                <Form.Item
+                  label={<Text strong>County</Text>}
+                  extra={<Text type="secondary" style={{ fontSize: 12 }}>Broadens news search coverage</Text>}
+                  required
+                >
+                  <Input
+                    value={formData.county}
+                    onChange={(e) => setFormData({ ...formData, county: e.target.value })}
+                    placeholder="Henderson County"
+                    size="large"
+                    required
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
                 <Form.Item label={<Text strong>State</Text>} required>
                   <Input
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    placeholder="CA"
+                    placeholder="NC"
                     size="large"
                     required
                   />

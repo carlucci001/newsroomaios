@@ -325,53 +325,51 @@ export function generateSearchQuery(
   state: string,
   region?: string
 ): string {
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  // Use month instead of exact date for broader results
+  const month = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-  const location = region || `${city}, ${state}`;
+  // Include both city and county/region for broader coverage
+  const countyPart = region ? ` ${region}` : '';
+  const location = `${city}${countyPart}, ${state}`;
 
   const beatQueries: Record<string, string> = {
-    'news': `latest breaking news ${location} today ${today}`,
-    'local': `local ${location} news community stories ${today}`,
-    'local-news': `local ${location} news community stories ${today}`,
-    'breaking-news': `breaking news ${location} today ${today}`,
-    'sports': `${location} sports news high school athletics ${today}`,
-    'high-school-sports': `${location} high school sports athletics ${today}`,
-    'college-sports': `${location} college sports university athletics ${today}`,
-    'business': `${location} business news economic development ${today}`,
-    'real-estate': `${location} real estate housing market property ${today}`,
-    'jobs': `${location} jobs employment hiring news ${today}`,
-    'agriculture': `${location} agriculture farming rural news ${today}`,
-    'politics': `${location} politics government news ${today}`,
-    'crime': `${location} crime public safety police news ${today}`,
-    'education': `${location} schools education news ${today}`,
-    'weather': `${location} weather forecast alerts ${today}`,
-    'entertainment': `${location} arts entertainment events ${today}`,
-    'food-dining': `${location} restaurants food dining news ${today}`,
-    'lifestyle': `${location} lifestyle trends living ${today}`,
-    'faith': `${location} churches faith religious community ${today}`,
-    'pets-animals': `${location} pets animals shelters rescue ${today}`,
-    'community': `${location} community events local happenings ${today}`,
-    'obituaries': `${location} obituaries memorials ${today}`,
-    'events': `${location} upcoming events calendar ${today}`,
-    'seniors': `${location} senior citizens elderly services ${today}`,
-    'veterans': `${location} veterans military services ${today}`,
-    'youth': `${location} youth kids activities programs ${today}`,
-    'health': `${location} health care medical news ${today}`,
-    'environment': `${location} environment conservation outdoor ${today}`,
-    'transportation': `${location} traffic roads transportation ${today}`,
-    'development': `${location} development construction projects ${today}`,
-    'technology': `${location} technology innovation tech news ${today}`,
-    'tourism': `${location} tourism travel visitors attractions ${today}`,
-    'history': `${location} history heritage historical ${today}`,
-    'opinion': `${location} opinion editorial commentary ${today}`,
-    'letters': `${location} letters editor community voices ${today}`,
-    'outdoors': `${location} outdoors recreation hiking fishing ${today}`,
+    'news': `latest news ${location} ${month}`,
+    'local': `local news ${location} community ${month}`,
+    'local-news': `local news ${location} community ${month}`,
+    'breaking-news': `breaking news ${location} ${month}`,
+    'sports': `${location} sports high school athletics recent`,
+    'high-school-sports': `${location} high school sports athletics recent`,
+    'college-sports': `${location} college sports university athletics recent`,
+    'business': `${location} business news economic development recent`,
+    'real-estate': `${location} real estate housing market recent`,
+    'jobs': `${location} jobs employment hiring recent`,
+    'agriculture': `${location} agriculture farming rural news recent`,
+    'politics': `${location} politics government city council recent`,
+    'crime': `${location} crime public safety police recent`,
+    'education': `${location} schools education news recent`,
+    'weather': `${location} weather forecast this week`,
+    'entertainment': `${location} arts entertainment events upcoming`,
+    'food-dining': `${location} restaurants food dining recent`,
+    'lifestyle': `${location} lifestyle trends living recent`,
+    'faith': `${location} churches faith religious community recent`,
+    'pets-animals': `${location} pets animals shelters rescue recent`,
+    'community': `${location} community events happenings ${month}`,
+    'obituaries': `${location} obituaries memorials recent`,
+    'events': `${location} upcoming events calendar ${month}`,
+    'seniors': `${location} senior citizens elderly services recent`,
+    'veterans': `${location} veterans military services recent`,
+    'youth': `${location} youth kids activities programs recent`,
+    'health': `${location} health care medical news recent`,
+    'environment': `${location} environment conservation outdoor recent`,
+    'transportation': `${location} traffic roads transportation recent`,
+    'development': `${location} development construction projects recent`,
+    'technology': `${location} technology innovation tech news recent`,
+    'tourism': `${location} tourism travel visitors attractions recent`,
+    'history': `${location} history heritage historical recent`,
+    'opinion': `${location} opinion editorial commentary recent`,
+    'letters': `${location} letters editor community voices recent`,
+    'outdoors': `${location} outdoors recreation hiking fishing recent`,
   };
 
-  return beatQueries[beat.toLowerCase()] || `${location} ${beat} news ${today}`;
+  return beatQueries[beat.toLowerCase()] || `${location} ${beat} news recent`;
 }
