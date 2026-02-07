@@ -285,43 +285,9 @@ export async function POST(request: NextRequest) {
     await siteConfigBatch.commit();
     console.log(`[Tenant Create] Seeded siteConfig for ${tenantId}`);
 
-    // Also seed ROOT level collections for template compatibility
-    const rootBatch = db.batch();
-    rootBatch.set(db.collection('siteConfig').doc('navigation'), {
-      tenantId,
-      mainNav: navigationItems,
-      updatedAt: new Date(),
-    });
-    rootBatch.set(db.collection('siteConfig').doc('general'), {
-      tenantId,
-      siteName: businessName,
-      tagline: `Your source for ${serviceArea.city} news`,
-      serviceArea,
-      updatedAt: new Date(),
-    });
-    rootBatch.set(db.collection('settings').doc('site'), {
-      tenantId,
-      name: businessName,
-      categories: navigationItems,
-      updatedAt: new Date(),
-    });
-
-    // Seed root categories collection
-    for (const cat of selectedCategories) {
-      const catId = cat.id || cat.slug;
-      rootBatch.set(db.collection('categories').doc(catId), {
-        id: catId,
-        name: cat.name,
-        slug: cat.slug || catId,
-        color: categoryColors[cat.slug] || categoryColors[catId] || '#1d4ed8',
-        description: cat.directive || '',
-        isActive: cat.enabled !== false,
-        tenantId,
-        updatedAt: new Date(),
-      });
-    }
-    await rootBatch.commit();
-    console.log(`[Tenant Create] Seeded ROOT collections for ${tenantId}`);
+    // NOTE: Root-level collections (siteConfig, settings, categories) are NOT seeded here.
+    // Each tenant reads from tenants/{tenantId}/... paths via getSettingsCollection() etc.
+    // Writing to root-level collections caused cross-tenant contamination (e.g. the42 showing another tenant's branding).
 
     // Create setup progress document for status tracking
     const progressNow = new Date();
