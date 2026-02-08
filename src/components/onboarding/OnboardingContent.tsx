@@ -103,7 +103,7 @@ function PaymentForm({
 }
 
 interface OnboardingContentProps {
-  onSuccess: (tenantId: string) => void;
+  onSuccess: (tenantId: string, credentials?: { email: string; temporaryPassword: string }, siteUrl?: string) => void;
   onBack?: () => void;
 }
 
@@ -263,7 +263,7 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
         setTenantId(result.tenantId);
         setLaunchComplete(true);
         // Go straight to live status view — customer watches their paper being built
-        onSuccess(result.tenantId);
+        onSuccess(result.tenantId, result.adminCredentials, result.newspaperUrl);
       } else {
         setError(result.error || 'Failed to create newspaper');
       }

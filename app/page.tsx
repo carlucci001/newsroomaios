@@ -39,6 +39,8 @@ export default function Home() {
   const [isVisible, setIsVisible] = useState(false);
   const [pageView, setPageView] = useState<PageView>('home');
   const [tenantId, setTenantId] = useState<string | null>(null);
+  const [adminCredentials, setAdminCredentials] = useState<{ email: string; temporaryPassword: string } | null>(null);
+  const [newspaperUrl, setNewspaperUrl] = useState<string | null>(null);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -46,8 +48,10 @@ export default function Home() {
   const pricingRef = useRef<HTMLDivElement>(null);
 
   // Handle onboarding success - transition to status view
-  const handleOnboardingSuccess = (newTenantId: string) => {
+  const handleOnboardingSuccess = (newTenantId: string, credentials?: { email: string; temporaryPassword: string }, siteUrl?: string) => {
     setTenantId(newTenantId);
+    if (credentials) setAdminCredentials(credentials);
+    if (siteUrl) setNewspaperUrl(siteUrl);
     setPageView('status');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -178,6 +182,8 @@ export default function Home() {
         <StatusContent
           tenantId={tenantId}
           onBack={goHome}
+          adminCredentials={adminCredentials}
+          newspaperUrl={newspaperUrl}
         />
       )}
 

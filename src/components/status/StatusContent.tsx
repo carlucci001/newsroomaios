@@ -90,9 +90,11 @@ interface Notification {
 interface StatusContentProps {
   tenantId: string;
   onBack?: () => void;
+  adminCredentials?: { email: string; temporaryPassword: string } | null;
+  newspaperUrl?: string | null;
 }
 
-export function StatusContent({ tenantId, onBack }: StatusContentProps) {
+export function StatusContent({ tenantId, onBack, adminCredentials, newspaperUrl }: StatusContentProps) {
   const [progress, setProgress] = useState<SetupProgress | null>(null);
   const [tenantName, setTenantName] = useState<string>('Your Newspaper');
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -400,6 +402,45 @@ export function StatusContent({ tenantId, onBack }: StatusContentProps) {
             <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.8, repeat: Infinity }} className="inline-block w-2 h-4 bg-brand-blue-500" />
           </div>
         </motion.div>
+
+        {/* Admin Credentials - shown immediately so customer has them */}
+        {adminCredentials && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8">
+            <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-2xl">🔑</span>
+                <h3 className="font-display font-bold text-lg text-amber-900">Your Admin Login</h3>
+              </div>
+              <div className="bg-white rounded-xl p-5 space-y-4">
+                <div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Email</div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-lg font-semibold">{adminCredentials.email}</span>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(adminCredentials.email)}
+                      className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+                <div className="border-t pt-4">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Password</div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-2xl font-bold text-amber-700">{adminCredentials.temporaryPassword}</span>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(adminCredentials.temporaryPassword)}
+                      className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-amber-700 mt-3">Change your password immediately after logging in.</p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Complete State */}
         {isComplete && (
