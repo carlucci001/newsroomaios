@@ -35,6 +35,7 @@ import {
   EyeOutlined,
   EyeInvisibleOutlined,
   LoadingOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -67,6 +68,10 @@ interface AIConfig {
     adequateSourceWords: string;
     limitedSourceWords: string;
   };
+  seeding: {
+    articlesPerCategory: number;
+    webSearchArticles: number;
+  };
 }
 
 const defaultConfig: AIConfig = {
@@ -89,10 +94,14 @@ const defaultConfig: AIConfig = {
     aggressiveness: 'neutral',
   },
   articleLength: {
-    richSourceWords: '650-900',
-    moderateSourceWords: '520-715',
-    adequateSourceWords: '390-585',
-    limitedSourceWords: '260-390',
+    richSourceWords: '800-1200',
+    moderateSourceWords: '600-900',
+    adequateSourceWords: '500-750',
+    limitedSourceWords: '400-600',
+  },
+  seeding: {
+    articlesPerCategory: 6,
+    webSearchArticles: 2,
   },
 };
 
@@ -151,6 +160,7 @@ export default function AISettingsPage() {
           webSearch: { ...defaultConfig.webSearch, ...data.webSearch },
           tone: { ...defaultConfig.tone, ...data.tone },
           articleLength: { ...defaultConfig.articleLength, ...data.articleLength },
+          seeding: { ...defaultConfig.seeding, ...data.seeding },
         });
       }
     } catch (error) {
@@ -306,6 +316,13 @@ export default function AISettingsPage() {
     setConfig(prev => ({
       ...prev,
       articleLength: { ...prev.articleLength, [field]: value },
+    }));
+  }
+
+  function updateSeeding(field: string, value: unknown) {
+    setConfig(prev => ({
+      ...prev,
+      seeding: { ...prev.seeding, [field]: value },
     }));
   }
 
@@ -821,6 +838,81 @@ export default function AISettingsPage() {
               size="large"
             >
               Save Length Settings
+            </Button>
+          </div>
+        </Space>
+      ),
+    },
+    {
+      key: 'seeding',
+      label: (
+        <span>
+          <ThunderboltOutlined style={{ marginRight: 8 }} />
+          Seeding
+        </span>
+      ),
+      children: (
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <Alert
+            type="info"
+            showIcon
+            message="Controls how many articles are generated when a new newspaper is first created. Each category gets this many seed articles."
+          />
+
+          <Row gutter={[24, 16]}>
+            <Col xs={24} sm={12}>
+              <Text strong>Articles Per Category</Text>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                How many articles to generate for each category during initial seeding.
+                Total seed articles = this number x number of categories (usually 6).
+              </Text>
+              <InputNumber
+                min={1}
+                max={12}
+                value={config.seeding.articlesPerCategory}
+                onChange={(v) => updateSeeding('articlesPerCategory', v ?? 6)}
+                style={{ width: 120 }}
+              />
+              <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                Current total: {config.seeding.articlesPerCategory * 6} articles (6 categories x {config.seeding.articlesPerCategory})
+              </Text>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Text strong>Web Search Articles</Text>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                How many articles per category use live web search for real news.
+                The rest use AI local-interest mode for original content variety.
+              </Text>
+              <InputNumber
+                min={0}
+                max={config.seeding.articlesPerCategory}
+                value={config.seeding.webSearchArticles}
+                onChange={(v) => updateSeeding('webSearchArticles', v ?? 2)}
+                style={{ width: 120 }}
+              />
+              <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                Per category: {config.seeding.webSearchArticles} web search + {config.seeding.articlesPerCategory - config.seeding.webSearchArticles} local interest
+              </Text>
+            </Col>
+          </Row>
+
+          <Divider />
+
+          <Alert
+            type="warning"
+            showIcon
+            message="Changing these settings only affects NEW newspapers created after saving. Existing papers are not affected."
+          />
+
+          <div style={{ marginTop: 16 }}>
+            <Button
+              type="primary"
+              icon={<SaveOutlined />}
+              onClick={saveConfig}
+              loading={saving}
+              size="large"
+            >
+              Save Seeding Settings
             </Button>
           </div>
         </Space>

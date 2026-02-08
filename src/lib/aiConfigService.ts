@@ -33,6 +33,10 @@ export interface AIConfig {
     adequateSourceWords: string;
     limitedSourceWords: string;
   };
+  seeding: {
+    articlesPerCategory: number;
+    webSearchArticles: number;
+  };
 }
 
 export const DEFAULT_AI_CONFIG: AIConfig = {
@@ -55,10 +59,14 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
     aggressiveness: 'neutral',
   },
   articleLength: {
-    richSourceWords: '650-900',
-    moderateSourceWords: '520-715',
-    adequateSourceWords: '390-585',
-    limitedSourceWords: '260-390',
+    richSourceWords: '800-1200',
+    moderateSourceWords: '600-900',
+    adequateSourceWords: '500-750',
+    limitedSourceWords: '400-600',
+  },
+  seeding: {
+    articlesPerCategory: 6,
+    webSearchArticles: 2,
   },
 };
 
@@ -92,6 +100,7 @@ export async function getAIConfig(): Promise<AIConfig> {
       webSearch: { ...DEFAULT_AI_CONFIG.webSearch, ...data.webSearch },
       tone: { ...DEFAULT_AI_CONFIG.tone, ...data.tone },
       articleLength: { ...DEFAULT_AI_CONFIG.articleLength, ...data.articleLength },
+      seeding: { ...DEFAULT_AI_CONFIG.seeding, ...data.seeding },
     };
     cacheTimestamp = now;
     return cachedConfig;

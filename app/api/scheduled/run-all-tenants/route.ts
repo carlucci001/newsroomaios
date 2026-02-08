@@ -4,6 +4,7 @@ import { SetupProgress } from '@/types/setupStatus';
 import { Tenant } from '@/types/tenant';
 import { AIJournalist } from '@/types/aiJournalist';
 import { CREDIT_COSTS } from '@/types/credits';
+import { getAIConfig } from '@/lib/aiConfigService';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes for seeding
@@ -463,7 +464,10 @@ async function seedTenantArticles(
   tenant: Tenant,
   db: FirebaseFirestore.Firestore
 ): Promise<{ articlesCreated: number; errors: string[] }> {
-  const ARTICLES_PER_CATEGORY = 6;
+  // Load seeding config from AI Configurator (admin-adjustable)
+  const aiConfig = await getAIConfig();
+  const ARTICLES_PER_CATEGORY = aiConfig.seeding.articlesPerCategory;
+  const WEB_SEARCH_ARTICLES = aiConfig.seeding.webSearchArticles;
   let articlesCreated = 0;
   const errors: string[] = [];
 
@@ -563,7 +567,7 @@ async function seedTenantArticles(
             body: JSON.stringify({
               tenantId: tenant.id,
               categoryId: category.id,
-              useWebSearch: i < 2, // Only first 2 articles use web search; rest use local interest mode for variety
+              useWebSearch: i < WEB_SEARCH_ARTICLES, // Configurable: first N articles use web search; rest use local interest mode
               journalistName: `${category.name} Reporter`,
               generateSEO: true,
               skipCredits: true,
