@@ -44,8 +44,10 @@ async function searchPexels(
   apiKey: string
 ): Promise<ImageResult | null> {
   try {
+    // Randomize page (1-5) so different articles in same category get different result sets
+    const page = Math.floor(Math.random() * 5) + 1;
     const response = await fetch(
-      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=5&orientation=landscape`,
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=15&orientation=landscape&page=${page}`,
       {
         headers: {
           Authorization: apiKey,
@@ -64,8 +66,8 @@ async function searchPexels(
       return null;
     }
 
-    // Pick a random photo from top results for variety
-    const photo = data.photos[Math.floor(Math.random() * Math.min(3, data.photos.length))];
+    // Pick a random photo from all results for maximum variety
+    const photo = data.photos[Math.floor(Math.random() * data.photos.length)];
 
     return {
       url: photo.src.large2x || photo.src.large,
