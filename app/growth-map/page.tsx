@@ -35,8 +35,10 @@ function normalizeState(state: string): string {
 
   // Otherwise title-case it (e.g. "OHIO" → "Ohio", "north carolina" → "North Carolina")
   return state
+    .trim()
     .toLowerCase()
     .split(' ')
+    .filter(word => word.length > 0)
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 }
