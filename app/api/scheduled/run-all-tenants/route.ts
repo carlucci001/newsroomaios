@@ -524,18 +524,17 @@ async function seedTenantArticles(
 
   console.log(`[Seed] Initialized progress for ${tenant.businessName}, ${totalArticles} articles to create`);
 
-  // Process each category
-  for (let catIndex = 0; catIndex < tenant.categories.length; catIndex++) {
-    const category = tenant.categories[catIndex];
-    const stepName = `generating_${category.slug || category.id}`;
+  // PARALLEL SEEDING: Process all categories simultaneously for ~6x speedup
+  // Each category generates its articles sequentially to avoid API rate limits,
+  // but all categories run in parallel with each other.
+  const categoryPromises = tenant.categories.map(async (category) => {
+    let catArticlesCreated = 0;
+    const catErrors: string[] = [];
 
     // Update status: starting this category
     categoryProgress[category.id].status = 'in_progress';
     await statusRef.set({
-      currentStep: stepName,
-      currentCategory: category.name,
       categoryProgress,
-      articlesGenerated: articlesCreated,
       lastUpdatedAt: new Date(),
     }, { merge: true });
 
@@ -565,8 +564,9 @@ async function seedTenantArticles(
           if (response.ok) {
             const result = await response.json();
             if (result.success) {
-              articlesCreated++;
+              catArticlesCreated++;
               categoryProgress[category.id].generated++;
+              articlesCreated++;
 
               // Update progress in real-time
               await statusRef.set({
@@ -611,8 +611,9 @@ async function seedTenantArticles(
         };
 
         await db.collection(`tenants/${tenant.id}/articles`).add(articleData);
-        articlesCreated++;
+        catArticlesCreated++;
         categoryProgress[category.id].generated++;
+        articlesCreated++;
 
         // Update progress
         await statusRef.set({
@@ -622,7 +623,7 @@ async function seedTenantArticles(
         }, { merge: true });
 
       } catch (error: any) {
-        errors.push(`${category.name} article ${i + 1}: ${error.message}`);
+        catErrors.push(`${category.name} article ${i + 1}: ${error.message}`);
         console.error(`[Seed] Error creating article for ${category.name}:`, error.message);
       }
     }
@@ -634,7 +635,20 @@ async function seedTenantArticles(
       lastUpdatedAt: new Date(),
     }, { merge: true });
 
-    console.log(`[Seed] ${tenant.businessName} - Completed category: ${category.name}`);
+    console.log(`[Seed] ${tenant.businessName} - Completed category: ${category.name} (${catArticlesCreated} articles)`);
+    return { category: category.name, created: catArticlesCreated, errors: catErrors };
+  });
+
+  // Wait for ALL categories to finish (running in parallel)
+  const categoryResults = await Promise.allSettled(categoryPromises);
+
+  // Collect errors from all categories
+  for (const result of categoryResults) {
+    if (result.status === 'fulfilled' && result.value.errors.length > 0) {
+      errors.push(...result.value.errors);
+    } else if (result.status === 'rejected') {
+      errors.push(`Category failed: ${result.reason}`);
+    }
   }
 
   // Mark seeding complete
@@ -648,7 +662,7 @@ async function seedTenantArticles(
     siteUrl: `https://${tenant.slug}.newsroomaios.com`,
   }, { merge: true });
 
-  console.log(`[Seed] ${tenant.businessName} - Seeding complete: ${articlesCreated} articles created`);
+  console.log(`[Seed] ${tenant.businessName} - Seeding complete: ${articlesCreated} articles created (PARALLEL)`);
 
   return { articlesCreated, errors };
 }
