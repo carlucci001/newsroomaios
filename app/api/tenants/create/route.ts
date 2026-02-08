@@ -325,14 +325,8 @@ export async function POST(request: NextRequest) {
     }
     await batch.commit();
 
-    // Trigger seeding in background (don't await - let it run async)
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://newsroomaios.vercel.app';
-    fetch(`${baseUrl}/api/scheduled/run-all-tenants`, {
-      method: 'GET',
-      headers: { 'X-Trigger-Source': 'tenant-creation' },
-    }).catch(err => console.error('Failed to trigger seeding:', err));
-
-    // Trigger Vercel deployment in background
+    // Trigger Vercel deployment in background (seeding is triggered after deploy completes)
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.newsroomaios.com';
     fetch(`${baseUrl}/api/tenants/deploy`, {
       method: 'POST',
       headers: {
