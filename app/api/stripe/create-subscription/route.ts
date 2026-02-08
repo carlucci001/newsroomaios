@@ -39,7 +39,8 @@ async function stripeAPI(endpoint: string, method: string, params?: Record<strin
  * POST /api/stripe/create-subscription
  *
  * Creates a recurring Stripe Subscription after initial payment.
- * Uses trial_end to avoid double-charging (first month already paid via PaymentIntent).
+ * Uses Stripe's trial_end param to defer first billing ~30 days (first month already paid via PaymentIntent).
+ * NOTE: This is NOT a trial. Customer has already paid. This just prevents double-charging.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -81,20 +82,21 @@ export async function POST(request: NextRequest) {
       'invoice_settings[default_payment_method]': paymentMethodId,
     });
 
-    // First billing ~30 days from now (first month already paid)
-    const trialEnd = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60);
+    // Next billing ~30 days from now (first month already paid upfront)
+    // Using Stripe's trial_end to defer — NOT a trial, just preventing double-charge
+    const nextBillingDate = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60);
 
     // Create subscription
     const subscription = await stripeAPI('/subscriptions', 'POST', {
       customer: customerId,
       'items[0][price]': priceId,
       default_payment_method: paymentMethodId,
-      trial_end: trialEnd.toString(),
+      trial_end: nextBillingDate.toString(),
       'metadata[tenantId]': tenantId,
       'metadata[plan]': plan,
     });
 
-    console.log(`[Subscription] Created ${subscription.id} for tenant ${tenantId} (${plan}, trial until ${new Date(trialEnd * 1000).toISOString()})`);
+    console.log(`[Subscription] Created ${subscription.id} for tenant ${tenantId} (${plan}, next charge ${new Date(nextBillingDate * 1000).toISOString()})`);
 
     // Update tenant doc with Stripe IDs
     const db = getAdminDb();
@@ -109,7 +111,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       subscriptionId: subscription.id,
-      trialEnd: new Date(trialEnd * 1000).toISOString(),
+      nextBillingDate: new Date(nextBillingDate * 1000).toISOString(),
     });
   } catch (error: any) {
     console.error('[Subscription] Error:', error.message);
