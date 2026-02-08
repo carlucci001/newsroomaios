@@ -109,13 +109,14 @@ export async function POST(request: NextRequest) {
       console.log(`[Rollout] Redeploying ${tenant.slug}...`);
       const result = await vercelService.redeployTenant(tenant.slug);
 
-      results.push({
+      const entry: RolloutResult = {
         tenantId: tenant.id,
         slug: tenant.slug,
         success: result.success,
-        deploymentId: result.deploymentId,
-        error: result.error,
-      });
+      };
+      if (result.deploymentId) entry.deploymentId = result.deploymentId;
+      if (result.error) entry.error = result.error;
+      results.push(entry);
 
       // Update tenant record with latest deployment info
       if (result.success && result.deploymentId) {
