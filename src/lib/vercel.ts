@@ -5,6 +5,9 @@
 
 const VERCEL_API_BASE = 'https://api.vercel.com';
 
+// Hardcoded fallback — wnct-template GitHub repoId (immutable, safe to hardcode)
+const WNCT_TEMPLATE_REPO_ID = 1148332475;
+
 interface VercelProject {
   id: string;
   name: string;
@@ -43,7 +46,7 @@ interface DeployTenantOptions {
   };
   ownerEmail: string;
   categories: Array<{ id: string; name: string; color: string }>;
-  apiKey: string; // Tenant's API key for calling platform APIs
+  apiKey: string;
 }
 
 interface DeploymentResult {
@@ -55,21 +58,29 @@ interface DeploymentResult {
   error?: string;
 }
 
-class VercelService {
-  private apiToken: string;
-  private teamId?: string;
-  private gitRepoUrl: string;
+/** Trim env var values — platform env vars often have trailing \n or \r\n from Vercel CLI import */
+function envTrimmed(key: string, fallback = ''): string {
+  return (process.env[key] || fallback).trim();
+}
 
-  constructor() {
-    this.apiToken = process.env.VERCEL_API_TOKEN || '';
-    this.teamId = process.env.VERCEL_TEAM_ID;
-    this.gitRepoUrl = process.env.WNCT_GIT_REPO_URL || 'https://github.com/carlucci001/wnct-template';
+class VercelService {
+  private get apiToken(): string {
+    return envTrimmed('VERCEL_API_TOKEN');
+  }
+
+  private get teamId(): string | undefined {
+    const val = envTrimmed('VERCEL_TEAM_ID');
+    return val || undefined;
+  }
+
+  private get gitRepoUrl(): string {
+    return envTrimmed('WNCT_GIT_REPO_URL', 'https://github.com/carlucci001/wnct-template');
   }
 
   private async fetch(
     endpoint: string,
     method: 'GET' | 'POST' | 'PATCH' | 'DELETE' = 'GET',
-    body?: Record<string, unknown>
+    body?: Record<string, unknown> | Array<Record<string, unknown>>
   ): Promise<Response> {
     const url = new URL(endpoint, VERCEL_API_BASE);
     if (this.teamId) {
@@ -89,12 +100,13 @@ class VercelService {
   }
 
   /**
-   * Create a new Vercel project for a tenant
+   * Create a new Vercel project, or return the existing one if it already exists.
    */
   async createProject(slug: string, gitRepo: string): Promise<VercelProject | null> {
+    const projectName = `newspaper-${slug}`;
     try {
-      const response = await this.fetch('/v10/projects', 'POST', {
-        name: `newspaper-${slug}`,
+      const response = await this.fetch('/v11/projects', 'POST', {
+        name: projectName,
         framework: 'nextjs',
         gitRepository: {
           type: 'github',
@@ -102,21 +114,32 @@ class VercelService {
         },
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Failed to create Vercel project:', JSON.stringify(error));
-        return null;
+      if (response.ok) {
+        const project = await response.json();
+        console.log(`[Vercel] Created project ${projectName}: ${project.id}`);
+        return project;
       }
 
-      return await response.json();
+      // If project already exists (409 or similar), fetch and return it
+      const errorBody = await response.json();
+      const errorCode = errorBody?.error?.code;
+      console.warn(`[Vercel] createProject returned ${response.status}: ${errorCode} — ${JSON.stringify(errorBody)}`);
+
+      if (response.status === 409 || errorCode === 'project_already_exists' || errorCode === 'CONFLICT') {
+        console.log(`[Vercel] Project ${projectName} already exists, fetching it`);
+        return await this.getProject(projectName);
+      }
+
+      return null;
     } catch (error) {
-      console.error('Error creating Vercel project:', error);
+      console.error('[Vercel] Error creating project:', error);
       return null;
     }
   }
 
   /**
-   * Set environment variables for a project
+   * Set environment variables for a project (batch).
+   * Trimmed values to strip any trailing whitespace/newlines from platform env vars.
    */
   async setEnvVars(
     projectId: string,
@@ -125,9 +148,9 @@ class VercelService {
     try {
       const envArray = Object.entries(envVars).map(([key, value]) => ({
         key,
-        value,
-        type: 'encrypted',
-        target: ['production', 'preview', 'development'],
+        value: value.trim(),
+        type: 'plain' as const,
+        target: ['production', 'preview'],
       }));
 
       const response = await this.fetch(
@@ -138,13 +161,14 @@ class VercelService {
 
       if (!response.ok) {
         const error = await response.json();
-        console.error('Failed to set env vars:', error);
+        console.error('[Vercel] Failed to set env vars:', JSON.stringify(error));
         return false;
       }
 
+      console.log(`[Vercel] Set ${envArray.length} env vars on project ${projectId}`);
       return true;
     } catch (error) {
-      console.error('Error setting env vars:', error);
+      console.error('[Vercel] Error setting env vars:', error);
       return false;
     }
   }
@@ -162,29 +186,37 @@ class VercelService {
 
       if (!response.ok) {
         const error = await response.json();
-        console.error('Failed to add domain:', error);
+        // Domain already added is not a failure
+        if (error?.error?.code === 'domain_already_in_use' || error?.error?.code === 'DOMAIN_ALREADY_IN_USE') {
+          console.log(`[Vercel] Domain ${domain} already assigned`);
+          return { name: domain, configured: true, verified: true };
+        }
+        console.error('[Vercel] Failed to add domain:', JSON.stringify(error));
         return null;
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error adding domain:', error);
+      console.error('[Vercel] Error adding domain:', error);
       return null;
     }
   }
 
   /**
-   * Trigger a new deployment
+   * Trigger a new deployment. Always includes repoId (required by v13 API).
    */
   async triggerDeployment(projectName: string, repoId?: number): Promise<VercelDeployment | null> {
     try {
       const body: Record<string, unknown> = {
         name: projectName,
+        project: projectName,
         target: 'production',
         gitSource: {
           type: 'github',
+          org: 'carlucci001',
+          repo: 'wnct-template',
           ref: 'master',
-          ...(repoId ? { repoId } : {}),
+          repoId: repoId || WNCT_TEMPLATE_REPO_ID,
         },
       };
 
@@ -192,13 +224,13 @@ class VercelService {
 
       if (!response.ok) {
         const error = await response.json();
-        console.error('Failed to trigger deployment:', JSON.stringify(error));
+        console.error('[Vercel] Failed to trigger deployment:', JSON.stringify(error));
         return null;
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error triggering deployment:', error);
+      console.error('[Vercel] Error triggering deployment:', error);
       return null;
     }
   }
@@ -209,14 +241,10 @@ class VercelService {
   async getDeploymentStatus(deploymentId: string): Promise<VercelDeployment | null> {
     try {
       const response = await this.fetch(`/v13/deployments/${deploymentId}`);
-
-      if (!response.ok) {
-        return null;
-      }
-
+      if (!response.ok) return null;
       return await response.json();
     } catch (error) {
-      console.error('Error getting deployment status:', error);
+      console.error('[Vercel] Error getting deployment status:', error);
       return null;
     }
   }
@@ -225,83 +253,81 @@ class VercelService {
    * Full deployment flow for a new tenant
    */
   async deployTenant(options: DeployTenantOptions): Promise<DeploymentResult> {
-    const { tenantId, slug, businessName, serviceArea, ownerEmail, categories, apiKey } = options;
+    const { tenantId, slug, businessName, serviceArea, apiKey } = options;
 
     console.log(`[Vercel] Starting deployment for tenant: ${slug}`);
+    console.log(`[Vercel] API token present: ${!!this.apiToken}, Team ID: ${this.teamId || 'NOT SET'}`);
 
-    // Step 1: Create project
-    const gitRepo = this.gitRepoUrl.replace('https://github.com/', '');
+    // Pre-flight: validate token works
+    try {
+      const whoami = await this.fetch('/v2/user');
+      if (!whoami.ok) {
+        const err = await whoami.json();
+        console.error('[Vercel] Token validation failed:', JSON.stringify(err));
+        return { success: false, error: `Vercel API token invalid: ${err?.error?.message || whoami.status}` };
+      }
+      console.log('[Vercel] Token validated OK');
+    } catch (e) {
+      return { success: false, error: `Vercel API unreachable: ${e}` };
+    }
+
+    // Step 1: Create project (or get existing)
+    const gitRepo = this.gitRepoUrl.replace('https://github.com/', '').trim();
     const project = await this.createProject(slug, gitRepo);
 
     if (!project) {
-      return { success: false, error: 'Failed to create Vercel project' };
+      return { success: false, error: 'Failed to create Vercel project — check VERCEL_API_TOKEN and GitHub integration' };
     }
 
-    console.log(`[Vercel] Created project: ${project.id}`);
+    console.log(`[Vercel] Project ready: ${project.id} (${project.name})`);
 
-    // Step 2: Set environment variables for tenant
+    // Step 2: Set environment variables (trimmed)
     const envVars: Record<string, string> = {
-      // Tenant identification (both server and client-side)
       TENANT_ID: tenantId,
       TENANT_SLUG: slug,
-      NEXT_PUBLIC_TENANT_ID: tenantId,  // Critical for client-side tenant isolation
-
-      // Firebase Client SDK (same as main platform)
-      NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
-      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '',
-      NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
-      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
-      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
-      NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
-
-      // AI API keys (required by wnct-template for article generation, fact-checking, etc.)
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-      PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY || '',
-      PEXELS_API_KEY: process.env.PEXELS_API_KEY || '',
-      ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || '',
-      GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY || '',
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
-
-      // Tenant-specific config
+      NEXT_PUBLIC_TENANT_ID: tenantId,
+      NEXT_PUBLIC_FIREBASE_API_KEY: envTrimmed('NEXT_PUBLIC_FIREBASE_API_KEY'),
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: envTrimmed('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: envTrimmed('NEXT_PUBLIC_FIREBASE_PROJECT_ID'),
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: envTrimmed('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET'),
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: envTrimmed('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
+      NEXT_PUBLIC_FIREBASE_APP_ID: envTrimmed('NEXT_PUBLIC_FIREBASE_APP_ID'),
+      GEMINI_API_KEY: envTrimmed('GEMINI_API_KEY'),
+      PERPLEXITY_API_KEY: envTrimmed('PERPLEXITY_API_KEY'),
+      PEXELS_API_KEY: envTrimmed('PEXELS_API_KEY'),
+      ELEVENLABS_API_KEY: envTrimmed('ELEVENLABS_API_KEY'),
+      GOOGLE_PLACES_API_KEY: envTrimmed('GOOGLE_PLACES_API_KEY'),
       NEXT_PUBLIC_SITE_NAME: businessName,
       NEXT_PUBLIC_SERVICE_AREA_CITY: serviceArea.city,
       NEXT_PUBLIC_SERVICE_AREA_STATE: serviceArea.state,
-
-      // Platform connection (OPTION C: Centralized API)
-      PLATFORM_API_URL: (process.env.NEXT_PUBLIC_BASE_URL || '').startsWith('http://localhost')
-        ? 'https://www.newsroomaios.com'
-        : (process.env.NEXT_PUBLIC_BASE_URL || 'https://www.newsroomaios.com'),
-      TENANT_API_KEY: apiKey, // Unique key for this tenant to call platform APIs
-      NEXT_PUBLIC_TENANT_API_KEY: apiKey, // Client-side access to tenant API key
-      PLATFORM_SECRET: process.env.PLATFORM_SECRET || '', // For internal platform calls
+      PLATFORM_API_URL: 'https://www.newsroomaios.com',
+      TENANT_API_KEY: apiKey,
+      NEXT_PUBLIC_TENANT_API_KEY: apiKey,
+      PLATFORM_SECRET: envTrimmed('PLATFORM_SECRET'),
     };
 
     const envSet = await this.setEnvVars(project.id, envVars);
     if (!envSet) {
-      console.warn('[Vercel] Warning: Failed to set some env vars');
+      console.warn('[Vercel] Warning: Failed to set some env vars — continuing anyway');
     }
 
     // Step 3: Assign subdomain
     const subdomain = `${slug}.newsroomaios.com`;
-    const domain = await this.addDomain(project.id, subdomain);
+    await this.addDomain(project.id, subdomain);
 
-    if (!domain) {
-      console.warn(`[Vercel] Warning: Failed to assign subdomain ${subdomain}`);
-    }
-
-    // Step 4: Trigger initial deployment (repoId required by Vercel API v13)
-    const repoId = project.link?.repoId;
+    // Step 4: Trigger deployment (always use hardcoded repoId as fallback)
+    const repoId = project.link?.repoId || WNCT_TEMPLATE_REPO_ID;
     const deployment = await this.triggerDeployment(`newspaper-${slug}`, repoId);
 
     if (!deployment) {
       return {
         success: false,
         projectId: project.id,
-        error: 'Failed to trigger deployment',
+        error: 'Project created but deployment trigger failed — check Vercel logs',
       };
     }
 
-    console.log(`[Vercel] Deployment triggered: ${deployment.id}`);
+    console.log(`[Vercel] Deployment triggered: ${deployment.id} → ${subdomain}`);
 
     return {
       success: true,
@@ -313,7 +339,7 @@ class VercelService {
   }
 
   /**
-   * Get a project by name (used during rollout to verify project exists)
+   * Get a project by name
    */
   async getProject(projectName: string): Promise<VercelProject | null> {
     try {
@@ -331,13 +357,12 @@ class VercelService {
   async redeployTenant(slug: string): Promise<{ success: boolean; deploymentId?: string; error?: string }> {
     const projectName = `newspaper-${slug}`;
 
-    // Get project to find its repoId
     const project = await this.getProject(projectName);
     if (!project) {
       return { success: false, error: `Project ${projectName} not found on Vercel` };
     }
 
-    const repoId = project.link?.repoId;
+    const repoId = project.link?.repoId || WNCT_TEMPLATE_REPO_ID;
     const deployment = await this.triggerDeployment(projectName, repoId);
 
     if (!deployment) {
@@ -347,9 +372,6 @@ class VercelService {
     return { success: true, deploymentId: deployment.id };
   }
 
-  /**
-   * Check if Vercel API is configured
-   */
   isConfigured(): boolean {
     return !!this.apiToken;
   }

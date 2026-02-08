@@ -7,6 +7,8 @@ import { DEFAULT_PLANS } from '@/types/credits';
 import { addSubdomainRecord, isGoDaddyConfigured } from '@/lib/godaddy';
 import { sendWelcomeEmail, isResendConfigured } from '@/lib/resend';
 
+export const maxDuration = 300; // 5 minutes — tenant creation triggers deployment
+
 function generateSlug(businessName: string): string {
   return businessName
     .toLowerCase()

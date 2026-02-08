@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { vercelService } from '@/lib/vercel';
 
+export const maxDuration = 300; // 5 minutes — deployment involves multiple Vercel API calls
+
 /**
  * POST /api/tenants/deploy
  * Deploys a full WNC Times clone for a tenant
