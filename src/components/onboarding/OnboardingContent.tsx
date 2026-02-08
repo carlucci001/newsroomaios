@@ -262,7 +262,8 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
         setNewspaperUrl(result.newspaperUrl);
         setTenantId(result.tenantId);
         setLaunchComplete(true);
-        setCurrentStep(8); // Move to credentials/launch step
+        // Go straight to live status view — customer watches their paper being built
+        onSuccess(result.tenantId);
       } else {
         setError(result.error || 'Failed to create newspaper');
       }
