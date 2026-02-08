@@ -118,6 +118,7 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
   const [newspaperUrl, setNewspaperUrl] = useState<string | null>(null);
   const [launchComplete, setLaunchComplete] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     newspaperName: '',
@@ -143,6 +144,8 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
           console.error('Failed to restore form data:', e);
         }
       }
+      const savedCustomerId = localStorage.getItem('onboardingCustomerId');
+      if (savedCustomerId) setCustomerId(savedCustomerId);
       setPaymentComplete(true);
       setCurrentStep(7);
     }
@@ -165,6 +168,10 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
       if (result.clientSecret) {
         setClientSecret(result.clientSecret);
         setPaymentBreakdown(result.breakdown);
+        if (result.customerId) {
+          setCustomerId(result.customerId);
+          localStorage.setItem('onboardingCustomerId', result.customerId);
+        }
       } else {
         setError(result.error || 'Failed to initialize payment');
       }
@@ -224,12 +231,30 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
           serviceArea: formData.serviceArea,
           selectedCategories: selectedCategoryObjects,
           plan: formData.selectedPlan,
+          stripeCustomerId: customerId,
         }),
       });
       const result = await response.json();
       if (result.success) {
+        // Create recurring subscription (non-fatal if it fails)
+        if (customerId) {
+          try {
+            await fetch('/api/stripe/create-subscription', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                customerId,
+                plan: formData.selectedPlan,
+                tenantId: result.tenantId,
+              }),
+            });
+          } catch (subError) {
+            console.error('Failed to create subscription:', subError);
+          }
+        }
         // Clear saved form data after successful launch
         localStorage.removeItem('onboardingFormData');
+        localStorage.removeItem('onboardingCustomerId');
         // Store admin credentials, URL, and tenant ID for display
         if (result.adminCredentials) {
           setAdminCredentials(result.adminCredentials);
@@ -568,7 +593,6 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
                     options={{
                       clientSecret,
                       appearance: { theme: 'stripe', variables: { colorPrimary: '#2563eb' } },
-                      paymentMethodCreation: 'manual',
                     }}
                   >
                     <PaymentForm onSuccess={handlePaymentSuccess} onError={setError} loading={loading} setLoading={setLoading} />

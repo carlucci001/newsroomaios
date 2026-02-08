@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
       serviceArea,
       selectedCategories,
       plan,
+      stripeCustomerId,
     } = await request.json();
 
     // Validation
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest) {
       status: 'provisioning',
       licensingStatus: 'active',
       createdAt: new Date(),
+      ...(stripeCustomerId && { stripeCustomerId }),
     };
 
     await db.collection('tenants').doc(tenantId).set(tenantData);

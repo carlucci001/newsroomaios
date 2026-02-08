@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
       amount: totalAmount.toString(),
       currency: 'usd',
       customer: customerId,
+      setup_future_usage: 'off_session',
       'metadata[newspaperName]': newspaperName,
       'metadata[plan]': plan,
       'metadata[setupFee]': setupFee.toString(),
@@ -112,6 +113,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
+      customerId,
       amount: totalAmount,
       breakdown: {
         setupFee: setupFee / 100,
