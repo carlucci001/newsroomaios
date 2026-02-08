@@ -68,10 +68,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (!body.sourceContent && !body.useWebSearch) {
-      return NextResponse.json(
-        { success: false, error: 'Either sourceContent or useWebSearch must be provided' },
-        { status: 400, headers: CORS_HEADERS }
-      );
+      // No source and no web search — article will use LOCAL INTEREST mode
+      // (promptBuilder generates an original local article based on AI knowledge)
+      console.log(`[Generate] No source content or web search — using local interest mode`);
     }
 
     // Find the category

@@ -592,7 +592,12 @@ async function seedTenantArticles(
 
               console.log(`[Seed] ${tenant.businessName} - Created article ${articlesCreated}/${totalArticles} for ${category.name}`);
               continue;
+            } else {
+              console.error(`[Seed] ${tenant.businessName} - AI returned success=false for ${category.name} article ${i + 1}: ${result.error}`);
             }
+          } else {
+            const errorBody = await response.text();
+            console.error(`[Seed] ${tenant.businessName} - AI API returned ${response.status} for ${category.name} article ${i + 1}: ${errorBody.substring(0, 200)}`);
           }
         }
 
