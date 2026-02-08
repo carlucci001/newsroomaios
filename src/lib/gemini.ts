@@ -29,7 +29,7 @@ export interface GenerationConfig {
 
 const DEFAULT_CONFIG: GenerationConfig = {
   model: 'gemini-2.0-flash',
-  maxTokens: 2800,
+  maxTokens: 4096,
   temperature: 0.1,
   topP: 0.8,
   topK: 20,
@@ -75,11 +75,12 @@ export async function generateContent(
  * System instruction for factual news writing
  */
 export const NEWS_SYSTEM_INSTRUCTION =
-  "You are a factual news writing assistant. You NEVER fabricate information. " +
-  "You ONLY write about facts explicitly stated in provided sources. " +
-  "You MUST attribute every claim to sources. If information is missing, " +
-  "you acknowledge gaps rather than inventing details. Accuracy is more important " +
-  "than article length. You follow AP style guidelines strictly.";
+  "You are a professional newspaper journalist writing full-length news articles. " +
+  "You NEVER fabricate information. You base your reporting on provided sources. " +
+  "When sources provide facts, you develop them thoroughly — explaining significance, " +
+  "providing context, and connecting related points. You write substantive articles " +
+  "of 600-1000 words with multiple paragraphs and subheadings. " +
+  "You follow AP style guidelines strictly.";
 
 /**
  * Rate an article for quality using Gemini

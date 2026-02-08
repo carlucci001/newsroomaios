@@ -160,7 +160,9 @@ GUIDELINES:
 - The article should read like it was written by a local journalist who knows the community
 - Do NOT mention that no news was found or that sources were unavailable
 - Do NOT write about news being unavailable — write a REAL article
-- Target: 5-7 paragraphs (${lengthModerate} words)
+- You MUST write 6-10 paragraphs totaling ${lengthModerate} words minimum
+- Develop each point with 2-3 sentences — don't just state facts, explain significance and local impact
+- Use subheadings (## format) to organize different aspects of the story
 ${targetWordCount ? `- Target word count: ${targetWordCount}` : ''}
 
 CRITICAL TITLE RULES:
@@ -235,18 +237,20 @@ You MUST follow these HARD CONSTRAINTS (violations will block publication):
    - ✅ Elaborate on impacts: If source mentions effects, explain what they mean practically
    - ✅ Organize logically: Present source facts in the most coherent, engaging order
 
-5. LENGTH CONSTRAINT:
-   - Write ONLY what the source supports
+5. LENGTH REQUIREMENT (MANDATORY — articles that are too short will be rejected):
    ${sourceQuality.richness === 'rich'
-     ? `- Target: 8-10 paragraphs (${lengthRich} words) - you have rich source material
-   - Develop each key point thoroughly with all available details`
+     ? `- You MUST write 8-10 paragraphs totaling ${lengthRich} words — you have rich source material
+   - Develop each key point with 2-3 sentences: state the fact, explain why it matters, describe the impact
+   - Use subheadings (## format) to organize sections`
      : sourceQuality.richness === 'moderate'
-     ? `- Target: 5-8 paragraphs (${lengthModerate} words) - you have moderate source material
-   - Cover main points with supporting details`
-     : `- Target: 4-7 paragraphs (${lengthAdequate} words) - you have adequate source material
-   - Cover essential points concisely`}
+     ? `- You MUST write 6-8 paragraphs totaling ${lengthModerate} words — you have moderate source material
+   - For each key fact: state it, explain its significance to locals, and describe what happens next
+   - Use subheadings (## format) to organize sections`
+     : `- You MUST write 5-7 paragraphs totaling ${lengthAdequate} words — you have adequate source material
+   - Develop each point thoroughly: don't just state facts, explain what they mean for the community
+   - Use subheadings (## format) to organize sections`}
    ${targetWordCount ? `- Target word count: ${targetWordCount}` : ''}
-   - DO NOT pad with filler or unsupported background
+   - Stay grounded in source material but develop each point fully
 
 6. WHEN INFORMATION IS MISSING:
    - If source lacks critical details (who, what, when, where), ACKNOWLEDGE IT
@@ -328,7 +332,7 @@ ${isWebSearch
   : `- Attribute ALL facts to sources (mandatory in every paragraph)
 - Cite the original source for all claims`}
 - Use direct quotes ONLY if they appear verbatim in source material
-- When in doubt, stick to what's verifiable - accuracy over length`;
+- When in doubt, stick to what's verifiable — but always write a FULL article, not a summary`;
 
   return prompt;
 }

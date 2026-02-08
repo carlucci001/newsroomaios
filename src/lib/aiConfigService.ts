@@ -43,7 +43,7 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
   gemini: {
     model: 'gemini-2.0-flash',
     temperature: 0.1,
-    maxTokens: 2800,
+    maxTokens: 4096,
     topP: 0.8,
     topK: 20,
   },
