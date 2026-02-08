@@ -40,11 +40,20 @@ export function parseArticleResponse(
   const contentMatch = response.match(/CONTENT:\s*([\s\S]+?)(?:TAGS:|$)/i);
   if (contentMatch) {
     content = contentMatch[1].trim();
-    // Convert paragraphs to HTML
+    // Convert markdown blocks to HTML
     content = content
       .split(/\n\n+/)
       .filter((p) => p.trim())
-      .map((p) => `<p>${p.trim()}</p>`)
+      .map((p) => {
+        const trimmed = p.trim();
+        // Convert markdown headings to HTML
+        if (trimmed.startsWith('### ')) return `<h3>${trimmed.slice(4)}</h3>`;
+        if (trimmed.startsWith('## ')) return `<h2>${trimmed.slice(3)}</h2>`;
+        if (trimmed.startsWith('# ')) return `<h2>${trimmed.slice(2)}</h2>`;
+        // Convert bold markers
+        const withBold = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        return `<p>${withBold}</p>`;
+      })
       .join('\n');
   } else {
     // Fallback: use the whole response as content
