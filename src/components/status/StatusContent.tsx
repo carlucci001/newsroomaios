@@ -100,20 +100,24 @@ export function StatusContent({ tenantId, onBack, adminCredentials, newspaperUrl
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [particles, setParticles] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [tenantEmail, setTenantEmail] = useState<string>('');
   const lastArticleCount = useRef(0);
 
+  const isComplete = progress?.currentStep === 'complete';
+
   useEffect(() => {
+    if (isComplete) return; // Stop particles when done
     const interval = setInterval(() => {
       const newParticle = { id: Date.now(), x: Math.random() * 100, y: Math.random() * 100 };
       setParticles((prev) => [...prev.slice(-15), newParticle]);
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isComplete]);
 
   useEffect(() => {
+    if (isComplete) return; // Stop activity feed when done
     const interval = setInterval(() => {
       const template = activityTemplates[Math.floor(Math.random() * activityTemplates.length)];
-      // Use actual user categories if available, otherwise fall back to generic
       const categories = progress?.categoryProgress
         ? Object.keys(progress.categoryProgress)
         : ['local-news', 'sports', 'business'];
@@ -132,7 +136,7 @@ export function StatusContent({ tenantId, onBack, adminCredentials, newspaperUrl
       });
     }, 2500);
     return () => clearInterval(interval);
-  }, [progress]);
+  }, [progress, isComplete]);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -141,6 +145,7 @@ export function StatusContent({ tenantId, onBack, adminCredentials, newspaperUrl
     const unsubTenant = onSnapshot(doc(db, 'tenants', tenantId), (snapshot) => {
       if (snapshot.exists()) {
         setTenantName(snapshot.data().businessName || 'Your Newspaper');
+        setTenantEmail(snapshot.data().ownerEmail || '');
       }
     });
 
@@ -201,7 +206,6 @@ export function StatusContent({ tenantId, onBack, adminCredentials, newspaperUrl
   }, [notifications]);
 
   const percentComplete = progress ? getProgressPercentage(progress) : 0;
-  const isComplete = progress?.currentStep === 'complete';
 
   return (
     <section className="relative py-16 md:py-24 min-h-screen bg-gradient-to-b from-brand-blue-50/30 to-background overflow-hidden">
@@ -284,6 +288,84 @@ export function StatusContent({ tenantId, onBack, adminCredentials, newspaperUrl
           </h1>
           <p className="text-lg text-muted-foreground">{isComplete ? '🎉 Your newsroom is ready!' : 'AI Journalists are creating your content...'}</p>
         </motion.div>
+
+        {/* Complete State — shown FIRST when done */}
+        {isComplete && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 space-y-6">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-8 text-center">
+              <div className="text-5xl mb-4">🎉</div>
+              <h2 className="text-2xl font-display font-bold text-green-800 mb-2">Your Newspaper is Ready!</h2>
+              <p className="text-green-700 mb-6">Your site is live and ready for the world to see.</p>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+                <motion.a
+                  href={progress?.siteUrl || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-brand-blue-500 to-brand-blue-600 text-white font-bold py-4 px-8 rounded-xl text-lg shadow-xl shadow-brand-blue-500/30 hover:shadow-brand-blue-500/40 transition-shadow"
+                >
+                  <span>View Your Newspaper</span>
+                  <span>🚀</span>
+                </motion.a>
+                <motion.a
+                  href={`${progress?.siteUrl || ''}/backend`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="inline-flex items-center justify-center gap-3 bg-white border-2 border-brand-blue-200 text-brand-blue-600 font-bold py-4 px-8 rounded-xl text-lg shadow-lg hover:bg-brand-blue-50 transition-colors"
+                >
+                  <span>Open Admin Panel</span>
+                  <span>⚙️</span>
+                </motion.a>
+              </div>
+
+              {/* Admin credentials right here, visible without scrolling */}
+              <div className="bg-white rounded-xl p-5 max-w-md mx-auto text-left border border-green-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">🔑</span>
+                  <span className="font-bold text-gray-800">Your Admin Login</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2">
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wide">Email</div>
+                      <div className="font-mono font-semibold text-gray-800">{adminCredentials?.email || tenantEmail}</div>
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(adminCredentials?.email || tenantEmail)}
+                      className="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2">
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wide">Password</div>
+                      <div className="font-mono font-bold text-lg text-amber-700">{adminCredentials?.temporaryPassword || 'Welcome1'}</div>
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(adminCredentials?.temporaryPassword || 'Welcome1')}
+                      className="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-amber-600 mt-3">Change your password immediately after first login.</p>
+              </div>
+
+              <div className="mt-4 bg-white/50 rounded-xl p-4 text-left max-w-md mx-auto">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Your Site URL:</p>
+                <code className="block bg-gray-100 rounded px-3 py-2 text-sm text-gray-800 break-all">
+                  {progress?.siteUrl || 'Loading...'}
+                </code>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Progress Section */}
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="bg-card border-2 border-border rounded-2xl p-8 mb-8 shadow-lg">
@@ -374,37 +456,39 @@ export function StatusContent({ tenantId, onBack, adminCredentials, newspaperUrl
           </div>
         </motion.div>
 
-        {/* Live Activity Feed */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="bg-card border-2 border-border rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="relative">
-              <div className="w-2.5 h-2.5 bg-green-500 rounded-full" />
-              <div className="absolute inset-0 w-2.5 h-2.5 bg-green-500 rounded-full animate-ping" />
+        {/* Live Activity Feed — hidden when complete */}
+        {!isComplete && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="bg-card border-2 border-border rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="relative">
+                <div className="w-2.5 h-2.5 bg-green-500 rounded-full" />
+                <div className="absolute inset-0 w-2.5 h-2.5 bg-green-500 rounded-full animate-ping" />
+              </div>
+              <h3 className="font-semibold">Live Activity</h3>
             </div>
-            <h3 className="font-semibold">Live Activity</h3>
-          </div>
-          <div className="space-y-3 max-h-40 overflow-y-auto font-mono text-sm">
-            <AnimatePresence>
-              {activities.slice(0, 5).map((activity) => (
-                <motion.div
-                  key={activity.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0 }}
-                  className={`flex items-center gap-2 ${activity.type === 'success' ? 'text-green-600 font-semibold' : 'text-muted-foreground'}`}
-                >
-                  <span>{activity.icon}</span>
-                  <span>{activity.message}</span>
-                  {activity.category && <span className="text-muted-foreground/60">({activity.category})</span>}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.8, repeat: Infinity }} className="inline-block w-2 h-4 bg-brand-blue-500" />
-          </div>
-        </motion.div>
+            <div className="space-y-3 max-h-40 overflow-y-auto font-mono text-sm">
+              <AnimatePresence>
+                {activities.slice(0, 5).map((activity) => (
+                  <motion.div
+                    key={activity.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0 }}
+                    className={`flex items-center gap-2 ${activity.type === 'success' ? 'text-green-600 font-semibold' : 'text-muted-foreground'}`}
+                  >
+                    <span>{activity.icon}</span>
+                    <span>{activity.message}</span>
+                    {activity.category && <span className="text-muted-foreground/60">({activity.category})</span>}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.8, repeat: Infinity }} className="inline-block w-2 h-4 bg-brand-blue-500" />
+            </div>
+          </motion.div>
+        )}
 
-        {/* Admin Credentials - shown immediately so customer has them */}
-        {adminCredentials && (
+        {/* Admin Credentials - shown during build so customer has them while waiting */}
+        {!isComplete && adminCredentials && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8">
             <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-4">
@@ -438,52 +522,6 @@ export function StatusContent({ tenantId, onBack, adminCredentials, newspaperUrl
                 </div>
               </div>
               <p className="text-xs text-amber-700 mt-3">Change your password immediately after logging in.</p>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Complete State */}
-        {isComplete && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-10 space-y-6">
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-8 text-center">
-              <div className="text-5xl mb-4">🎉</div>
-              <h2 className="text-2xl font-display font-bold text-green-800 mb-2">Your Newspaper is Ready!</h2>
-              <p className="text-green-700 mb-6">Your site is live and ready for the world to see.</p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-                <motion.a
-                  href={progress?.siteUrl || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-brand-blue-500 to-brand-blue-600 text-white font-bold py-4 px-8 rounded-xl text-lg shadow-xl shadow-brand-blue-500/30 hover:shadow-brand-blue-500/40 transition-shadow"
-                >
-                  <span>View Your Newspaper</span>
-                  <span>🚀</span>
-                </motion.a>
-                <motion.a
-                  href={`${progress?.siteUrl || ''}/backend`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="inline-flex items-center justify-center gap-3 bg-white border-2 border-brand-blue-200 text-brand-blue-600 font-bold py-4 px-8 rounded-xl text-lg shadow-lg hover:bg-brand-blue-50 transition-colors"
-                >
-                  <span>Open Admin Panel</span>
-                  <span>⚙️</span>
-                </motion.a>
-              </div>
-
-              <div className="bg-white/50 rounded-xl p-4 text-left max-w-md mx-auto">
-                <p className="text-sm font-semibold text-gray-700 mb-2">Your Site URL:</p>
-                <code className="block bg-gray-100 rounded px-3 py-2 text-sm text-gray-800 mb-3 break-all">
-                  {progress?.siteUrl || 'Loading...'}
-                </code>
-                <p className="text-xs text-gray-500">
-                  Tip: Configure your DNS to use your custom domain. Until then, use the Vercel URL above.
-                </p>
-              </div>
             </div>
           </motion.div>
         )}
