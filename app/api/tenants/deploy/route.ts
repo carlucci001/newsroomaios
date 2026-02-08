@@ -135,12 +135,18 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Deploy] Successfully deployed tenant ${tenant.slug} to ${siteUrl}`);
 
-    // Trigger article seeding now that the site is live (don't await — runs in background)
+    // Trigger article seeding — MUST await, serverless kills unawaited fetches
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.newsroomaios.com';
-    fetch(`${baseUrl}/api/scheduled/run-all-tenants`, {
-      method: 'GET',
-      headers: { 'X-Trigger-Source': 'post-deploy' },
-    }).catch(err => console.error('[Deploy] Failed to trigger seeding:', err));
+    try {
+      const seedRes = await fetch(`${baseUrl}/api/scheduled/run-all-tenants`, {
+        method: 'GET',
+        headers: { 'X-Trigger-Source': 'post-deploy' },
+      });
+      const seedResult = await seedRes.json();
+      console.log('[Deploy] Seeding result:', seedResult.totalArticlesGenerated, 'articles');
+    } catch (err) {
+      console.error('[Deploy] Failed to trigger seeding:', err);
+    }
 
     return NextResponse.json({
       success: true,

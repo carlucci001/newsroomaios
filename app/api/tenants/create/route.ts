@@ -327,17 +327,27 @@ export async function POST(request: NextRequest) {
     }
     await batch.commit();
 
-    // Trigger Vercel deployment in background (seeding is triggered after deploy completes)
+    // Trigger Vercel deployment — MUST await, serverless kills unawaited fetches
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.newsroomaios.com';
-    fetch(`${baseUrl}/api/tenants/deploy`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Internal-Call': 'true',
-        'X-Platform-Secret': process.env.PLATFORM_SECRET || '',
-      },
-      body: JSON.stringify({ tenantId }),
-    }).catch(err => console.error('Failed to trigger deployment:', err));
+    try {
+      const deployRes = await fetch(`${baseUrl}/api/tenants/deploy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Internal-Call': 'true',
+          'X-Platform-Secret': process.env.PLATFORM_SECRET || '',
+        },
+        body: JSON.stringify({ tenantId }),
+      });
+      const deployResult = await deployRes.json();
+      if (!deployRes.ok) {
+        console.error('[Tenant Create] Deploy failed:', deployResult.error);
+      } else {
+        console.log('[Tenant Create] Deploy triggered:', deployResult.siteUrl || deployResult.deploymentId);
+      }
+    } catch (err) {
+      console.error('[Tenant Create] Failed to trigger deployment:', err);
+    }
 
     // Create GoDaddy DNS record for subdomain (runs in parallel with deployment)
     if (isGoDaddyConfigured()) {
