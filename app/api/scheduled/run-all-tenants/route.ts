@@ -363,6 +363,7 @@ async function generateArticleForTenant(
         journalistId: journalist.id,
         journalistName: journalist.name,
         generateSEO: true,
+        skipCredits: true,
       }),
     });
 
@@ -556,6 +557,7 @@ async function seedTenantArticles(
               useWebSearch: true,
               journalistName: `${category.name} Reporter`,
               generateSEO: true,
+              skipCredits: true,
             }),
           });
 

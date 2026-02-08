@@ -34,6 +34,9 @@ export interface GenerateArticleRequest {
   generateSEO?: boolean;
   targetWordCount?: number;
   writingStyle?: 'formal' | 'conversational' | 'investigative';
+
+  // Platform-only: skip credit check/deduct during initial seeding
+  skipCredits?: boolean;
 }
 
 export interface GeneratedArticle {

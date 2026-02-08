@@ -135,18 +135,25 @@ export async function POST(request: NextRequest) {
     if (body.generateSEO) creditsNeeded += CREDIT_COSTS.seo_optimization;
     if (body.useWebSearch) creditsNeeded += CREDIT_COSTS.web_search;
 
-    // Check credits
-    const creditCheck = await checkCredits(tenant.id, creditsNeeded);
-    if (!creditCheck.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: creditCheck.message || 'Insufficient credits',
-          creditsRequired: creditsNeeded,
-          creditsRemaining: creditCheck.creditsRemaining,
-        },
-        { status: 402, headers: CORS_HEADERS }
-      );
+    // Skip credit check during initial seeding (platform cost, not tenant cost)
+    const isPlatformCall = request.headers.get('X-Platform-Secret') === PLATFORM_SECRET;
+    const skipCredits = body.skipCredits === true && isPlatformCall;
+
+    // Check credits (unless seeding)
+    let creditCheck = { allowed: true, creditsRemaining: 0, message: '' };
+    if (!skipCredits) {
+      creditCheck = await checkCredits(tenant.id, creditsNeeded);
+      if (!creditCheck.allowed) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: creditCheck.message || 'Insufficient credits',
+            creditsRequired: creditsNeeded,
+            creditsRemaining: creditCheck.creditsRemaining,
+          },
+          { status: 402, headers: CORS_HEADERS }
+        );
+      }
     }
 
     // Build prompt context
@@ -286,8 +293,10 @@ export async function POST(request: NextRequest) {
       .collection(`tenants/${tenant.id}/articles`)
       .add(articleData);
 
-    // Deduct credits
-    await deductCredits(tenant.id, creditsNeeded, parsedArticle.title, articleRef.id);
+    // Deduct credits (skip during initial seeding - platform absorbs that cost)
+    if (!skipCredits) {
+      await deductCredits(tenant.id, creditsNeeded, parsedArticle.title, articleRef.id);
+    }
 
     const generationTimeMs = Date.now() - startTime;
 
