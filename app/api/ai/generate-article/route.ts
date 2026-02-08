@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     const skipCredits = body.skipCredits === true && isPlatformCall;
 
     // Check credits (unless seeding)
-    let creditCheck = { allowed: true, creditsRemaining: 0, message: '' };
+    let creditCheck: { allowed: boolean; creditsRemaining: number; message?: string } = { allowed: true, creditsRemaining: 0 };
     if (!skipCredits) {
       creditCheck = await checkCredits(tenant.id, creditsNeeded);
       if (!creditCheck.allowed) {
