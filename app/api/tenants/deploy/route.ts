@@ -70,13 +70,12 @@ export async function POST(request: NextRequest) {
       deploymentStartedAt: new Date(),
     });
 
-    // Update setup progress
+    // Update setup progress - only mark deployment as in progress, don't overwrite seeding progress
     const progressRef = db.collection('tenants').doc(tenantId).collection('meta').doc('setupStatus');
-    await progressRef.update({
-      currentStep: 'deploying_site',
-      'completedSteps': ['account_created', 'payment_received', 'journalists_created', 'articles_seeding'],
+    await progressRef.set({
+      siteDeploying: true,
       lastUpdatedAt: new Date(),
-    });
+    }, { merge: true });
 
     // Deploy to Vercel
     console.log(`[Deploy] Starting Vercel deployment for tenant: ${tenant.slug}`);
@@ -98,11 +97,11 @@ export async function POST(request: NextRequest) {
         deploymentError: result.error,
       });
 
-      await progressRef.update({
-        currentStep: 'deployment_failed',
+      await progressRef.set({
+        siteDeploying: false,
+        deploymentError: result.error,
         lastUpdatedAt: new Date(),
-        'errors': [{ step: 'deploying_site', message: result.error, timestamp: new Date() }],
-      });
+      }, { merge: true });
 
       return NextResponse.json(
         { error: result.error },
@@ -124,13 +123,13 @@ export async function POST(request: NextRequest) {
       deployedAt: new Date(),
     });
 
-    // Update setup progress to complete
-    await progressRef.update({
-      currentStep: 'complete',
-      completedSteps: ['account_created', 'payment_received', 'journalists_created', 'articles_seeding', 'deploying_site'],
+    // Store siteUrl on setup progress - don't set 'complete' here, let seeding handle that
+    await progressRef.set({
       siteUrl,
+      siteDeployed: true,
+      siteDeploying: false,
       lastUpdatedAt: new Date(),
-    });
+    }, { merge: true });
 
     console.log(`[Deploy] Successfully deployed tenant ${tenant.slug} to ${siteUrl}`);
 

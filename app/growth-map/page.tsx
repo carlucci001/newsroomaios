@@ -94,8 +94,9 @@ export default function GrowthMapPage() {
         if (tenant.status === 'active' && tenant.serviceArea) {
           activeTenants.push({
             id: doc.id,
-            name: tenant.ownerEmail || tenant.businessName,
+            name: tenant.ownerName || tenant.businessName || '',
             email: tenant.ownerEmail || '',
+            phone: tenant.ownerPhone || tenant.phone || '',
             newspaperName: tenant.businessName,
             city: tenant.serviceArea.city || '',
             state: normalizeState(tenant.serviceArea.state || ''),

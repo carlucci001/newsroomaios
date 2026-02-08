@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all active tenants (include 'seeding' to handle stuck seeding status)
+    // Get all active tenants (include 'seeding'/'deploying' to handle race conditions)
     const tenantsSnap = await db.collection('tenants')
-      .where('status', 'in', ['active', 'provisioning', 'seeding'])
+      .where('status', 'in', ['active', 'provisioning', 'seeding', 'deploying'])
       .get();
 
     if (tenantsSnap.empty) {
@@ -69,7 +69,8 @@ export async function GET(request: NextRequest) {
 
       try {
         // SEEDING: New tenants get 36 seed articles (6 per category)
-        if (tenant.status === 'provisioning') {
+        // Check seededAt instead of status to handle race condition with deploy endpoint
+        if (!tenant.seededAt) {
           console.log(`[Seeding] Checking if ${tenant.businessName} needs seeding`);
 
           // CRITICAL FIX: Check if articles already exist to prevent duplicate seeding

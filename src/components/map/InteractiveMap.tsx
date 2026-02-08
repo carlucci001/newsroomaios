@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { Lead } from '@/types/lead';
-import { MapPin, ExternalLink, Globe } from 'lucide-react';
+import { MapPin, ExternalLink, Globe, Mail, Phone } from 'lucide-react';
 
 interface InteractiveMapProps {
   leads: Lead[];
@@ -191,28 +191,43 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
 
       {/* Hover card */}
       {hoveredLead && (
-        <div className="hidden md:block absolute top-4 right-4 bg-white rounded-xl shadow-2xl border border-gray-200 w-72 overflow-hidden z-50 pointer-events-none">
+        <div
+          className="hidden md:block absolute top-4 right-4 bg-white rounded-xl shadow-2xl border border-gray-200 w-72 overflow-hidden z-50"
+          onMouseEnter={() => { if (hoverTimeout.current) clearTimeout(hoverTimeout.current); }}
+          onMouseLeave={handleMouseLeave}
+        >
           {/* Thumbnail area */}
-          <div className="relative h-36 bg-gray-100 overflow-hidden">
-            {hoveredLead.status === 'converted' && hoveredLead.siteUrl && !thumbError ? (
-              <img
-                src={getSiteThumbnailUrl(hoveredLead.siteUrl)}
-                alt={hoveredLead.newspaperName || 'Newspaper preview'}
-                className="w-full h-full object-cover object-top"
-                onError={() => setThumbError(true)}
-              />
-            ) : (
-              <div className={`w-full h-full flex items-center justify-center ${
-                hoveredLead.status === 'converted'
-                  ? 'bg-gradient-to-br from-green-500 to-emerald-600'
-                  : 'bg-gradient-to-br from-blue-500 to-indigo-600'
-              }`}>
-                <span className="text-5xl font-bold text-white/90">
-                  {(hoveredLead.newspaperName || hoveredLead.city || 'N')[0].toUpperCase()}
-                </span>
+          {hoveredLead.status === 'converted' && hoveredLead.siteUrl ? (
+            <a href={hoveredLead.siteUrl} target="_blank" rel="noopener noreferrer" className="block">
+              <div className="relative h-36 bg-gray-100 overflow-hidden group">
+                {!thumbError ? (
+                  <img
+                    src={getSiteThumbnailUrl(hoveredLead.siteUrl)}
+                    alt={hoveredLead.newspaperName || 'Newspaper preview'}
+                    className="w-full h-full object-cover object-top"
+                    onError={() => setThumbError(true)}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-500 to-emerald-600">
+                    <span className="text-5xl font-bold text-white/90">
+                      {(hoveredLead.newspaperName || hoveredLead.city || 'N')[0].toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold flex items-center gap-1">
+                    <ExternalLink className="h-4 w-4" /> Visit Site
+                  </span>
+                </div>
               </div>
-            )}
-          </div>
+            </a>
+          ) : (
+            <div className="relative h-36 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+              <span className="text-5xl font-bold text-white/90">
+                {(hoveredLead.newspaperName || hoveredLead.city || 'N')[0].toUpperCase()}
+              </span>
+            </div>
+          )}
 
           {/* Details */}
           <div className="p-4">
@@ -226,12 +241,38 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
               <p className="text-xs text-gray-400">{hoveredLead.county}</p>
             )}
 
+            {/* Contact info */}
+            {(hoveredLead.name || hoveredLead.email || hoveredLead.phone) && (
+              <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
+                {hoveredLead.name && (
+                  <p className="text-sm font-medium text-gray-700">{hoveredLead.name}</p>
+                )}
+                {hoveredLead.email && (
+                  <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                    <Mail className="h-3 w-3 text-gray-400" />
+                    {hoveredLead.email}
+                  </p>
+                )}
+                {hoveredLead.phone && (
+                  <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                    <Phone className="h-3 w-3 text-gray-400" />
+                    {hoveredLead.phone}
+                  </p>
+                )}
+              </div>
+            )}
+
             {hoveredLead.status === 'converted' && hoveredLead.siteUrl ? (
-              <div className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg">
+              <a
+                href={hoveredLead.siteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 hover:bg-green-700 transition-colors text-white text-sm font-semibold rounded-lg"
+              >
                 <Globe className="h-4 w-4" />
                 Visit Site
                 <ExternalLink className="h-3 w-3" />
-              </div>
+              </a>
             ) : (
               <div className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg">
                 <MapPin className="h-4 w-4" />
