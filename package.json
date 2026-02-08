@@ -1,6 +1,6 @@
 {
   "name": "newsroomaios",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -33,6 +33,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dayjs": "^1.11.19",
     "dotenv": "^17.2.4",
     "firebase": "^12.7.0",
     "firebase-admin": "^13.6.0",

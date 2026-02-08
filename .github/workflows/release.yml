@@ -1,0 +1,74 @@
+name: Release — Tag & Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      description:
+        description: 'What changed in this release'
+        required: true
+        type: string
+
+jobs:
+  release:
+    name: Tag Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        id: version
+        run: |
+          npm version ${{ inputs.bump }} --no-git-tag-version
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Bumped to v${VERSION}"
+
+      - name: Commit version bump
+        run: |
+          git add package.json package-lock.json
+          git commit -m "release: v${{ steps.version.outputs.version }}"
+
+      - name: Create git tag
+        run: |
+          git tag -a "v${{ steps.version.outputs.version }}" -m "${{ inputs.description }}"
+
+      - name: Push changes and tag
+        run: |
+          git push origin main
+          git push origin "v${{ steps.version.outputs.version }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body: |
+            ## v${{ steps.version.outputs.version }}
+
+            ${{ inputs.description }}
+
+            **Commit:** ${{ github.sha }}
+          generate_release_notes: true

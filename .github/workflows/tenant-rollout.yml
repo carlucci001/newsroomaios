@@ -1,0 +1,88 @@
+name: Tenant Rollout — Deploy to All Sites
+
+# Triggered in 3 ways:
+# 1. Manually from GitHub UI (workflow_dispatch)
+# 2. Via repository_dispatch from the wnct-template repo
+# 3. After a successful release (workflow_call)
+#
+# IMPORTANT: This only redeploys CODE. Tenant data (articles, images,
+# advertisers, users) lives in Firestore and is never touched.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version being rolled out (e.g. v1.2.3)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run — list tenants but do not deploy'
+        required: false
+        type: boolean
+        default: false
+
+  repository_dispatch:
+    types: [template-updated]
+
+jobs:
+  rollout:
+    name: Roll Out to All Tenants
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ github.event.client_payload.version }}" ]; then
+            echo "version=${{ github.event.client_payload.version }}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(node -p "require('./package.json').version")
+            echo "version=v${VERSION}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger tenant rollout
+        id: rollout
+        run: |
+          DRY_RUN="${{ inputs.dry_run || 'false' }}"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.PLATFORM_URL }}/api/tenants/rollout" \
+            -H "Content-Type: application/json" \
+            -H "X-Platform-Secret: ${{ secrets.PLATFORM_SECRET }}" \
+            -d "{\"version\": \"${{ steps.version.outputs.version }}\", \"dryRun\": ${DRY_RUN}}")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          echo "HTTP Status: ${HTTP_CODE}"
+          echo "Response: ${BODY}"
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "## Rollout FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "HTTP ${HTTP_CODE}" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            echo "$BODY" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # Parse results for summary
+          SUCCEEDED=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('succeeded',0))" 2>/dev/null || echo "?")
+          FAILED=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('failed',0))" 2>/dev/null || echo "?")
+          TOTAL=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('totalTenants',0))" 2>/dev/null || echo "?")
+          SUMMARY=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('summary',''))" 2>/dev/null || echo "")
+
+          echo "## Rollout Complete" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tenants:** ${SUCCEEDED}/${TOTAL} succeeded, ${FAILED} failed" >> $GITHUB_STEP_SUMMARY
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "**Mode:** DRY RUN (no actual deployments)" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

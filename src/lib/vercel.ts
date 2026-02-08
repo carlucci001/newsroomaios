@@ -313,6 +313,41 @@ class VercelService {
   }
 
   /**
+   * Get a project by name (used during rollout to verify project exists)
+   */
+  async getProject(projectName: string): Promise<VercelProject | null> {
+    try {
+      const response = await this.fetch(`/v9/projects/${projectName}`);
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Redeploy an existing tenant project with latest template code
+   */
+  async redeployTenant(slug: string): Promise<{ success: boolean; deploymentId?: string; error?: string }> {
+    const projectName = `newspaper-${slug}`;
+
+    // Get project to find its repoId
+    const project = await this.getProject(projectName);
+    if (!project) {
+      return { success: false, error: `Project ${projectName} not found on Vercel` };
+    }
+
+    const repoId = project.link?.repoId;
+    const deployment = await this.triggerDeployment(projectName, repoId);
+
+    if (!deployment) {
+      return { success: false, error: `Failed to trigger deployment for ${projectName}` };
+    }
+
+    return { success: true, deploymentId: deployment.id };
+  }
+
+  /**
    * Check if Vercel API is configured
    */
   isConfigured(): boolean {
