@@ -37,6 +37,9 @@ export interface GenerateArticleRequest {
 
   // Platform-only: skip credit check/deduct during initial seeding
   skipCredits?: boolean;
+
+  // Existing titles to avoid duplicating (passed during seeding)
+  existingTitles?: string[];
 }
 
 export interface GeneratedArticle {
@@ -95,4 +98,5 @@ export interface PromptContext {
     adequateSourceWords?: string;
     limitedSourceWords?: string;
   };
+  existingTitles?: string[];
 }

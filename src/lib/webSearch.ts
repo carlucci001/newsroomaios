@@ -128,6 +128,24 @@ Important:
       return fallbackSearch(query, focusArea);
     }
 
+    // Detect "no news found" type responses before parsing
+    const noNewsPatterns = [
+      /no\s+(recent\s+)?news\s+(was\s+)?found/i,
+      /news\s+(is\s+)?unavailable/i,
+      /news\s+unreported/i,
+      /no\s+.*\s+news\s+available/i,
+      /information\s+not\s+found/i,
+      /could\s+not\s+find\s+(any\s+)?(recent\s+)?news/i,
+      /no\s+specific\s+.*\s+news/i,
+      /no\s+results\s+found/i,
+      /unable\s+to\s+find/i,
+    ];
+    const isNoNews = noNewsPatterns.some(p => p.test(content));
+    if (isNoNews) {
+      console.warn(`[WebSearch] Perplexity returned "no news found" response — forcing local interest mode`);
+      return null; // Return null so generate-article falls into LOCAL INTEREST mode
+    }
+
     // Parse the structured response
     const parsed = parsePerplexityResponse(content, query);
 

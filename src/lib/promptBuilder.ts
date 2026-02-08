@@ -79,13 +79,14 @@ export function buildArticlePrompt(context: PromptContext): string {
     writingStyle,
     aggressiveness,
     articleLengthConfig,
+    existingTitles,
   } = context;
 
   const sourceQuality = assessSourceQuality(sourceContent);
-  const lengthRich = articleLengthConfig?.richSourceWords || '650-900';
-  const lengthModerate = articleLengthConfig?.moderateSourceWords || '520-715';
-  const lengthAdequate = articleLengthConfig?.adequateSourceWords || '390-585';
-  const lengthLimited = articleLengthConfig?.limitedSourceWords || '260-390';
+  const lengthRich = articleLengthConfig?.richSourceWords || '800-1200';
+  const lengthModerate = articleLengthConfig?.moderateSourceWords || '600-900';
+  const lengthAdequate = articleLengthConfig?.adequateSourceWords || '500-750';
+  const lengthLimited = articleLengthConfig?.limitedSourceWords || '400-600';
   const sourceName = sourceContent?.sourceName || 'News Reports';
   const isWebSearch = sourceName === 'News Reports';
 
@@ -150,26 +151,38 @@ export function buildArticlePrompt(context: PromptContext): string {
     prompt += `
 LOCAL INTEREST ARTICLE MODE:
 
-No breaking news source was found for this beat. Instead, write an original, engaging
-local-interest article about ${categoryName} in ${serviceArea.city}${regionName}, ${serviceArea.state}.
+Write an original, engaging local-interest article about ${categoryName} in ${serviceArea.city}${regionName}, ${serviceArea.state}.
 
 GUIDELINES:
-- Use your general knowledge of ${serviceArea.city} and the surrounding area
-- Write about real landmarks, geography, culture, history, seasonal activities, or community life
-- Focus on evergreen topics that would genuinely interest local residents
-- Write in warm, community-newspaper style — informative and inviting
+- Use your knowledge of ${serviceArea.city} and the surrounding area
+- Write about REAL, SPECIFIC places, people, events, landmarks, or topics
+- Write as a genuine local newspaper article — not a generic tourism blurb
+- The article should read like it was written by a local journalist who knows the community
 - Do NOT mention that no news was found or that sources were unavailable
-- Do NOT write about news being unavailable — write a real article
+- Do NOT write about news being unavailable — write a REAL article
 - Target: 5-7 paragraphs (${lengthModerate} words)
 ${targetWordCount ? `- Target word count: ${targetWordCount}` : ''}
 
-TOPIC IDEAS BY BEAT:
-- Local News: city history, notable landmarks, community traditions, seasonal changes
-- Sports: local sports culture, popular outdoor activities, recreational facilities
-- Business: local economy, notable industries, small business culture, downtown scene
-- Weather: seasonal weather patterns, best times to visit, outdoor activity planning
-- Community: volunteer opportunities, local organizations, festivals, farmers markets
-- Opinion: what makes the community special, quality of life, local pride
+CRITICAL TITLE RULES:
+- Do NOT put the city name in every title — most real newspapers don't
+- Write titles that focus on the SUBJECT, not the location
+- GOOD: "Garden of the Gods Trail Expansion Opens This Spring"
+- GOOD: "Local Chef Brings Farm-to-Table Dining to Downtown"
+- GOOD: "Youth Soccer League Registration Opens for Spring Season"
+- BAD: "Colorado Springs News Update" ❌
+- BAD: "Colorado Springs Business Report" ❌
+- BAD: "What's Happening in Colorado Springs" ❌
+
+TOPIC DIVERSITY — pick a SPECIFIC, UNIQUE angle:
+- Local News: a specific neighborhood, a local tradition, a seasonal event, a historical anniversary, infrastructure project, library program, park renovation
+- Sports: a specific team's season, a coaching milestone, youth league spotlight, a local athlete's journey, recreational league, upcoming tournament
+- Business: a specific restaurant or shop, a new opening, a family business story, downtown revitalization, a local entrepreneur, market trends
+- Politics: a specific policy debate, zoning issue, budget allocation, school board decision, community planning meeting
+- Entertainment: a specific venue, upcoming show, local artist profile, museum exhibit, music scene, comedy night, book club
+- Lifestyle: a specific neighborhood's character, food scene, outdoor activity guide, seasonal living tips, local wellness trend
+- Tourism: a hidden gem attraction, day trip itinerary, seasonal festival, outdoor adventure, historical walking tour
+- Health: a local clinic initiative, community health fair, fitness trend, mental health resources, senior wellness program
+- Community: a specific nonprofit, volunteer spotlight, fundraiser, neighborhood association, cultural celebration
 
 ${writingStyle ? `WRITING STYLE: ${writingStyle}\n` : ''}
 ${aggressiveness && aggressiveness !== 'neutral' ? `EDITORIAL TONE: ${
@@ -177,7 +190,7 @@ ${aggressiveness && aggressiveness !== 'neutral' ? `EDITORIAL TONE: ${
     ? 'Write with strong, assertive language.'
     : 'Write with measured, careful language.'
 }\n` : ''}
-TASK: Write an engaging, original local-interest article about ${categoryName} in ${serviceArea.city}.`;
+TASK: Write an engaging, original local-interest article about ${categoryName} in ${serviceArea.city}. Choose a SPECIFIC, UNIQUE topic — not a generic overview.`;
   } else {
     // --- ANTI-HALLUCINATION PROTOCOL (for articles with real sources) ---
     prompt += `
@@ -257,27 +270,36 @@ FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
 TITLE: [Write a SPECIFIC news headline that answers "What happened?" - NOT generic phrases]
 
 HEADLINE REQUIREMENTS - MANDATORY:
-✅ DO: Identify the SPECIFIC news event from the source
+✅ DO: Write a SPECIFIC, compelling headline about the actual subject
 ✅ DO: Use active voice and concrete details
-✅ DO: Make it answer "What happened?" in under 12 words
-✅ DO: Include key facts (who, what, where if available)
+✅ DO: Make it answer "What happened?" or "What is this about?" in under 12 words
+✅ DO: Focus on the SUBJECT of the story, not the location
 
-❌ DON'T: Use generic words like "Breaking", "News", "Update", "Alert"
-❌ DON'T: Use redundant phrases like "News News" or "Breaking News Article"
-❌ DON'T: Use vague phrases like "Major Development" or "Important Announcement"
-❌ DON'T: Start with "Local" unless it's specifically about local government
+❌ DON'T: Put the city or county name in EVERY title — real newspapers don't do this
+❌ DON'T: Use generic words like "Breaking", "News", "Update", "Alert", "Report"
+❌ DON'T: Use patterns like "[City] [Category] News" or "[County] [Category] Update"
+❌ DON'T: Write titles that sound like search queries or database entries
+❌ DON'T: Start with the city/county name unless it's essential to the story
 
-GOOD EXAMPLES:
-- "Winter Storm Warning Issued for ${serviceArea.city} Through Thursday"
-- "New Restaurant Opens on Main Street in Downtown ${serviceArea.city}"
+GOOD EXAMPLES (notice most don't lead with location):
+- "Winter Storm Warning Issued Through Thursday"
+- "New Farm-to-Table Restaurant Opens on Main Street"
 - "City Council Approves $2M Budget for Road Repairs"
-- "High School Basketball Team Wins Regional Championship"
+- "Eagles Take Regional Championship in Overtime Thriller"
+- "Downtown Farmers Market Expands to Year-Round Schedule"
+- "Tech Startup Brings 200 Jobs to Former Mill Building"
 
 BAD EXAMPLES (NEVER DO THIS):
-- "Breaking: News News in ${serviceArea.state}" ❌
-- "Local Update: Weather Information" ❌
-- "Important Business News for the Area" ❌
-- "Major Development in ${serviceArea.region || serviceArea.state}" ❌
+- "${serviceArea.city} News Update" ❌
+- "${serviceArea.city} Business Report" ❌
+- "${serviceArea.city} Sports News" ❌
+- "What's Happening in ${serviceArea.city}" ❌
+- "${serviceArea.city}'s Economy Thrives" ❌ (generic, no specifics)
+${existingTitles && existingTitles.length > 0 ? `
+EXISTING TITLES TO AVOID DUPLICATING:
+${existingTitles.map(t => `- "${t}"`).join('\n')}
+Your article MUST cover a DIFFERENT topic and angle than all of the above.
+` : ''}
 
 CONTENT:
 ${isWebSearch
@@ -295,8 +317,9 @@ ${isWebSearch
 TAGS: [keywords extracted from source only]
 
 Article Requirements:
-- 3-5 paragraphs (or 2-3 if source is brief)
+- 6-10 paragraphs — write a FULL, substantive article, not a brief summary
 - Professional journalistic tone appropriate for local news
+- Include subheadings (## format) for longer articles to improve readability
 - Include relevant local context ONLY if mentioned in sources
 ${isWebSearch
   ? `- Write in active, engaging news style WITHOUT repetitive attribution phrases

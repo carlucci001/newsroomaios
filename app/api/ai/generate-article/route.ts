@@ -176,6 +176,7 @@ export async function POST(request: NextRequest) {
         adequateSourceWords: aiConfig.articleLength.adequateSourceWords,
         limitedSourceWords: aiConfig.articleLength.limitedSourceWords,
       },
+      existingTitles: body.existingTitles,
     };
 
     // Build the prompt

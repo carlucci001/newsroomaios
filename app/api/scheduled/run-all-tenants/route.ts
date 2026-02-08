@@ -540,10 +540,19 @@ async function seedTenantArticles(
 
     console.log(`[Seed] ${tenant.businessName} - Starting category: ${category.name}`);
 
+    // Track generated titles to avoid duplicates within this category
+    const generatedTitles: string[] = [];
+
+    // Topic angle prompts — each article gets a different angle to ensure variety
+    const topicAngles = getSeedTopicAngles(category.name, tenant.serviceArea.city);
+
     for (let i = 0; i < ARTICLES_PER_CATEGORY; i++) {
       try {
         // If Gemini is configured, use real AI generation
         if (geminiApiKey) {
+          // Build a unique topic angle for this article
+          const anglePrompt = topicAngles[i] || `Write about a unique, specific aspect of ${category.name} that hasn't been covered yet.`;
+
           const response = await fetch(`${baseUrl}/api/ai/generate-article`, {
             method: 'POST',
             headers: {
@@ -554,10 +563,12 @@ async function seedTenantArticles(
             body: JSON.stringify({
               tenantId: tenant.id,
               categoryId: category.id,
-              useWebSearch: true,
+              useWebSearch: i < 2, // Only first 2 articles use web search; rest use local interest mode for variety
               journalistName: `${category.name} Reporter`,
               generateSEO: true,
               skipCredits: true,
+              articleSpecificPrompt: anglePrompt,
+              existingTitles: generatedTitles.length > 0 ? generatedTitles : undefined,
             }),
           });
 
@@ -567,6 +578,10 @@ async function seedTenantArticles(
               catArticlesCreated++;
               categoryProgress[category.id].generated++;
               articlesCreated++;
+              // Track title for dedup
+              if (result.article?.title) {
+                generatedTitles.push(result.article.title);
+              }
 
               // Update progress in real-time
               await statusRef.set({
@@ -665,6 +680,107 @@ async function seedTenantArticles(
   console.log(`[Seed] ${tenant.businessName} - Seeding complete: ${articlesCreated} articles created (PARALLEL)`);
 
   return { articlesCreated, errors };
+}
+
+/**
+ * Generate unique topic angles for seed articles to ensure variety.
+ * Each of the 6 articles per category gets a different angle.
+ */
+function getSeedTopicAngles(categoryName: string, city: string): string[] {
+  const catLower = categoryName.toLowerCase();
+  const angles: Record<string, string[]> = {
+    'local news': [
+      `Write about a specific neighborhood or district in ${city} — its character, history, and what makes it special.`,
+      `Write about a recent or upcoming community event, festival, or public gathering.`,
+      `Write about local infrastructure — a road project, park renovation, library program, or public facility.`,
+      `Write about a local tradition, annual event, or seasonal change that affects residents.`,
+      `Write about an interesting local personality, community leader, or longtime resident.`,
+      `Write about a recent development in local schools, public services, or city programs.`,
+    ],
+    'sports': [
+      `Write about a specific local high school team and their current season — wins, losses, key players.`,
+      `Write about youth sports leagues, registration, or recreational programs for kids.`,
+      `Write about outdoor recreation opportunities — trails, parks, cycling, fishing, or running clubs.`,
+      `Write about a local athlete's achievements, college commitments, or personal story.`,
+      `Write about a community fitness event — a 5K race, charity walk, golf tournament, or sports camp.`,
+      `Write about the local college or semi-pro sports scene — a team, coach, or rivalry.`,
+    ],
+    'business': [
+      `Profile a SPECIFIC local restaurant, café, or food business — their story, what makes them unique.`,
+      `Write about a new business opening, expansion, or renovation happening downtown or in a shopping area.`,
+      `Write about local job market trends, a major employer, or workforce development programs.`,
+      `Profile a family-owned business or long-standing local shop and their history.`,
+      `Write about the local real estate or housing market — trends, new developments, affordability.`,
+      `Write about a local entrepreneur, startup, or innovative company doing something different.`,
+    ],
+    'politics': [
+      `Write about a specific city council decision, vote, or debate that affects residents.`,
+      `Write about local zoning, development, or land use issues and community reactions.`,
+      `Write about the local school board — budget decisions, policy changes, or parent concerns.`,
+      `Write about local election information, candidates, or voter engagement efforts.`,
+      `Write about a specific public policy issue — housing, transportation, taxes, or public safety.`,
+      `Write about interactions between city and county government on a shared issue.`,
+    ],
+    'entertainment': [
+      `Write about a specific upcoming concert, show, or performance at a local venue.`,
+      `Profile a local artist, musician, or performer and their work.`,
+      `Write about the local theater scene — a specific production, community theater group, or arts program.`,
+      `Write about local museums, galleries, or cultural institutions and current exhibits.`,
+      `Write about the local dining and nightlife scene — food festivals, wine tastings, or new bars.`,
+      `Write about family-friendly entertainment — children's events, movie screenings, or game nights.`,
+    ],
+    'lifestyle': [
+      `Write about local food culture — farmers markets, food trucks, farm-to-table dining, or cooking classes.`,
+      `Write about outdoor living and nature activities specific to the area.`,
+      `Write about wellness trends — yoga studios, gyms, meditation groups, or health food stores.`,
+      `Write about local fashion, shopping districts, or boutique stores.`,
+      `Write about home and garden — local gardening tips, home improvement trends, or real estate lifestyle.`,
+      `Write about local pet culture — dog parks, pet-friendly businesses, or animal rescue stories.`,
+    ],
+    'tourism': [
+      `Write about a specific hidden gem attraction that visitors often miss.`,
+      `Write a day-trip itinerary for visitors or new residents exploring the area.`,
+      `Write about the area's most iconic landmark and its history, visitors, and significance.`,
+      `Write about seasonal tourism — what to do this time of year, festivals, or outdoor activities.`,
+      `Write about local food and drink tourism — breweries, restaurants, food tours, or culinary traditions.`,
+      `Write about outdoor adventure tourism — hiking, kayaking, cycling, or nature excursions.`,
+    ],
+    'health': [
+      `Write about a local hospital, clinic, or healthcare provider's community programs.`,
+      `Write about mental health resources and counseling services available in the area.`,
+      `Write about local fitness trends — popular gyms, running groups, or outdoor workout spots.`,
+      `Write about a community health fair, vaccination drive, or public health initiative.`,
+      `Write about senior wellness programs, assisted living options, or elder care resources.`,
+      `Write about local nutrition and diet trends — health food stores, nutritionists, or cooking classes.`,
+    ],
+    'community': [
+      `Write about a specific local nonprofit organization and the impact they're making.`,
+      `Write about volunteer opportunities and how residents can get involved.`,
+      `Write about a local cultural celebration, heritage festival, or community tradition.`,
+      `Write about neighborhood associations and their current projects or concerns.`,
+      `Write about local churches, faith organizations, or interfaith community efforts.`,
+      `Write about a local fundraiser, charity event, or giving campaign.`,
+    ],
+  };
+
+  // Try exact match first, then partial match
+  const directMatch = angles[catLower];
+  if (directMatch) return directMatch;
+
+  // Partial match
+  for (const [key, value] of Object.entries(angles)) {
+    if (catLower.includes(key) || key.includes(catLower)) return value;
+  }
+
+  // Generic fallback
+  return [
+    `Write about a SPECIFIC place, person, or event related to ${categoryName} — not a generic overview.`,
+    `Write a profile piece about a local figure or organization involved in ${categoryName}.`,
+    `Write about an upcoming event or seasonal activity related to ${categoryName}.`,
+    `Write about a historical or cultural aspect of ${categoryName} in the area.`,
+    `Write about community involvement and volunteer opportunities related to ${categoryName}.`,
+    `Write about trends or changes happening in ${categoryName} that affect local residents.`,
+  ];
 }
 
 // Article templates for seed variety
