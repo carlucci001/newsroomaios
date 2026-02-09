@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function OnboardingRedirect() {
+function OnboardingRedirectInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -19,5 +19,20 @@ export default function OnboardingRedirect() {
         <p className="text-muted-foreground">Redirecting...</p>
       </div>
     </div>
+  );
+}
+
+export default function OnboardingRedirect() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-blue-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Redirecting...</p>
+        </div>
+      </div>
+    }>
+      <OnboardingRedirectInner />
+    </Suspense>
   );
 }
