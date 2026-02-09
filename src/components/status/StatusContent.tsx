@@ -310,7 +310,7 @@ export function StatusContent({ tenantId, onBack, adminCredentials, newspaperUrl
                   <span>🚀</span>
                 </motion.a>
                 <motion.a
-                  href={`${progress?.siteUrl || ''}/backend`}
+                  href={`${progress?.siteUrl || ''}/admin`}
                   target="_blank"
                   rel="noopener noreferrer"
                   whileHover={{ scale: 1.05 }}

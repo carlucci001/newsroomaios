@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Feather, ArrowRight, Menu, X } from 'lucide-react';
+import { ArrowRight, Menu, X } from 'lucide-react';
 import { OnboardingChoice } from '@/components/onboarding/OnboardingChoice';
 
 interface SiteHeaderProps {
@@ -29,15 +29,10 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
 
   return (
     <>
-      <nav className="relative z-50 border-b border-border/40 backdrop-blur-xl bg-background/90 sticky top-0">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-brand-blue-600">
-              <Feather className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-2xl font-display font-bold">
-              Newsroom <span className="text-brand-blue-600">AIOS</span>
-            </span>
+      <nav className="relative z-50 border-b border-border/40 bg-white sticky top-0">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          <Link href="/" className="flex items-center">
+            <img src="/newsroom-logo.png" alt="Newsroom AIOS" width="300" height="93" />
           </Link>
 
           {/* Desktop Navigation */}

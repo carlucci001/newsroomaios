@@ -105,9 +105,10 @@ function PaymentForm({
 interface OnboardingContentProps {
   onSuccess: (tenantId: string, credentials?: { email: string; temporaryPassword: string }, siteUrl?: string) => void;
   onBack?: () => void;
+  initialPlan?: string | null;
 }
 
-export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps) {
+export function OnboardingContent({ onSuccess, onBack, initialPlan }: OnboardingContentProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -127,7 +128,7 @@ export function OnboardingContent({ onSuccess, onBack }: OnboardingContentProps)
     domain: '',
     serviceArea: { city: '', state: '', region: '' } as ServiceArea,
     selectedCategories: [] as string[],
-    selectedPlan: 'growth',
+    selectedPlan: initialPlan || 'growth',
   });
 
   // Restore form data on mount (after payment redirect)

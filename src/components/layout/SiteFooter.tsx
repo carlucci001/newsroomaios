@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { Newspaper } from 'lucide-react';
 
 export function SiteFooter() {
   return (
@@ -9,13 +8,8 @@ export function SiteFooter() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-12 mb-12">
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg bg-brand-blue-600">
-                <Newspaper className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-display font-bold">
-                Newsroom <span className="text-brand-blue-600">AIOS</span>
-              </span>
+            <div className="mb-6">
+              <img src="/newsroom-logo.png" alt="Newsroom AIOS" width="300" height="95" />
             </div>
             <p className="text-sm text-foreground/80 leading-relaxed">
               Empowering local journalism with AI-powered tools and built-in monetization.

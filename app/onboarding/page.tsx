@@ -1,15 +1,16 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function OnboardingRedirect() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Redirect to home page with embedded onboarding view
-    router.replace('/?view=onboarding');
-  }, [router]);
+    const plan = searchParams.get('plan');
+    router.replace(`/?view=onboarding${plan ? `&plan=${plan}` : ''}`);
+  }, [router, searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">

@@ -166,14 +166,11 @@ export default function PricingPage() {
                     <span className="text-5xl font-display font-bold">$99</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">+ $199 one-time setup</p>
-                  <p className="text-xs text-brand-blue-600 font-medium mt-1">
-                    Includes 36 articles + 100 directory listings
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">+ $199 one-time setup*</p>
                 </div>
               </CardHeader>
               <CardContent>
-                <Link href="/onboarding" className="block">
+                <Link href="/onboarding?plan=starter" className="block">
                   <Button variant="outline" className="w-full mb-6 hover:bg-brand-gray-50">
                     Get Started
                   </Button>
@@ -225,14 +222,11 @@ export default function PricingPage() {
                     <span className="text-5xl font-display font-bold text-brand-blue-600">$199</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">+ $199 one-time setup</p>
-                  <p className="text-xs text-brand-blue-600 font-medium mt-1">
-                    Includes 36 articles + 100 directory listings
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">+ $199 one-time setup*</p>
                 </div>
               </CardHeader>
               <CardContent>
-                <Link href="/onboarding" className="block">
+                <Link href="/onboarding?plan=growth" className="block">
                   <Button className="w-full mb-6 shadow-lg shadow-brand-blue-500/30">
                     Get Started
                   </Button>
@@ -281,14 +275,11 @@ export default function PricingPage() {
                     <span className="text-5xl font-display font-bold">$299</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">+ $199 one-time setup</p>
-                  <p className="text-xs text-brand-blue-600 font-medium mt-1">
-                    Includes 36 articles + 100 directory listings
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">+ $199 one-time setup*</p>
                 </div>
               </CardHeader>
               <CardContent>
-                <Link href="/onboarding" className="block">
+                <Link href="/onboarding?plan=professional" className="block">
                   <Button variant="outline" className="w-full mb-6 hover:bg-brand-gray-50">
                     Get Started
                   </Button>
@@ -609,7 +600,7 @@ export default function PricingPage() {
                 Launch Your Paper Today
               </h2>
               <p className="text-xl text-brand-blue-100 mb-10 max-w-2xl mx-auto">
-                $199 one-time setup includes 36 articles, 100 directory listings, and complete revenue systems. Keep 100% of everything you earn.
+                *Your setup includes the seeding of your first 36 articles and 100 directory listings to get you started. Keep 100% of everything you earn.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
                 <Link href="/onboarding">
