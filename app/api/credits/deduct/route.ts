@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/firebase';
-import { collection, doc, getDocs, query, where, updateDoc, addDoc } from 'firebase/firestore';
-import { TenantCredits, CreditUsage, CREDIT_COSTS } from '@/types/credits';
+import { collection, doc, getDoc, addDoc } from 'firebase/firestore';
+import { CREDIT_COSTS } from '@/types/credits';
 
 // Platform secret - shared with all tenant sites
 const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
@@ -9,8 +9,10 @@ const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
 /**
  * POST /api/credits/deduct
  *
- * Called by tenant sites after successfully completing an AI operation.
- * Deducts credits from the tenant's balance and logs the usage.
+ * Logging-only endpoint. Tenant sites deduct credits locally via their own
+ * deductCredits() function, then report usage here for platform-side auditing.
+ * This endpoint logs to creditUsage but does NOT deduct from the tenant balance
+ * (that already happened on the tenant side).
  *
  * Headers:
  *   X-Platform-Secret: shared platform secret
@@ -55,100 +57,43 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getDb();
-    const creditsToDeduct = CREDIT_COSTS[action as keyof typeof CREDIT_COSTS] * quantity;
+    const creditsReported = CREDIT_COSTS[action as keyof typeof CREDIT_COSTS] * quantity;
 
-    // Get tenant's credit balance
-    const creditsQuery = query(
-      collection(db, 'tenantCredits'),
-      where('tenantId', '==', tenantId)
-    );
-    const creditsSnap = await getDocs(creditsQuery);
-
-    if (creditsSnap.empty) {
-      // No credit allocation - just log the usage without updating balance
-      console.warn(`[Credits] No allocation for tenant ${tenantId}, logging usage only`);
-
-      // Log usage even without credit allocation
-      await addDoc(collection(db, 'creditUsage'), {
-        tenantId,
-        action,
-        creditsUsed: creditsToDeduct,
-        description,
-        timestamp: new Date(),
-        ...(articleId && { articleId }),
-        ...(metadata && { metadata }),
-      });
-
-      return NextResponse.json({
-        success: true,
-        creditsDeducted: creditsToDeduct,
-        creditsRemaining: -1,
-        status: 'untracked',
-        isOverage: false,
-      });
-    }
-
-    const creditDoc = creditsSnap.docs[0];
-    const credits = { id: creditDoc.id, ...creditDoc.data() } as TenantCredits;
-
-    // Update credit balance
-    const newCreditsUsed = credits.creditsUsed + creditsToDeduct;
-    const newCreditsRemaining = credits.monthlyAllocation - newCreditsUsed;
-    const isOverage = newCreditsRemaining < 0;
-
-    // Determine new status
-    let newStatus = credits.status;
-    if (newCreditsRemaining <= 0) {
-      newStatus = 'exhausted';
-    } else if (credits.softLimit > 0 && newCreditsUsed >= credits.softLimit) {
-      newStatus = 'warning';
-    } else {
-      newStatus = 'active';
-    }
-
-    // Update the credit document
-    await updateDoc(doc(db, 'tenantCredits', creditDoc.id), {
-      creditsUsed: newCreditsUsed,
-      creditsRemaining: Math.max(0, newCreditsRemaining),
-      overageCredits: isOverage ? credits.overageCredits + Math.abs(newCreditsRemaining) : credits.overageCredits,
-      status: newStatus,
-      lastUsageAt: new Date(),
-    });
-
-    // Log the usage
-    const usageEntry: Omit<CreditUsage, 'id'> = {
+    // Log the usage for platform-side auditing
+    await addDoc(collection(db, 'creditUsage'), {
       tenantId,
-      action: action as CreditUsage['action'],
-      creditsUsed: creditsToDeduct,
+      action,
+      creditsUsed: creditsReported,
       description,
       timestamp: new Date(),
       ...(articleId && { articleId }),
       ...(metadata && { metadata }),
-    };
-
-    await addDoc(collection(db, 'creditUsage'), usageEntry);
-
-    // Log transaction for billing purposes
-    await addDoc(collection(db, 'creditTransactions'), {
-      tenantId,
-      type: 'usage',
-      amount: -creditsToDeduct,
-      balance: Math.max(0, newCreditsRemaining),
-      description: `${action.replace(/_/g, ' ')}: ${description}`,
-      createdAt: new Date(),
     });
+
+    // Read current balance from tenants/{tenantId} (source of truth)
+    const tenantSnap = await getDoc(doc(db, 'tenants', tenantId));
+    let creditsRemaining = -1;
+    let status = 'untracked';
+
+    if (tenantSnap.exists()) {
+      const data = tenantSnap.data();
+      const subscriptionCredits = data.subscriptionCredits || 0;
+      const topOffCredits = data.topOffCredits || 0;
+      creditsRemaining = subscriptionCredits + topOffCredits;
+      status = creditsRemaining > 0 ? 'active' : 'exhausted';
+    }
 
     return NextResponse.json({
       success: true,
-      creditsDeducted: creditsToDeduct,
-      creditsRemaining: Math.max(0, newCreditsRemaining),
-      status: newStatus,
-      isOverage,
+      creditsDeducted: creditsReported,
+      creditsRemaining,
+      status,
+      isOverage: creditsRemaining <= 0 && creditsRemaining !== -1,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Credits Deduct] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to deduct credits', message: error.message },
+      { error: 'Failed to log credit usage', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

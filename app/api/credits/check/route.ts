@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/firebase';
-import { collection, doc, getDocs, query, where, updateDoc } from 'firebase/firestore';
-import { TenantCredits, CREDIT_COSTS } from '@/types/credits';
+import { doc, getDoc } from 'firebase/firestore';
+import { CREDIT_COSTS } from '@/types/credits';
 
 // Platform secret - shared with all tenant sites
 const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
@@ -11,6 +11,7 @@ const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
  *
  * Called by tenant sites before performing AI operations.
  * Checks if the tenant has sufficient credits for the requested action.
+ * Reads from tenants/{tenantId} document (single source of truth).
  *
  * Headers:
  *   X-Platform-Secret: shared platform secret
@@ -52,83 +53,53 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getDb();
+    const creditsRequired = CREDIT_COSTS[action as keyof typeof CREDIT_COSTS] * quantity;
 
-    // Get tenant's credit balance
-    const creditsQuery = query(
-      collection(db, 'tenantCredits'),
-      where('tenantId', '==', tenantId)
-    );
-    const creditsSnap = await getDocs(creditsQuery);
+    // Read from tenants/{tenantId} — the single source of truth
+    const tenantSnap = await getDoc(doc(db, 'tenants', tenantId));
 
-    if (creditsSnap.empty) {
-      // No credit allocation - allow operation but log warning
-      console.warn(`[Credits] No allocation for tenant ${tenantId}, allowing operation`);
+    if (!tenantSnap.exists()) {
+      console.warn(`[Credits] Tenant ${tenantId} not found, allowing operation`);
       return NextResponse.json({
         allowed: true,
-        creditsRequired: CREDIT_COSTS[action as keyof typeof CREDIT_COSTS] * quantity,
-        creditsRemaining: -1, // Indicates unlimited/untracked
-        message: 'No credit allocation - operating in unlimited mode',
+        creditsRequired,
+        creditsRemaining: -1,
+        message: 'Tenant not found - operating in unlimited mode',
       });
     }
 
-    const creditDoc = creditsSnap.docs[0];
-    const credits = { id: creditDoc.id, ...creditDoc.data() } as TenantCredits;
-
-    // Calculate credits required
-    const creditsRequired = CREDIT_COSTS[action as keyof typeof CREDIT_COSTS] * quantity;
+    const data = tenantSnap.data();
+    const subscriptionCredits = data.subscriptionCredits || 0;
+    const topOffCredits = data.topOffCredits || 0;
+    const totalCredits = subscriptionCredits + topOffCredits;
+    const licensingStatus = data.licensingStatus;
 
     // Check if tenant is suspended
-    if (credits.status === 'suspended') {
+    if (licensingStatus === 'suspended') {
       return NextResponse.json({
         allowed: false,
         creditsRequired,
-        creditsRemaining: credits.creditsRemaining,
+        creditsRemaining: totalCredits,
         message: 'Account is suspended. Please contact support.',
       });
     }
 
-    // Check if hard limit is set and would be exceeded
-    if (credits.hardLimit > 0 && credits.creditsUsed + creditsRequired > credits.hardLimit) {
-      await updateDoc(doc(db, 'tenantCredits', creditDoc.id), {
-        status: 'exhausted',
-      });
-
+    // Check if tenant has enough credits
+    if (totalCredits < creditsRequired) {
       return NextResponse.json({
         allowed: false,
         creditsRequired,
-        creditsRemaining: credits.creditsRemaining,
-        message: 'Credit limit reached. AI operations are temporarily disabled.',
-      });
-    }
-
-    // Check if tenant has enough credits (soft enforcement - warn but allow)
-    if (credits.creditsRemaining < creditsRequired) {
-      // Update status but still allow operation (can go negative)
-      if (credits.status !== 'exhausted') {
-        await updateDoc(doc(db, 'tenantCredits', creditDoc.id), {
-          status: 'exhausted',
-        });
-      }
-    }
-
-    // Check soft limit warning
-    if (
-      credits.softLimit > 0 &&
-      !credits.softLimitWarned &&
-      credits.creditsUsed + creditsRequired >= credits.softLimit
-    ) {
-      await updateDoc(doc(db, 'tenantCredits', creditDoc.id), {
-        softLimitWarned: true,
-        status: 'warning',
+        creditsRemaining: totalCredits,
+        message: 'Insufficient credits. Please purchase a top-off or upgrade your plan.',
       });
     }
 
     return NextResponse.json({
       allowed: true,
       creditsRequired,
-      creditsRemaining: credits.creditsRemaining,
+      creditsRemaining: totalCredits,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Credits Check] Error:', error);
     // On error, allow operation to not block the tenant
     return NextResponse.json({

@@ -83,15 +83,21 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
   const [hoveredLead, setHoveredLead] = useState<Lead | null>(null);
   const [thumbError, setThumbError] = useState(false);
   const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const enterTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleMouseEnter = useCallback((lead: Lead) => {
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-    if (hoveredLead?.id !== lead.id) setThumbError(false);
-    setHoveredLead(lead);
+    if (enterTimeout.current) clearTimeout(enterTimeout.current);
+    // Require hovering on the pin for 300ms before showing the card
+    enterTimeout.current = setTimeout(() => {
+      if (hoveredLead?.id !== lead.id) setThumbError(false);
+      setHoveredLead(lead);
+    }, 300);
   }, [hoveredLead?.id]);
 
   const handleMouseLeave = useCallback(() => {
-    hoverTimeout.current = setTimeout(() => setHoveredLead(null), 200);
+    if (enterTimeout.current) clearTimeout(enterTimeout.current);
+    hoverTimeout.current = setTimeout(() => setHoveredLead(null), 150);
   }, []);
 
   // Compute stable pin positions once per data change
@@ -161,17 +167,14 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
                 }
               }}
             >
-              {/* Larger invisible hit area to prevent flicker */}
-              <div className="p-3 -m-3">
-                {isLive ? (
-                  <div className="relative w-fit">
-                    <div className="h-4 w-4 md:h-5 md:w-5 rounded-full bg-green-500 border-2 border-white shadow-lg transition-transform duration-150 hover:scale-125" />
-                    <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-20" />
-                  </div>
-                ) : (
-                  <div className="h-3 w-3 md:h-4 md:w-4 rounded-full bg-blue-500 border-2 border-white shadow-md transition-transform duration-150 hover:scale-110" />
-                )}
-              </div>
+              {isLive ? (
+                <div className="relative w-fit">
+                  <div className="h-4 w-4 md:h-5 md:w-5 rounded-full bg-green-500 border-2 border-white shadow-lg transition-transform duration-150 hover:scale-125" />
+                  <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-20" />
+                </div>
+              ) : (
+                <div className="h-3 w-3 md:h-4 md:w-4 rounded-full bg-blue-500 border-2 border-white shadow-md transition-transform duration-150 hover:scale-110" />
+              )}
             </div>
           ))}
         </div>
