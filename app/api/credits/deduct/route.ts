@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   try {
     const platformSecret = request.headers.get('X-Platform-Secret');
     const body = await request.json();
-    const { tenantId, action, quantity = 1, description, articleId, metadata } = body;
+    const { tenantId, action, quantity = 1, description, articleId, metadata, deduct = false } = body;
 
     // Verify platform secret
     if (platformSecret !== PLATFORM_SECRET) {
@@ -72,52 +72,54 @@ export async function POST(request: NextRequest) {
     const creditCost = CREDIT_COSTS[action as keyof typeof CREDIT_COSTS] * quantity;
     const tenantRef = doc(db, 'tenants', tenantId);
 
-    // Atomic transaction: deduct credits from tenant balance
     let subscriptionAfter = 0;
     let topOffAfter = 0;
     let deductedFromSubscription = 0;
     let deductedFromTopOff = 0;
     let isOverage = false;
 
-    await runTransaction(db, async (transaction) => {
-      const tenantSnap = await transaction.get(tenantRef);
+    if (deduct) {
+      // Atomic transaction: deduct credits from tenant balance
+      await runTransaction(db, async (transaction) => {
+        const tenantSnap = await transaction.get(tenantRef);
 
-      if (!tenantSnap.exists()) {
-        throw new Error(`Tenant ${tenantId} not found`);
-      }
+        if (!tenantSnap.exists()) {
+          throw new Error(`Tenant ${tenantId} not found`);
+        }
 
-      const data = tenantSnap.data();
-      let subscriptionCredits = data.subscriptionCredits || 0;
-      let topOffCredits = data.topOffCredits || 0;
-      const totalAvailable = subscriptionCredits + topOffCredits;
+        const data = tenantSnap.data();
+        let subscriptionCredits = data.subscriptionCredits || 0;
+        let topOffCredits = data.topOffCredits || 0;
+        const totalAvailable = subscriptionCredits + topOffCredits;
 
-      if (totalAvailable < creditCost) {
-        isOverage = true;
-        console.warn(`[Credits] Tenant ${tenantId} in overage: needs ${creditCost}, has ${totalAvailable}`);
-      }
+        if (totalAvailable < creditCost) {
+          isOverage = true;
+          console.warn(`[Credits] Tenant ${tenantId} in overage: needs ${creditCost}, has ${totalAvailable}`);
+        }
 
-      // Deduct from subscription first, then top-off
-      if (subscriptionCredits >= creditCost) {
-        deductedFromSubscription = creditCost;
-        subscriptionCredits -= creditCost;
-      } else {
-        deductedFromSubscription = subscriptionCredits;
-        const remaining = creditCost - subscriptionCredits;
-        subscriptionCredits = 0;
-        deductedFromTopOff = Math.min(remaining, topOffCredits);
-        topOffCredits = Math.max(0, topOffCredits - remaining);
-      }
+        // Deduct from subscription first, then top-off
+        if (subscriptionCredits >= creditCost) {
+          deductedFromSubscription = creditCost;
+          subscriptionCredits -= creditCost;
+        } else {
+          deductedFromSubscription = subscriptionCredits;
+          const remaining = creditCost - subscriptionCredits;
+          subscriptionCredits = 0;
+          deductedFromTopOff = Math.min(remaining, topOffCredits);
+          topOffCredits = Math.max(0, topOffCredits - remaining);
+        }
 
-      subscriptionAfter = subscriptionCredits;
-      topOffAfter = topOffCredits;
+        subscriptionAfter = subscriptionCredits;
+        topOffAfter = topOffCredits;
 
-      // Update tenant balance
-      transaction.update(tenantRef, {
-        subscriptionCredits,
-        topOffCredits,
-        updatedAt: new Date(),
+        // Update tenant balance
+        transaction.update(tenantRef, {
+          subscriptionCredits,
+          topOffCredits,
+          updatedAt: new Date(),
+        });
       });
-    });
+    }
 
     const creditsRemaining = subscriptionAfter + topOffAfter;
 
@@ -126,6 +128,7 @@ export async function POST(request: NextRequest) {
       tenantId,
       action,
       creditsUsed: creditCost,
+      deducted: deduct,
       description,
       timestamp: new Date(),
       subscriptionAfter,
@@ -136,11 +139,11 @@ export async function POST(request: NextRequest) {
       ...(metadata && { metadata }),
     });
 
-    console.log(`[Credits] ${tenantId}: -${creditCost} for ${action}. Remaining: ${creditsRemaining} (sub: ${subscriptionAfter}, topoff: ${topOffAfter})`);
+    console.log(`[Credits] ${tenantId}: ${deduct ? `-${creditCost}` : `logged ${creditCost}`} for ${action}. Remaining: ${creditsRemaining} (sub: ${subscriptionAfter}, topoff: ${topOffAfter})`);
 
     return NextResponse.json({
       success: true,
-      creditsDeducted: creditCost,
+      creditsDeducted: deduct ? creditCost : 0,
       creditsRemaining,
       subscriptionCredits: subscriptionAfter,
       topOffCredits: topOffAfter,
