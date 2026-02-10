@@ -307,6 +307,7 @@ class VercelService {
       SCHEDULED_RUNNER_API_KEY: apiKey,
       STRIPE_SECRET_KEY: envTrimmed('STRIPE_SECRET_KEY'),
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: envTrimmed('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'),
+      FIREBASE_SERVICE_ACCOUNT: envTrimmed('FIREBASE_SERVICE_ACCOUNT'),
     };
 
     const envSet = await this.setEnvVars(project.id, envVars);
