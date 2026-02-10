@@ -60,7 +60,11 @@ interface DeploymentResult {
 
 /** Trim env var values — platform env vars often have trailing \n or \r\n from Vercel CLI import */
 function envTrimmed(key: string, fallback = ''): string {
-  return (process.env[key] || fallback).trim();
+  let val = (process.env[key] || fallback).trim();
+  // Strip literal \n sequences that Vercel CLI leaves on env var values
+  while (val.endsWith('\\n')) val = val.slice(0, -2);
+  while (val.startsWith('\\n')) val = val.slice(2);
+  return val;
 }
 
 class VercelService {
