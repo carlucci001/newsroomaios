@@ -104,7 +104,9 @@ export default function GrowthMapPage() {
             state: normalizeState(tenant.serviceArea.state || ''),
             status: 'converted' as const,
             source: 'direct' as const,
-            siteUrl: tenant.siteUrl || '',
+            siteUrl: tenant.customDomain
+              ? `https://${tenant.customDomain}`
+              : tenant.siteUrl || '',
             createdAt: tenant.createdAt,
           });
         }

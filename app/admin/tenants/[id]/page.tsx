@@ -41,6 +41,7 @@ import {
   WarningOutlined,
   SaveOutlined,
   LinkOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -56,11 +57,13 @@ export default function TenantDetailPage() {
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [syncingDomains, setSyncingDomains] = useState(false);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
     businessName: '',
     domain: '',
+    customDomain: '',
     ownerEmail: '',
     status: '',
     licensingStatus: '',
@@ -87,6 +90,7 @@ export default function TenantDetailPage() {
       setEditForm({
         businessName: tenantData.businessName,
         domain: tenantData.domain,
+        customDomain: tenantData.customDomain || '',
         ownerEmail: tenantData.ownerEmail,
         status: tenantData.status,
         licensingStatus: tenantData.licensingStatus,
@@ -145,13 +149,18 @@ export default function TenantDetailPage() {
     try {
       const db = getDb();
 
-      await updateDoc(doc(db, 'tenants', tenantId), {
+      const tenantUpdate: Record<string, any> = {
         businessName: editForm.businessName,
         domain: editForm.domain,
         ownerEmail: editForm.ownerEmail,
         status: editForm.status,
         licensingStatus: editForm.licensingStatus,
-      });
+      };
+      if (editForm.customDomain) {
+        tenantUpdate.customDomain = editForm.customDomain;
+        tenantUpdate.siteUrl = `https://${editForm.customDomain}`;
+      }
+      await updateDoc(doc(db, 'tenants', tenantId), tenantUpdate);
 
       if (credits) {
         await updateDoc(doc(db, 'tenantCredits', credits.id), {
@@ -200,6 +209,29 @@ export default function TenantDetailPage() {
     } catch (error) {
       console.error('Failed to allocate credits:', error);
       message.error('Failed to allocate credits');
+    }
+  }
+
+  async function syncDomainsFromVercel() {
+    setSyncingDomains(true);
+    try {
+      const res = await fetch(`/api/tenants/domains?tenantId=${tenantId}`);
+      const data = await res.json();
+      if (!res.ok) {
+        message.error(data.error || 'Failed to fetch domains from Vercel');
+        return;
+      }
+      if (data.customDomain) {
+        setEditForm((prev) => ({ ...prev, customDomain: data.customDomain }));
+        message.success(`Found custom domain: ${data.customDomain}`);
+      } else {
+        message.info('No custom domain found on Vercel — only subdomain detected');
+      }
+    } catch (error) {
+      console.error('Failed to sync domains:', error);
+      message.error('Failed to sync domains from Vercel');
+    } finally {
+      setSyncingDomains(false);
     }
   }
 
@@ -299,6 +331,13 @@ export default function TenantDetailPage() {
                     </a>
                   ) : 'Not deployed'}
                 </Descriptions.Item>
+                {tenant.customDomain && (
+                  <Descriptions.Item label={<><GlobalOutlined /> Custom Domain</>}>
+                    <a href={`https://${tenant.customDomain}`} target="_blank" rel="noopener noreferrer">
+                      {tenant.customDomain}
+                    </a>
+                  </Descriptions.Item>
+                )}
               </Descriptions>
             </Card>
           </Col>
@@ -423,6 +462,25 @@ export default function TenantDetailPage() {
                     value={editForm.domain}
                     onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
                   />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label="Custom Domain" help="Live domain (e.g. atlanta-news.com). Also updates siteUrl.">
+                  <Space.Compact style={{ width: '100%' }}>
+                    <Input
+                      value={editForm.customDomain}
+                      onChange={(e) => setEditForm({ ...editForm, customDomain: e.target.value })}
+                      placeholder="e.g. mynewspaper.com"
+                    />
+                    <Button
+                      icon={<SyncOutlined spin={syncingDomains} />}
+                      onClick={syncDomainsFromVercel}
+                      loading={syncingDomains}
+                      title="Sync from Vercel"
+                    >
+                      Sync
+                    </Button>
+                  </Space.Compact>
                 </Form.Item>
               </Col>
               <Col xs={24} md={12}>

@@ -62,15 +62,15 @@ const stateCoordinates: Record<string, { x: number; y: number }> = {
   'Wyoming': { x: 35, y: 38 },
 };
 
-// Deterministic offset based on string hash to prevent jitter on re-render
-function hashOffset(str: string, index: number): number {
-  let hash = 0;
-  const s = str + index;
-  for (let i = 0; i < s.length; i++) {
-    hash = ((hash << 5) - hash) + s.charCodeAt(i);
-    hash |= 0;
-  }
-  return ((hash % 100) / 100) * 4 - 2; // returns -2 to +2
+// Spread same-state pins in a circle so they don't overlap
+function getSpreadOffset(indexInState: number, totalInState: number): { dx: number; dy: number } {
+  if (totalInState <= 1) return { dx: 0, dy: 0 };
+  const radius = 3; // percentage spread radius
+  const angle = (2 * Math.PI * indexInState) / totalInState - Math.PI / 2;
+  return {
+    dx: radius * Math.cos(angle),
+    dy: radius * Math.sin(angle),
+  };
 }
 
 // Build a screenshot thumbnail URL for a live site
@@ -100,8 +100,17 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
     hoverTimeout.current = setTimeout(() => setHoveredLead(null), 150);
   }, []);
 
-  // Compute stable pin positions once per data change
+  // Compute stable pin positions — spread same-state pins so they don't overlap
   const pins = useMemo(() => {
+    // Group leads by state to know how many share each state
+    const stateGroups: Record<string, number[]> = {};
+    leads.forEach((lead, index) => {
+      if (stateCoordinates[lead.state]) {
+        if (!stateGroups[lead.state]) stateGroups[lead.state] = [];
+        stateGroups[lead.state].push(index);
+      }
+    });
+
     return leads
       .map((lead, index) => {
         const coords = stateCoordinates[lead.state];
@@ -109,13 +118,16 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
 
         const isLive = lead.status === 'converted';
         const key = `${lead.id || ''}-${lead.city}-${lead.state}-${index}`;
+        const group = stateGroups[lead.state];
+        const indexInState = group.indexOf(index);
+        const { dx, dy } = getSpreadOffset(indexInState, group.length);
 
         return {
           lead,
           isLive,
           key,
-          x: coords.x + hashOffset(key, 0),
-          y: coords.y + hashOffset(key, 1),
+          x: coords.x + dx,
+          y: coords.y + dy,
         };
       })
       .filter(Boolean) as Array<{
@@ -157,7 +169,7 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
               style={{
                 left: `${x}%`,
                 top: `${y}%`,
-                transform: 'translate(-50%, -50%)',
+                transform: 'translate(-50%, -100%)',
               }}
               onMouseEnter={() => handleMouseEnter(lead)}
               onMouseLeave={handleMouseLeave}
@@ -167,14 +179,28 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
                 }
               }}
             >
-              {isLive ? (
-                <div className="relative w-fit">
-                  <div className="h-4 w-4 md:h-5 md:w-5 rounded-full bg-green-500 border-2 border-white shadow-lg transition-transform duration-150 hover:scale-125" />
-                  <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-20" />
-                </div>
-              ) : (
-                <div className="h-3 w-3 md:h-4 md:w-4 rounded-full bg-blue-500 border-2 border-white shadow-md transition-transform duration-150 hover:scale-110" />
-              )}
+              <div className="relative transition-transform duration-150 hover:scale-125">
+                <svg
+                  width={isLive ? 22 : 18}
+                  height={isLive ? 30 : 24}
+                  viewBox="0 0 24 36"
+                  className="drop-shadow-lg"
+                >
+                  <path
+                    d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z"
+                    fill={isLive ? '#16a34a' : '#3b82f6'}
+                    stroke="white"
+                    strokeWidth="2"
+                  />
+                  <circle cx="12" cy="11" r="4.5" fill="white" />
+                </svg>
+                {isLive && (
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 border border-white" />
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -182,11 +208,17 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
         {/* Legend */}
         <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 bg-white/95 rounded-lg shadow-lg p-2 md:p-4 border-2 border-brand-blue-100">
           <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-            <div className="h-3 w-3 md:h-4 md:w-4 rounded-full bg-blue-500 border-2 border-white shadow-sm" />
+            <svg width="14" height="18" viewBox="0 0 24 36">
+              <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#3b82f6" stroke="white" strokeWidth="2" />
+              <circle cx="12" cy="11" r="4.5" fill="white" />
+            </svg>
             <span className="text-xs md:text-sm font-medium">Reserved</span>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="h-3 w-3 md:h-4 md:w-4 rounded-full bg-green-500 border-2 border-white shadow-sm" />
+            <svg width="14" height="18" viewBox="0 0 24 36">
+              <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#16a34a" stroke="white" strokeWidth="2" />
+              <circle cx="12" cy="11" r="4.5" fill="white" />
+            </svg>
             <span className="text-xs md:text-sm font-medium">Live Newspaper</span>
           </div>
         </div>

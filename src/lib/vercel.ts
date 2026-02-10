@@ -343,6 +343,20 @@ class VercelService {
   }
 
   /**
+   * Get all domains assigned to a project
+   */
+  async getProjectDomains(projectId: string): Promise<VercelDomain[]> {
+    try {
+      const response = await this.fetch(`/v9/projects/${projectId}/domains`);
+      if (!response.ok) return [];
+      const data = await response.json();
+      return data.domains || [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
    * Get a project by name
    */
   async getProject(projectName: string): Promise<VercelProject | null> {
