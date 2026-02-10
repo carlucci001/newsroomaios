@@ -60,12 +60,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const tenants = tenantsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      slug: doc.data().slug as string,
-      businessName: doc.data().businessName as string,
-      vercelProjectId: doc.data().vercelProjectId as string | undefined,
-    }));
+    const tenants = tenantsSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        slug: data.slug as string,
+        businessName: data.businessName as string,
+        vercelProjectId: data.vercelProjectId as string | undefined,
+        apiKey: data.apiKey as string,
+        serviceArea: data.serviceArea as { city: string; state: string } | undefined,
+      };
+    });
 
     console.log(`[Rollout] Starting rollout of v${version} to ${tenants.length} tenants (dryRun: ${dryRun})`);
 
@@ -107,7 +112,12 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`[Rollout] Redeploying ${tenant.slug}...`);
-      const result = await vercelService.redeployTenant(tenant.slug);
+      const result = await vercelService.redeployTenant(tenant.slug, {
+        tenantId: tenant.id,
+        apiKey: tenant.apiKey,
+        businessName: tenant.businessName,
+        serviceArea: tenant.serviceArea,
+      });
 
       const entry: RolloutResult = {
         tenantId: tenant.id,

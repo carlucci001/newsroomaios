@@ -370,14 +370,78 @@ class VercelService {
   }
 
   /**
-   * Redeploy an existing tenant project with latest template code
+   * Ensure required env vars exist on a project. Adds any that are missing.
+   * Returns the list of keys that were backfilled.
    */
-  async redeployTenant(slug: string): Promise<{ success: boolean; deploymentId?: string; error?: string }> {
+  async ensureEnvVars(
+    projectId: string,
+    requiredVars: Record<string, string>
+  ): Promise<string[]> {
+    const envResponse = await this.fetch(`/v9/projects/${projectId}/env`);
+    if (!envResponse.ok) return [];
+    const envData = await envResponse.json();
+    const existingKeys = new Set((envData.envs || []).map((e: { key: string }) => e.key));
+
+    const missing: Record<string, string> = {};
+    for (const [key, value] of Object.entries(requiredVars)) {
+      if (!existingKeys.has(key) && value) {
+        missing[key] = value;
+      }
+    }
+
+    if (Object.keys(missing).length === 0) return [];
+
+    const backfilledKeys = Object.keys(missing);
+    console.log(`[Vercel] Backfilling ${backfilledKeys.length} missing env vars: ${backfilledKeys.join(', ')}`);
+    await this.setEnvVars(projectId, missing);
+    return backfilledKeys;
+  }
+
+  /**
+   * Redeploy an existing tenant project with latest template code.
+   * If tenantConfig is provided, audits and backfills missing env vars first.
+   */
+  async redeployTenant(
+    slug: string,
+    tenantConfig?: { tenantId: string; apiKey: string; businessName: string; serviceArea?: { city: string; state: string } }
+  ): Promise<{ success: boolean; deploymentId?: string; error?: string; backfilledEnvVars?: string[] }> {
     const projectName = `newspaper-${slug}`;
 
     const project = await this.getProject(projectName);
     if (!project) {
       return { success: false, error: `Project ${projectName} not found on Vercel` };
+    }
+
+    // Audit and backfill missing env vars if tenant config provided
+    let backfilledEnvVars: string[] = [];
+    if (tenantConfig) {
+      const requiredVars: Record<string, string> = {
+        TENANT_ID: tenantConfig.tenantId,
+        TENANT_SLUG: slug,
+        NEXT_PUBLIC_TENANT_ID: tenantConfig.tenantId,
+        TENANT_API_KEY: tenantConfig.apiKey,
+        NEXT_PUBLIC_TENANT_API_KEY: tenantConfig.apiKey,
+        SCHEDULED_RUNNER_API_KEY: tenantConfig.apiKey,
+        PLATFORM_API_URL: 'https://www.newsroomaios.com',
+        PLATFORM_SECRET: envTrimmed('PLATFORM_SECRET'),
+        NEXT_PUBLIC_SITE_NAME: tenantConfig.businessName,
+        NEXT_PUBLIC_FIREBASE_API_KEY: envTrimmed('NEXT_PUBLIC_FIREBASE_API_KEY'),
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: envTrimmed('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: envTrimmed('NEXT_PUBLIC_FIREBASE_PROJECT_ID'),
+        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: envTrimmed('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET'),
+        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: envTrimmed('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
+        NEXT_PUBLIC_FIREBASE_APP_ID: envTrimmed('NEXT_PUBLIC_FIREBASE_APP_ID'),
+        GEMINI_API_KEY: envTrimmed('GEMINI_API_KEY'),
+        PERPLEXITY_API_KEY: envTrimmed('PERPLEXITY_API_KEY'),
+        PEXELS_API_KEY: envTrimmed('PEXELS_API_KEY'),
+        ELEVENLABS_API_KEY: envTrimmed('ELEVENLABS_API_KEY'),
+        GOOGLE_PLACES_API_KEY: envTrimmed('GOOGLE_PLACES_API_KEY'),
+      };
+      if (tenantConfig.serviceArea) {
+        requiredVars.NEXT_PUBLIC_SERVICE_AREA_CITY = tenantConfig.serviceArea.city;
+        requiredVars.NEXT_PUBLIC_SERVICE_AREA_STATE = tenantConfig.serviceArea.state;
+      }
+      backfilledEnvVars = await this.ensureEnvVars(project.id, requiredVars);
     }
 
     const repoId = project.link?.repoId || WNCT_TEMPLATE_REPO_ID;
@@ -387,7 +451,7 @@ class VercelService {
       return { success: false, error: `Failed to trigger deployment for ${projectName}` };
     }
 
-    return { success: true, deploymentId: deployment.id };
+    return { success: true, deploymentId: deployment.id, backfilledEnvVars };
   }
 
   isConfigured(): boolean {
