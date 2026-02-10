@@ -312,6 +312,7 @@ class VercelService {
       STRIPE_SECRET_KEY: envTrimmed('STRIPE_SECRET_KEY'),
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: envTrimmed('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'),
       FIREBASE_SERVICE_ACCOUNT: envTrimmed('FIREBASE_SERVICE_ACCOUNT'),
+      NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL: envTrimmed('NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL'),
     };
 
     const envSet = await this.setEnvVars(project.id, envVars);
@@ -440,6 +441,7 @@ class VercelService {
         PEXELS_API_KEY: envTrimmed('PEXELS_API_KEY'),
         ELEVENLABS_API_KEY: envTrimmed('ELEVENLABS_API_KEY'),
         GOOGLE_PLACES_API_KEY: envTrimmed('GOOGLE_PLACES_API_KEY'),
+        NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL: envTrimmed('NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL'),
       };
       if (tenantConfig.serviceArea) {
         requiredVars.NEXT_PUBLIC_SERVICE_AREA_CITY = tenantConfig.serviceArea.city;

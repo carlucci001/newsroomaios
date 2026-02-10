@@ -456,6 +456,28 @@ export function StatusContent({ tenantId, onBack, adminCredentials, newspaperUrl
           </div>
         </motion.div>
 
+        {/* Directory Seeding Status — shown after articles complete */}
+        {isComplete && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card border-2 border-border rounded-2xl p-6 mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">📂</span>
+              {(progress as any)?.directorySeeded ? (
+                <div className="flex items-center gap-2">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">✓</motion.div>
+                  <span className="font-semibold text-green-700">
+                    Business directory seeded — {(progress as any)?.directoryBusinessCount || 100} listings
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-5 h-5 border-2 border-brand-blue-500 border-t-transparent rounded-full" />
+                  <span className="font-medium text-muted-foreground">Seeding business directory...</span>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {/* Live Activity Feed — hidden when complete */}
         {!isComplete && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="bg-card border-2 border-border rounded-xl p-6">

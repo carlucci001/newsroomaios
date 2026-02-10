@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
 import { PREDEFINED_CATEGORIES } from '@/data/categories';
 import { ServiceArea } from '@/types/tenant';
 import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Rocket, CreditCard, Check, AlertTriangle, Home, Key, Copy, ExternalLink } from 'lucide-react';
@@ -55,6 +54,19 @@ const PLANS = [
       '+ $199 setup (36 articles, 100 listings, all systems)',
     ],
   },
+];
+
+const DIRECTORY_CATEGORIES = [
+  { name: 'Restaurants & Dining', slug: 'restaurants-dining' },
+  { name: 'Shopping & Retail', slug: 'shopping-retail' },
+  { name: 'Health & Medical', slug: 'health-medical' },
+  { name: 'Professional Services', slug: 'professional-services' },
+  { name: 'Home Services', slug: 'home-services' },
+  { name: 'Automotive', slug: 'automotive' },
+  { name: 'Beauty & Personal Care', slug: 'beauty-personal-care' },
+  { name: 'Entertainment & Recreation', slug: 'entertainment-recreation' },
+  { name: 'Real Estate', slug: 'real-estate' },
+  { name: 'Education & Childcare', slug: 'education-childcare' },
 ];
 
 function PaymentForm({
@@ -128,6 +140,7 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
     domain: '',
     serviceArea: { city: '', state: '', region: '' } as ServiceArea,
     selectedCategories: [] as string[],
+    selectedDirectoryCategories: DIRECTORY_CATEGORIES.map(c => c.slug),
     selectedPlan: initialPlan || 'growth',
   });
 
@@ -148,7 +161,7 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
       const savedCustomerId = localStorage.getItem('onboardingCustomerId');
       if (savedCustomerId) setCustomerId(savedCustomerId);
       setPaymentComplete(true);
-      setCurrentStep(7);
+      setCurrentStep(8);
     }
   }, []);
 
@@ -196,8 +209,12 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
       setError('Please select exactly 6 categories');
       return;
     }
+    if (currentStep === 4 && formData.selectedDirectoryCategories.length === 0) {
+      setError('Please select at least one directory category');
+      return;
+    }
     setError('');
-    if (currentStep === 5) {
+    if (currentStep === 6) {
       // Save form data to localStorage before payment (in case of redirect)
       localStorage.setItem('onboardingFormData', JSON.stringify(formData));
       await createPaymentIntent();
@@ -212,7 +229,7 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
 
   const handlePaymentSuccess = () => {
     setPaymentComplete(true);
-    setCurrentStep(7);
+    setCurrentStep(8);
   };
 
   const handleSubmit = async () => {
@@ -231,6 +248,7 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
           domain: formData.domain,
           serviceArea: formData.serviceArea,
           selectedCategories: selectedCategoryObjects,
+          directoryCategories: formData.selectedDirectoryCategories,
           plan: formData.selectedPlan,
           stripeCustomerId: customerId,
         }),
@@ -282,6 +300,13 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
     setFormData({ ...formData, selectedCategories: newSelected });
   };
 
+  const toggleDirectoryCategory = (slug: string) => {
+    const newSelected = formData.selectedDirectoryCategories.includes(slug)
+      ? formData.selectedDirectoryCategories.filter(s => s !== slug)
+      : [...formData.selectedDirectoryCategories, slug];
+    setFormData({ ...formData, selectedDirectoryCategories: newSelected });
+  };
+
   const selectedPlanData = PLANS.find(p => p.id === formData.selectedPlan);
 
   return (
@@ -311,10 +336,10 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
         {/* Progress Indicator */}
         <div className="mb-10 bg-card border border-border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
               <div key={step} className="flex items-center">
                 <div
-                  className={`w-8 md:w-10 h-8 md:h-10 rounded-full flex items-center justify-center font-semibold transition-colors text-sm md:text-base ${
+                  className={`w-7 md:w-9 h-7 md:h-9 rounded-full flex items-center justify-center font-semibold transition-colors text-xs md:text-sm ${
                     step === currentStep
                       ? 'bg-brand-blue-600 text-white shadow-lg shadow-brand-blue-500/30'
                       : step < currentStep
@@ -322,23 +347,24 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
-                  {step < currentStep ? <Check className="h-4 w-4 md:h-5 md:w-5" /> : step}
+                  {step < currentStep ? <Check className="h-3 w-3 md:h-4 md:w-4" /> : step}
                 </div>
-                {step < 8 && (
-                  <div className={`w-2 md:w-6 h-1 ${step < currentStep ? 'bg-brand-blue-200' : 'bg-muted'}`} />
+                {step < 9 && (
+                  <div className={`w-1 md:w-4 h-1 ${step < currentStep ? 'bg-brand-blue-200' : 'bg-muted'}`} />
                 )}
               </div>
             ))}
           </div>
           <div className="text-center text-sm text-muted-foreground font-medium">
-            Step {currentStep} of 8: {
+            Step {currentStep} of 9: {
               currentStep === 1 ? 'Basic Info' :
               currentStep === 2 ? 'Service Area' :
-              currentStep === 3 ? 'Categories' :
-              currentStep === 4 ? 'Review' :
-              currentStep === 5 ? 'Select Plan' :
-              currentStep === 6 ? 'Payment' :
-              currentStep === 7 ? 'Launch' : 'Your Credentials'
+              currentStep === 3 ? 'News Categories' :
+              currentStep === 4 ? 'Directory Categories' :
+              currentStep === 5 ? 'Review' :
+              currentStep === 6 ? 'Select Plan' :
+              currentStep === 7 ? 'Payment' :
+              currentStep === 8 ? 'Launch' : 'Your Credentials'
             }
           </div>
         </div>
@@ -357,22 +383,24 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
             <CardTitle className="text-2xl font-display">
               {currentStep === 1 && 'Basic Information'}
               {currentStep === 2 && 'Service Area'}
-              {currentStep === 3 && 'Select Categories'}
-              {currentStep === 4 && 'Review Your Setup'}
-              {currentStep === 5 && 'Choose Your Plan'}
-              {currentStep === 6 && 'Complete Payment'}
-              {currentStep === 7 && 'Launch Your Newspaper'}
-              {currentStep === 8 && 'Your Newspaper is Ready!'}
+              {currentStep === 3 && 'Select News Categories'}
+              {currentStep === 4 && 'Select Directory Categories'}
+              {currentStep === 5 && 'Review Your Setup'}
+              {currentStep === 6 && 'Choose Your Plan'}
+              {currentStep === 7 && 'Complete Payment'}
+              {currentStep === 8 && 'Launch Your Newspaper'}
+              {currentStep === 9 && 'Your Newspaper is Ready!'}
             </CardTitle>
             <CardDescription>
               {currentStep === 1 && 'Enter your newspaper details and domain'}
               {currentStep === 2 && 'Define the geographic area your newspaper will serve'}
-              {currentStep === 3 && 'Pick exactly 6 categories for your news sections'}
-              {currentStep === 4 && 'Review your selections before payment'}
-              {currentStep === 5 && 'Select the plan that fits your needs'}
-              {currentStep === 6 && 'Enter your payment details to complete setup'}
-              {currentStep === 7 && 'Your payment is complete. Launch your newspaper!'}
-              {currentStep === 8 && 'Save your admin credentials and access your newspaper'}
+              {currentStep === 3 && 'Tap to select exactly 6 categories for your news sections'}
+              {currentStep === 4 && 'Choose which business directory categories to include (all selected by default)'}
+              {currentStep === 5 && 'Review your selections before payment'}
+              {currentStep === 6 && 'Select the plan that fits your needs'}
+              {currentStep === 7 && 'Enter your payment details to complete setup'}
+              {currentStep === 8 && 'Your payment is complete. Launch your newspaper!'}
+              {currentStep === 9 && 'Save your admin credentials and access your newspaper'}
             </CardDescription>
           </CardHeader>
 
@@ -471,34 +499,92 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
               </div>
             )}
 
-            {/* Step 3: Category Selection */}
+            {/* Step 3: News Category Selection — Compact Chip/Label UI */}
             {currentStep === 3 && (
               <div className="space-y-4">
-                <div className="text-sm text-muted-foreground">Selected: {formData.selectedCategories.length} / 6</div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto">
-                  {PREDEFINED_CATEGORIES.map((category) => (
-                    <div
-                      key={category.id}
-                      className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                        formData.selectedCategories.includes(category.id) ? 'bg-brand-blue-50 border-brand-blue-600' : 'hover:bg-muted/50'
-                      }`}
-                      onClick={() => toggleCategory(category.id)}
-                    >
-                      <div className="flex items-start space-x-3">
-                        <Checkbox checked={formData.selectedCategories.includes(category.id)} onCheckedChange={() => toggleCategory(category.id)} />
-                        <div className="flex-1">
-                          <div className="font-semibold">{category.name}</div>
-                          <div className="text-xs text-muted-foreground mt-1">{category.directive.substring(0, 60)}...</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Selected: <span className={formData.selectedCategories.length === 6 ? 'text-green-600 font-semibold' : 'font-semibold'}>{formData.selectedCategories.length}</span> / 6
+                  </div>
+                  {formData.selectedCategories.length === 6 && (
+                    <span className="text-xs text-green-600 font-medium flex items-center gap-1"><Check className="h-3 w-3" /> Ready</span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {PREDEFINED_CATEGORIES.map((category) => {
+                    const isSelected = formData.selectedCategories.includes(category.id);
+                    const isDisabled = !isSelected && formData.selectedCategories.length >= 6;
+                    return (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => !isDisabled && toggleCategory(category.id)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+                          isSelected
+                            ? 'bg-brand-blue-600 text-white border-brand-blue-600 shadow-sm'
+                            : isDisabled
+                            ? 'bg-muted/30 text-muted-foreground/40 border-muted cursor-not-allowed'
+                            : 'bg-white text-foreground border-border hover:border-brand-blue-400 hover:bg-brand-blue-50'
+                        }`}
+                      >
+                        {isSelected && <Check className="h-3 w-3 inline mr-1.5 -mt-0.5" />}
+                        {category.name}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Step 4: Review */}
+            {/* Step 4: Directory Category Selection — Compact Chip/Label UI */}
             {currentStep === 4 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Selected: <span className="font-semibold">{formData.selectedDirectoryCategories.length}</span> / {DIRECTORY_CATEGORIES.length}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allSelected = formData.selectedDirectoryCategories.length === DIRECTORY_CATEGORIES.length;
+                      setFormData({
+                        ...formData,
+                        selectedDirectoryCategories: allSelected ? [] : DIRECTORY_CATEGORIES.map(c => c.slug),
+                      });
+                    }}
+                    className="text-xs text-brand-blue-600 hover:text-brand-blue-700 font-medium"
+                  >
+                    {formData.selectedDirectoryCategories.length === DIRECTORY_CATEGORIES.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Your business directory will be pre-populated with 10 local listings per category. You can always add more categories later.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {DIRECTORY_CATEGORIES.map((category) => {
+                    const isSelected = formData.selectedDirectoryCategories.includes(category.slug);
+                    return (
+                      <button
+                        key={category.slug}
+                        type="button"
+                        onClick={() => toggleDirectoryCategory(category.slug)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+                          isSelected
+                            ? 'bg-brand-blue-600 text-white border-brand-blue-600 shadow-sm'
+                            : 'bg-white text-foreground border-border hover:border-brand-blue-400 hover:bg-brand-blue-50'
+                        }`}
+                      >
+                        {isSelected && <Check className="h-3 w-3 inline mr-1.5 -mt-0.5" />}
+                        {category.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Review */}
+            {currentStep === 5 && (
               <div className="bg-muted/50 p-6 rounded-lg space-y-4">
                 <h3 className="font-semibold">Your Newspaper Setup:</h3>
                 <div className="grid gap-4 text-sm">
@@ -506,13 +592,14 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
                   <div><div className="text-muted-foreground">Email:</div><div className="font-medium">{formData.ownerEmail}</div></div>
                   <div><div className="text-muted-foreground">Domain:</div><div className="font-medium">{formData.domain}</div></div>
                   <div><div className="text-muted-foreground">Service Area:</div><div className="font-medium">{formData.serviceArea.city}, {formData.serviceArea.state}</div></div>
-                  <div><div className="text-muted-foreground">Categories:</div><div className="font-medium">{formData.selectedCategories.map(id => PREDEFINED_CATEGORIES.find(c => c.id === id)?.name).join(', ')}</div></div>
+                  <div><div className="text-muted-foreground">News Categories:</div><div className="font-medium">{formData.selectedCategories.map(id => PREDEFINED_CATEGORIES.find(c => c.id === id)?.name).join(', ')}</div></div>
+                  <div><div className="text-muted-foreground">Directory Categories:</div><div className="font-medium">{formData.selectedDirectoryCategories.map(slug => DIRECTORY_CATEGORIES.find(c => c.slug === slug)?.name).join(', ')}</div></div>
                 </div>
               </div>
             )}
 
-            {/* Step 5: Plan Selection */}
-            {currentStep === 5 && (
+            {/* Step 6: Plan Selection */}
+            {currentStep === 6 && (
               <div className="space-y-6">
                 {/* Value Proposition Callout */}
                 <div className="bg-gradient-to-r from-brand-blue-600 to-brand-blue-700 rounded-xl p-6 text-white">
@@ -569,8 +656,8 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
               </div>
             )}
 
-            {/* Step 6: Payment */}
-            {currentStep === 6 && (
+            {/* Step 7: Payment */}
+            {currentStep === 7 && (
               <div className="space-y-6">
                 <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
                   <div className="flex items-start gap-3">
@@ -608,8 +695,8 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
               </div>
             )}
 
-            {/* Step 7: Launch */}
-            {currentStep === 7 && paymentComplete && !launchComplete && (
+            {/* Step 8: Launch */}
+            {currentStep === 8 && paymentComplete && !launchComplete && (
               <div className="space-y-6">
                 <div className="text-center py-6">
                   <CheckCircle className="h-16 w-16 mx-auto text-green-600 mb-4" />
@@ -634,8 +721,8 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
               </div>
             )}
 
-            {/* Step 8: Credentials & Launch Options */}
-            {currentStep === 8 && launchComplete && (
+            {/* Step 9: Credentials & Launch Options */}
+            {currentStep === 9 && launchComplete && (
               <div className="space-y-6">
                 <div className="text-center py-6">
                   <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
@@ -754,7 +841,7 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
         </Card>
 
         {/* Navigation Buttons */}
-        {currentStep !== 6 && currentStep !== 7 && currentStep !== 8 && (
+        {currentStep !== 7 && currentStep !== 8 && currentStep !== 9 && (
           <div className="flex items-center justify-between mt-8">
             <Button variant="outline" size="lg" onClick={handlePrevious} disabled={currentStep === 1 || loading}>
               <ArrowLeft className="h-4 w-4 mr-2" /> Previous

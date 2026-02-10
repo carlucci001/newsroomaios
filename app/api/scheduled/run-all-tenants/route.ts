@@ -109,6 +109,36 @@ export async function GET(request: NextRequest) {
           });
 
           console.log(`[Seeding] Completed for ${tenant.businessName}: ${seedResult.articlesCreated} articles`);
+
+          // Trigger directory seeding on the tenant site (fire-and-forget)
+          const tenantSiteUrl = `https://${tenant.slug}.newsroomaios.com`;
+          const directoryCats = (tenant as any).directoryCategories as string[] | undefined;
+          if (directoryCats && directoryCats.length > 0) {
+            try {
+              console.log(`[Seeding] Triggering directory seed for ${tenant.businessName} (${directoryCats.length} categories)`);
+              const dirRes = await fetch(`${tenantSiteUrl}/api/directory/seed`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categories: directoryCats }),
+              });
+              if (dirRes.ok) {
+                const dirResult = await dirRes.json();
+                console.log(`[Seeding] Directory seeded for ${tenant.businessName}: ${dirResult.totalBusinesses} businesses`);
+                // Update setupStatus with directory info
+                const statusRef = db.collection('tenants').doc(tenant.id).collection('meta').doc('setupStatus');
+                await statusRef.set({
+                  directorySeeded: true,
+                  directoryBusinessCount: dirResult.totalBusinesses || 0,
+                  lastUpdatedAt: new Date(),
+                }, { merge: true });
+              } else {
+                console.warn(`[Seeding] Directory seed returned ${dirRes.status} for ${tenant.businessName}`);
+              }
+            } catch (dirErr) {
+              console.warn(`[Seeding] Directory seed failed for ${tenant.businessName} (site may not be ready yet):`, dirErr);
+            }
+          }
+
           results.push(tenantResult);
           continue; // Skip regular journalist run for seeding pass
         }

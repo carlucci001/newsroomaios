@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       domain,
       serviceArea,
       selectedCategories,
+      directoryCategories,
       plan,
       stripeCustomerId,
     } = await request.json();
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
       licensingStatus: 'active',
       createdAt: new Date(),
       ...(stripeCustomerId && { stripeCustomerId }),
+      ...(directoryCategories && { directoryCategories }),
     };
 
     await db.collection('tenants').doc(tenantId).set(tenantData);

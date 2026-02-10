@@ -35,6 +35,8 @@ export interface SetupProgress {
   estimatedCompletion?: Date;
   errors: string[];
   siteUrl?: string;
+  directorySeeded?: boolean;
+  directoryBusinessCount?: number;
 }
 
 export const STEP_LABELS: Record<SetupStep, string> = {
