@@ -101,11 +101,15 @@ export async function POST(request: NextRequest) {
       pexelsUrl.searchParams.set('orientation', body.orientation);
     }
 
+    const controller = new AbortController();
+    const pexelsTimeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
     const pexelsResponse = await fetch(pexelsUrl.toString(), {
       headers: {
         'Authorization': PEXELS_API_KEY,
       },
+      signal: controller.signal,
     });
+    clearTimeout(pexelsTimeout);
 
     if (!pexelsResponse.ok) {
       throw new Error(`Pexels API error: ${pexelsResponse.status}`);
