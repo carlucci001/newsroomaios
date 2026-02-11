@@ -110,7 +110,8 @@ async function buildDefaultMenus(tenantId: string, db: any): Promise<any[]> {
    */
   function shortenCategoryLabel(fullName: string): string {
     const labelMap: Record<string, string> = {
-      'Local News': 'Local',
+      'News': 'News',
+      'Local News': 'News',
       'Politics & Government': 'Politics',
       'Crime & Public Safety': 'Crime',
       'Business': 'Business',
@@ -230,55 +231,62 @@ export async function GET(request: NextRequest) {
     let needsRegeneration = snapshot.empty;
 
     if (!needsRegeneration && !snapshot.empty) {
-      // Check if main-nav exists and has reasonable number of items
-      const mainNav = snapshot.docs.find(doc => doc.id === 'main-nav');
-      if (!mainNav) {
-        needsRegeneration = true;
-        console.log(`[Menus API] main-nav missing - forcing regeneration`);
+      // Check if any menu has been manually customized by the tenant owner
+      const hasCustomizedMenu = snapshot.docs.some(doc => doc.data().customized === true);
+      if (hasCustomizedMenu) {
+        // Skip all regeneration — respect the tenant's manual changes
+        console.log(`[Menus API] Menus marked as customized for ${tenantId} - skipping regeneration`);
       } else {
-        const mainNavData = mainNav.data();
-        const itemCount = mainNavData.items?.length || 0;
-        // Main nav should have at least a few category items
-        if (itemCount < 5) {
+        // Check if main-nav exists and has reasonable number of items
+        const mainNav = snapshot.docs.find(doc => doc.id === 'main-nav');
+        if (!mainNav) {
           needsRegeneration = true;
-          console.log(`[Menus API] main-nav only has ${itemCount} items - forcing regeneration`);
-        }
-
-        // Check if category labels are too long (multi-word labels cause stacking)
-        // Labels should be ONE WORD only for proper display
-        if (!needsRegeneration && mainNavData.items) {
-          const categoryItems = mainNavData.items.filter((item: any) =>
-            item.path && item.path.includes('/category/')
-          );
-          const hasLongLabels = categoryItems.some((item: any) => {
-            const label = item.label || '';
-            // Check if label has spaces or is longer than 15 chars (indicates multi-word)
-            return label.includes(' ') || label.length > 15;
-          });
-
-          if (hasLongLabels) {
+          console.log(`[Menus API] main-nav missing - forcing regeneration`);
+        } else {
+          const mainNavData = mainNav.data();
+          const itemCount = mainNavData.items?.length || 0;
+          // Main nav should have at least a few category items
+          if (itemCount < 5) {
             needsRegeneration = true;
-            console.log(`[Menus API] Found multi-word category labels - forcing regeneration with short labels`);
+            console.log(`[Menus API] main-nav only has ${itemCount} items - forcing regeneration`);
           }
 
-          // Check if main-nav has Home link - Home belongs ONLY in top-nav, never in main-nav
-          const hasHomeInMainNav = mainNavData.items.some((item: any) =>
-            item.path === '/' || item.id === 'home' || (item.label && item.label.toLowerCase() === 'home')
-          );
+          // Check if category labels are too long (multi-word labels cause stacking)
+          // Labels should be ONE WORD only for proper display
+          if (!needsRegeneration && mainNavData.items) {
+            const categoryItems = mainNavData.items.filter((item: any) =>
+              item.path && item.path.includes('/category/')
+            );
+            const hasLongLabels = categoryItems.some((item: any) => {
+              const label = item.label || '';
+              // Check if label has spaces or is longer than 15 chars (indicates multi-word)
+              return label.includes(' ') || label.length > 15;
+            });
 
-          if (hasHomeInMainNav) {
-            needsRegeneration = true;
-            console.log(`[Menus API] Found Home in main-nav - forcing regeneration (Home belongs only in top-nav)`);
-          }
+            if (hasLongLabels) {
+              needsRegeneration = true;
+              console.log(`[Menus API] Found multi-word category labels - forcing regeneration with short labels`);
+            }
 
-          // Check if main-nav has standard pages (Directory, Blog, Community) - these belong only in top-nav
-          const hasDuplicatePages = mainNavData.items.some((item: any) =>
-            item.path === '/directory' || item.path === '/blog' || item.path === '/community'
-          );
+            // Check if main-nav has Home link - Home belongs ONLY in top-nav, never in main-nav
+            const hasHomeInMainNav = mainNavData.items.some((item: any) =>
+              item.path === '/' || item.id === 'home' || (item.label && item.label.toLowerCase() === 'home')
+            );
 
-          if (hasDuplicatePages) {
-            needsRegeneration = true;
-            console.log(`[Menus API] Found duplicate standard pages in main-nav - forcing regeneration`);
+            if (hasHomeInMainNav) {
+              needsRegeneration = true;
+              console.log(`[Menus API] Found Home in main-nav - forcing regeneration (Home belongs only in top-nav)`);
+            }
+
+            // Check if main-nav has standard pages (Directory, Blog, Community) - these belong only in top-nav
+            const hasDuplicatePages = mainNavData.items.some((item: any) =>
+              item.path === '/directory' || item.path === '/blog' || item.path === '/community'
+            );
+
+            if (hasDuplicatePages) {
+              needsRegeneration = true;
+              console.log(`[Menus API] Found duplicate standard pages in main-nav - forcing regeneration`);
+            }
           }
         }
       }
@@ -462,6 +470,7 @@ export async function PUT(request: NextRequest) {
 
     const updateData = {
       ...updates,
+      customized: true,
       updatedAt: new Date().toISOString(),
     };
 
