@@ -379,7 +379,7 @@ async function generateArticleForTenant(
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const platformSecret = process.env.PLATFORM_SECRET || 'paper-partner-2024';
+    const platformSecret = process.env.PLATFORM_SECRET || '';
 
     const response = await fetch(`${baseUrl}/api/ai/generate-article`, {
       method: 'POST',
@@ -528,7 +528,7 @@ async function seedTenantArticles(
 
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const platformSecret = process.env.PLATFORM_SECRET || 'paper-partner-2024';
+  const platformSecret = process.env.PLATFORM_SECRET || '';
 
   // Initialize category progress tracking
   const categoryProgress: SetupProgress['categoryProgress'] = {};

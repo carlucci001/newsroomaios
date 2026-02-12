@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { CREDIT_COSTS } from '@/types/credits';
-
-// Platform secret - shared with all tenant sites
-const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
+import { verifyPlatformSecret } from '@/lib/platformAuth';
 
 /**
  * POST /api/credits/check
@@ -25,12 +23,11 @@ const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
  */
 export async function POST(request: NextRequest) {
   try {
-    const platformSecret = request.headers.get('X-Platform-Secret');
     const body = await request.json();
     const { tenantId, action, quantity = 1 } = body;
 
     // Verify platform secret
-    if (platformSecret !== PLATFORM_SECRET) {
+    if (!verifyPlatformSecret(request)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

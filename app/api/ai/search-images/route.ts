@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
+import { verifyPlatformSecret } from '@/lib/platformAuth';
 import { Tenant } from '@/types/tenant';
 
-// Platform secret for internal calls
-const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY || '';
 
 // CORS headers for tenant domains
@@ -165,7 +164,7 @@ async function authenticateRequest(request: NextRequest): Promise<{
 
   // Option 1: Platform secret (internal calls)
   if (platformSecret) {
-    if (platformSecret !== PLATFORM_SECRET) {
+    if (!verifyPlatformSecret(request)) {
       return { valid: false, error: 'Invalid platform secret' };
     }
     // For internal calls, tenant must still be provided

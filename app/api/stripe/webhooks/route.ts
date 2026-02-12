@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { headers } from 'next/headers';
+import Stripe from 'stripe';
 
 const PLAN_CREDITS = {
   starter: 250,
@@ -37,9 +38,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
     }
 
-    // Verify webhook signature (simplified - in production use Stripe SDK)
-    // For now, we'll process the event without full signature verification
-    const event = JSON.parse(body);
+    // Verify webhook signature using Stripe SDK
+    const stripe = new Stripe(stripeKey);
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    } catch (err: any) {
+      console.error('[Webhook] Signature verification failed:', err.message);
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+    }
 
     console.log(`[Webhook] Received event: ${event.type}`);
 
@@ -111,7 +119,7 @@ export async function POST(request: NextRequest) {
           invoicePdf: invoice.invoice_pdf,
           periodStart: new Date(invoice.period_start * 1000),
           periodEnd: new Date(invoice.period_end * 1000),
-          paidAt: new Date(invoice.status_transitions.paid_at * 1000),
+          paidAt: invoice.status_transitions.paid_at ? new Date(invoice.status_transitions.paid_at * 1000) : new Date(),
           createdAt: new Date(),
         });
 
@@ -144,7 +152,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.updated': {
-        const subscription = event.data.object;
+        const subscription = event.data.object as Stripe.Subscription & { current_period_end?: number };
         console.log(`[Webhook] Subscription updated: ${subscription.id}`);
 
         // Find tenant and update subscription details
@@ -159,7 +167,9 @@ export async function POST(request: NextRequest) {
 
           await db.collection('tenants').doc(tenantId).update({
             licensingStatus: subscription.status,
-            nextBillingDate: new Date(subscription.current_period_end * 1000),
+            ...(subscription.current_period_end && {
+              nextBillingDate: new Date(subscription.current_period_end * 1000),
+            }),
             updatedAt: new Date(),
           });
 

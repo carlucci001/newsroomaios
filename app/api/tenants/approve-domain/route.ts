@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { vercelService } from '@/lib/vercel';
-
-const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
+import { verifyPlatformSecret } from '@/lib/platformAuth';
 
 export async function POST(request: NextRequest) {
-  const secret = request.headers.get('X-Platform-Secret');
-  if (secret !== PLATFORM_SECRET) {
+  if (!verifyPlatformSecret(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

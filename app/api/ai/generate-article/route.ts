@@ -6,12 +6,10 @@ import { parseArticleResponse, generateSlug } from '@/lib/articleParser';
 import { generateArticleImage } from '@/lib/imageGeneration';
 import { searchNews, generateSearchQuery } from '@/lib/webSearch';
 import { getAIConfig } from '@/lib/aiConfigService';
+import { verifyPlatformSecret } from '@/lib/platformAuth';
 import { GenerateArticleRequest, GenerateArticleResponse, PromptContext, SourceContent } from '@/types/generation';
 import { Tenant, NewsCategory } from '@/types/tenant';
 import { CREDIT_COSTS } from '@/types/credits';
-
-// Platform secret for internal calls
-const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
 
 // CORS headers for tenant domains
 const CORS_HEADERS = {
@@ -135,7 +133,7 @@ export async function POST(request: NextRequest) {
     if (body.useWebSearch) creditsNeeded += CREDIT_COSTS.web_search;
 
     // Skip credit check during initial seeding (platform cost, not tenant cost)
-    const isPlatformCall = request.headers.get('X-Platform-Secret') === PLATFORM_SECRET;
+    const isPlatformCall = verifyPlatformSecret(request);
     const skipCredits = body.skipCredits === true && isPlatformCall;
 
     // Check credits (unless seeding)
@@ -349,12 +347,11 @@ async function authenticateRequest(request: NextRequest): Promise<{
   tenant?: Tenant;
   error?: string;
 }> {
-  const platformSecret = request.headers.get('X-Platform-Secret');
   const tenantId = request.headers.get('X-Tenant-ID');
   const apiKey = request.headers.get('X-API-Key');
 
   // Check platform secret first (internal calls)
-  if (platformSecret === PLATFORM_SECRET && tenantId) {
+  if (verifyPlatformSecret(request) && tenantId) {
     const tenant = await getTenant(tenantId);
     if (tenant) {
       return { valid: true, tenant };
@@ -417,7 +414,7 @@ async function checkCredits(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Platform-Secret': PLATFORM_SECRET,
+        'X-Platform-Secret': process.env.PLATFORM_SECRET || '',
       },
       body: JSON.stringify({
         tenantId,
@@ -454,7 +451,7 @@ async function deductCredits(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Platform-Secret': PLATFORM_SECRET,
+        'X-Platform-Secret': process.env.PLATFORM_SECRET || '',
       },
       body: JSON.stringify({
         tenantId,

@@ -261,7 +261,7 @@ export default function TenantDetailPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Platform-Secret': 'paper-partner-2024',
+          'X-Platform-Secret': process.env.NEXT_PUBLIC_PLATFORM_SECRET || '',
         },
         body: JSON.stringify({
           tenantId,

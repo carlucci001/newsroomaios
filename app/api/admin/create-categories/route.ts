@@ -1,18 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
-
-const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
+import { verifyPlatformSecret } from '@/lib/platformAuth';
 
 const CATEGORY_COLORS: Record<string, string> = {
+  'news': '#1d4ed8',
   'local-news': '#1d4ed8',
   'sports': '#dc2626',
   'business': '#059669',
   'politics': '#6366f1',
   'entertainment': '#7c3aed',
-  'weather': '#0ea5e9',
   'lifestyle': '#db2777',
   'outdoors': '#16a34a',
-  'community': '#f59e0b',
+  'crime': '#991b1b',
+  'agriculture': '#15803d',
+  'education': '#1e40af',
+  'health': '#0d9488',
+  'real-estate': '#7c2d12',
+  'technology': '#4f46e5',
+  'environment': '#059669',
+  'faith': '#7c3aed',
+  'history': '#92400e',
+  'veterans': '#1e3a5f',
+  'events': '#ea580c',
+  'opinion': '#6b21a8',
+  'food-dining': '#dc2626',
 };
 
 /**
@@ -22,8 +33,7 @@ const CATEGORY_COLORS: Record<string, string> = {
  */
 export async function POST(request: NextRequest) {
   try {
-    const secret = request.headers.get('X-Platform-Secret');
-    if (secret !== PLATFORM_SECRET) {
+    if (!verifyPlatformSecret(request)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

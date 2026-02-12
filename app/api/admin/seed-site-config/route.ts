@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
-
-const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
+import { verifyPlatformSecret } from '@/lib/platformAuth';
 
 /**
  * POST /api/admin/seed-site-config
@@ -9,8 +8,7 @@ const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
  */
 export async function POST(request: NextRequest) {
   try {
-    const secret = request.headers.get('X-Platform-Secret');
-    if (secret !== PLATFORM_SECRET) {
+    if (!verifyPlatformSecret(request)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -128,8 +126,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const secret = request.headers.get('X-Platform-Secret');
-    if (secret !== PLATFORM_SECRET) {
+    if (!verifyPlatformSecret(request)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

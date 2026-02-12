@@ -9,8 +9,7 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore';
-
-const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
+import { verifyPlatformSecret } from '@/lib/platformAuth';
 
 /**
  * DELETE /api/admin/clear-test-data
@@ -25,8 +24,7 @@ const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
 export async function DELETE(request: NextRequest) {
   try {
     // Verify platform secret
-    const secret = request.headers.get('X-Platform-Secret');
-    if (secret !== PLATFORM_SECRET) {
+    if (!verifyPlatformSecret(request)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -160,8 +158,7 @@ export async function DELETE(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Verify platform secret
-    const secret = request.headers.get('X-Platform-Secret');
-    if (secret !== PLATFORM_SECRET) {
+    if (!verifyPlatformSecret(request)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

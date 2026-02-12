@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
+import { verifyPlatformSecret } from '@/lib/platformAuth';
 
 export const dynamic = 'force-dynamic';
-
-const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
 
 /**
  * Reset menus for a tenant by deleting all existing menus
@@ -12,8 +11,7 @@ const PLATFORM_SECRET = process.env.PLATFORM_SECRET || 'paper-partner-2024';
 export async function POST(request: NextRequest) {
   try {
     // Check platform secret
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${PLATFORM_SECRET}`) {
+    if (!verifyPlatformSecret(request)) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }

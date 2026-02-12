@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
+import { verifyPlatformSecret } from '@/lib/platformAuth';
 
 const PLATFORM_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.newsroomaios.com').trim();
 
@@ -34,9 +35,8 @@ async function stripeAPI(endpoint: string, method: string, params?: Record<strin
 function authenticateRequest(request: NextRequest): string | null {
   const tenantId = request.headers.get('x-tenant-id');
   const apiKey = request.headers.get('x-api-key');
-  const platformSecret = request.headers.get('x-platform-secret');
 
-  if (platformSecret === (process.env.PLATFORM_SECRET || 'paper-partner-2024')) {
+  if (verifyPlatformSecret(request)) {
     return tenantId;
   }
 
@@ -195,8 +195,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Missing tenantId' }, { status: 400 });
     }
 
-    const platformSecret = request.headers.get('x-platform-secret');
-    if (platformSecret !== (process.env.PLATFORM_SECRET || 'paper-partner-2024')) {
+    if (!verifyPlatformSecret(request)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
