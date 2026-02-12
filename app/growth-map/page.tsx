@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { InteractiveMap } from '@/components/map/InteractiveMap';
-import { ActivityFeed } from '@/components/map/ActivityFeed';
+import { ReservationsSidebar } from '@/components/map/ReservationsSidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, TrendingUp, Users, Zap } from 'lucide-react';
 import { getDb } from '@/lib/firebase';
-import { collection, query, onSnapshot, orderBy, limit } from 'firebase/firestore';
-import { Lead, LeadActivity } from '@/types/lead';
+import { collection, query, onSnapshot } from 'firebase/firestore';
+import { Lead } from '@/types/lead';
 
 // Map state abbreviations to full names, then normalize to title case
 const STATE_ABBREVS: Record<string, string> = {
@@ -46,15 +46,15 @@ function normalizeState(state: string): string {
 export default function GrowthMapPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [liveTenants, setLiveTenants] = useState<Lead[]>([]);
-  const [activities, setActivities] = useState<LeadActivity[]>([]);
+  const [showReservations, setShowReservations] = useState(false);
   const [stats, setStats] = useState({
     totalReservations: 0,
     livePapers: 0,
     thisMonth: 0
   });
 
-  // Combine leads + live tenants for the map
-  const allMapPins = [...leads, ...liveTenants];
+  // Map pins: live-only by default, optionally include reservations
+  const mapPins = showReservations ? [...leads, ...liveTenants] : liveTenants;
 
   useEffect(() => {
     const db = getDb();
@@ -121,24 +121,9 @@ export default function GrowthMapPage() {
       console.error('[GrowthMap] Tenants listener error:', error);
     });
 
-    // Subscribe to recent activities (we'll create these when leads are added)
-    const activitiesQuery = query(
-      collection(db, 'activities'),
-      orderBy('timestamp', 'desc'),
-      limit(20)
-    );
-    const unsubscribeActivities = onSnapshot(activitiesQuery, (snapshot) => {
-      const activitiesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as LeadActivity[];
-      setActivities(activitiesData);
-    });
-
     return () => {
       unsubscribeLeads();
       unsubscribeTenants();
-      unsubscribeActivities();
     };
   }, []);
 
@@ -225,20 +210,37 @@ export default function GrowthMapPage() {
             <div className="lg:col-span-2 order-1">
               <Card className="border-2 shadow-xl">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl md:text-2xl font-display">Interactive Growth Map</CardTitle>
-                  <CardDescription className="text-sm">
-                    Blue pins = Reserved • Green pins = Live
-                  </CardDescription>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <CardTitle className="text-xl md:text-2xl font-display">Interactive Growth Map</CardTitle>
+                      <CardDescription className="text-sm">Live newspapers across America</CardDescription>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer flex-shrink-0">
+                      <span className="text-xs font-medium text-muted-foreground hidden sm:inline">Show Reservations</span>
+                      <button
+                        role="switch"
+                        aria-checked={showReservations}
+                        onClick={() => setShowReservations(!showReservations)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                          showReservations ? 'bg-blue-600' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
+                          showReservations ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                        }`} />
+                      </button>
+                    </label>
+                  </div>
                 </CardHeader>
                 <CardContent className="p-2 md:p-6">
-                  <InteractiveMap leads={allMapPins} />
+                  <InteractiveMap leads={mapPins} />
                 </CardContent>
               </Card>
             </div>
 
-            {/* Activity Feed */}
+            {/* Reservations Sidebar */}
             <div className="lg:col-span-1 order-2">
-              <ActivityFeed activities={activities} />
+              <ReservationsSidebar leads={leads} />
             </div>
           </div>
         </div>

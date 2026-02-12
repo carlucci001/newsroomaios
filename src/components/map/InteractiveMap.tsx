@@ -207,13 +207,15 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
 
         {/* Legend */}
         <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 bg-white/95 rounded-lg shadow-lg p-2 md:p-4 border-2 border-brand-blue-100">
-          <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-            <svg width="14" height="18" viewBox="0 0 24 36">
-              <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#3b82f6" stroke="white" strokeWidth="2" />
-              <circle cx="12" cy="11" r="4.5" fill="white" />
-            </svg>
-            <span className="text-xs md:text-sm font-medium">Reserved</span>
-          </div>
+          {leads.some(l => l.status !== 'converted') && (
+            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+              <svg width="14" height="18" viewBox="0 0 24 36">
+                <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#3b82f6" stroke="white" strokeWidth="2" />
+                <circle cx="12" cy="11" r="4.5" fill="white" />
+              </svg>
+              <span className="text-xs md:text-sm font-medium">Reserved</span>
+            </div>
+          )}
           <div className="flex items-center gap-2 md:gap-3">
             <svg width="14" height="18" viewBox="0 0 24 36">
               <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#16a34a" stroke="white" strokeWidth="2" />
