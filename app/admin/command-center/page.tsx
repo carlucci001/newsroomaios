@@ -17,8 +17,6 @@ import {
   Space,
   Spin,
   Progress,
-  Tooltip,
-  Badge,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -111,36 +109,6 @@ interface SystemCheck {
   detail: string;
 }
 
-// ─── US State coordinates for map ────────────────────────────────────────
-
-const STATE_COORDS: Record<string, [number, number]> = {
-  AL: [32.8, -86.8], AK: [64.2, -152.5], AZ: [34.3, -111.7], AR: [34.8, -92.2],
-  CA: [37.2, -119.5], CO: [39.0, -105.5], CT: [41.6, -72.7], DE: [39.0, -75.5],
-  FL: [28.6, -82.4], GA: [33.0, -83.5], HI: [20.8, -156.3], ID: [44.4, -114.6],
-  IL: [40.0, -89.2], IN: [39.9, -86.3], IA: [42.0, -93.5], KS: [38.5, -98.3],
-  KY: [37.8, -85.3], LA: [31.1, -91.9], ME: [45.4, -69.2], MD: [39.0, -76.7],
-  MA: [42.2, -71.8], MI: [44.3, -85.4], MN: [46.3, -94.3], MS: [32.7, -89.7],
-  MO: [38.5, -92.5], MT: [47.0, -109.6], NE: [41.5, -99.8], NV: [39.3, -116.6],
-  NH: [43.7, -71.6], NJ: [40.1, -74.7], NM: [34.5, -106.0], NY: [42.9, -75.5],
-  NC: [35.6, -79.8], ND: [47.4, -100.5], OH: [40.4, -82.8], OK: [35.6, -97.5],
-  OR: [44.0, -120.5], PA: [40.9, -77.8], RI: [41.7, -71.5], SC: [33.9, -80.9],
-  SD: [44.4, -100.2], TN: [35.9, -86.4], TX: [31.5, -99.4], UT: [39.3, -111.7],
-  VT: [44.1, -72.6], VA: [37.5, -78.9], WA: [47.4, -120.7], WV: [38.6, -80.6],
-  WI: [44.6, -89.8], WY: [43.0, -107.6], DC: [38.9, -77.0],
-};
-
-const CITY_COORDS: Record<string, [number, number]> = {
-  'asheville': [35.60, -82.55], 'hendersonville': [35.32, -82.46],
-  'atlanta': [33.75, -84.39], 'chicago': [41.88, -87.63],
-  'minneapolis': [44.98, -93.27], 'omaha': [41.26, -95.93],
-  'portland': [45.51, -122.68], 'st. petersburg': [27.77, -82.64],
-  'saint petersburg': [27.77, -82.64],
-  'san diego': [32.72, -117.16], 'oceanside': [33.20, -117.38],
-  'seattle': [47.61, -122.33], 'denver': [39.74, -104.98],
-  'austin': [30.27, -97.74], 'nashville': [36.16, -86.78],
-  'phoenix': [33.45, -112.07], 'miami': [25.76, -80.19],
-  'cincinnati': [39.10, -84.51], 'colorado springs': [38.83, -104.82],
-};
 
 // Full state name → abbreviation for coordinate lookup
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -166,16 +134,6 @@ function normalizeState(state: string): string {
   return STATE_NAME_TO_ABBR[trimmed.toLowerCase()] || trimmed.toUpperCase();
 }
 
-function getCityCoords(city: string, state: string): [number, number] | null {
-  const cityKey = city.toLowerCase().trim();
-  if (CITY_COORDS[cityKey]) return CITY_COORDS[cityKey];
-  const abbr = normalizeState(state);
-  if (STATE_COORDS[abbr]) return STATE_COORDS[abbr];
-  return null;
-}
-
-// Simplified US continental outline as SVG path (for map background)
-const US_OUTLINE = 'M 130 95 L 145 90 L 155 85 L 170 80 L 185 78 L 200 80 L 218 85 L 230 90 L 245 88 L 260 85 L 280 82 L 300 78 L 320 72 L 340 68 L 360 65 L 380 62 L 400 58 L 420 55 L 445 50 L 465 48 L 485 50 L 510 55 L 530 58 L 550 55 L 570 52 L 590 50 L 610 48 L 635 50 L 655 55 L 670 60 L 685 65 L 700 70 L 715 78 L 728 85 L 740 95 L 750 105 L 758 118 L 762 130 L 768 145 L 772 160 L 778 175 L 782 190 L 785 205 L 788 225 L 785 240 L 780 255 L 772 268 L 760 280 L 748 290 L 735 298 L 720 308 L 708 318 L 700 325 L 688 335 L 675 340 L 660 345 L 645 348 L 628 355 L 612 362 L 595 370 L 578 375 L 560 378 L 540 380 L 520 382 L 500 385 L 480 388 L 458 392 L 438 395 L 418 398 L 395 400 L 370 402 L 345 405 L 320 408 L 295 405 L 270 400 L 248 395 L 230 388 L 215 380 L 200 370 L 188 358 L 178 348 L 168 340 L 155 332 L 142 328 L 128 325 L 115 320 L 105 312 L 95 300 L 88 288 L 82 275 L 78 260 L 75 245 L 72 228 L 70 210 L 68 195 L 65 178 L 68 160 L 72 145 L 78 132 L 85 120 L 95 108 L 108 100 L 120 95 Z';
 
 // ─── Main Component ──────────────────────────────────────────────────────
 
@@ -566,30 +524,71 @@ export default function CommandCenterPage() {
   }, [costMetrics, isDark]);
 
   const mapTab = useMemo(() => {
-    // SVG-based US map with tenant markers
+    // Same percentage-based coordinate system as the front-end InteractiveMap
+    const statePositions: Record<string, { x: number; y: number }> = {
+      'Alabama': { x: 68, y: 68 }, 'Alaska': { x: 10, y: 85 },
+      'Arizona': { x: 20, y: 60 }, 'Arkansas': { x: 60, y: 63 },
+      'California': { x: 10, y: 55 }, 'Colorado': { x: 35, y: 50 },
+      'Connecticut': { x: 88, y: 35 }, 'Delaware': { x: 85, y: 42 },
+      'Florida': { x: 78, y: 80 }, 'Georgia': { x: 73, y: 68 },
+      'Hawaii': { x: 22, y: 85 }, 'Idaho': { x: 23, y: 30 },
+      'Illinois': { x: 64, y: 47 }, 'Indiana': { x: 68, y: 46 },
+      'Iowa': { x: 60, y: 40 }, 'Kansas': { x: 52, y: 50 },
+      'Kentucky': { x: 70, y: 52 }, 'Louisiana': { x: 62, y: 74 },
+      'Maine': { x: 92, y: 22 }, 'Maryland': { x: 83, y: 45 },
+      'Massachusetts': { x: 88, y: 32 }, 'Michigan': { x: 69, y: 35 },
+      'Minnesota': { x: 60, y: 28 }, 'Mississippi': { x: 63, y: 70 },
+      'Missouri': { x: 60, y: 50 }, 'Montana': { x: 32, y: 25 },
+      'Nebraska': { x: 50, y: 42 }, 'Nevada': { x: 18, y: 45 },
+      'New Hampshire': { x: 88, y: 28 }, 'New Jersey': { x: 85, y: 42 },
+      'New Mexico': { x: 33, y: 62 }, 'New York': { x: 84, y: 33 },
+      'North Carolina': { x: 78, y: 58 }, 'North Dakota': { x: 50, y: 25 },
+      'Ohio': { x: 72, y: 45 }, 'Oklahoma': { x: 52, y: 60 },
+      'Oregon': { x: 15, y: 32 }, 'Pennsylvania': { x: 80, y: 42 },
+      'Rhode Island': { x: 89, y: 34 }, 'South Carolina': { x: 76, y: 64 },
+      'South Dakota': { x: 50, y: 35 }, 'Tennessee': { x: 68, y: 58 },
+      'Texas': { x: 48, y: 72 }, 'Utah': { x: 27, y: 47 },
+      'Vermont': { x: 86, y: 28 }, 'Virginia': { x: 80, y: 51 },
+      'Washington': { x: 17, y: 23 }, 'West Virginia': { x: 76, y: 48 },
+      'Wisconsin': { x: 63, y: 32 }, 'Wyoming': { x: 35, y: 38 },
+    };
+
+    // City-specific offsets (so papers in the same state don't overlap)
+    const cityPositions: Record<string, { x: number; y: number }> = {
+      'asheville': { x: 76, y: 57 }, 'hendersonville': { x: 74, y: 59 },
+      'atlanta': { x: 73, y: 66 }, 'chicago': { x: 64, y: 43 },
+      'minneapolis': { x: 58, y: 28 }, 'omaha': { x: 52, y: 42 },
+      'portland': { x: 13, y: 28 }, 'st. petersburg': { x: 77, y: 82 },
+      'saint petersburg': { x: 77, y: 82 }, 'miami': { x: 80, y: 86 },
+      'san diego': { x: 12, y: 60 }, 'oceanside': { x: 10, y: 57 },
+      'seattle': { x: 15, y: 22 }, 'denver': { x: 35, y: 48 },
+      'colorado springs': { x: 36, y: 52 }, 'austin': { x: 48, y: 74 },
+      'nashville': { x: 67, y: 57 }, 'phoenix': { x: 22, y: 62 },
+      'cincinnati': { x: 71, y: 47 },
+    };
+
+    // Resolve each tenant to a map position
     const mapTenants = tenants
       .map(t => {
-        const coords = getCityCoords(t.city, t.state);
-        if (!coords) return null;
-        return { ...t, lat: coords[0], lng: coords[1] };
+        const cityKey = t.city.toLowerCase().trim();
+        const pos = cityPositions[cityKey];
+        if (pos) return { ...t, x: pos.x, y: pos.y };
+
+        // Fallback: use state center
+        const abbr = normalizeState(t.state);
+        const STATE_ABBREVS_REV: Record<string, string> = {};
+        Object.entries(STATE_NAME_TO_ABBR).forEach(([name, ab]) => {
+          STATE_ABBREVS_REV[ab] = name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        });
+        const fullName = STATE_ABBREVS_REV[abbr] || t.state;
+        const statePos = statePositions[fullName];
+        if (statePos) return { ...t, x: statePos.x, y: statePos.y };
+        return null;
       })
-      .filter(Boolean) as (TenantHealth & { lat: number; lng: number })[];
-
-    // Bounding box for continental US
-    const minLat = 24, maxLat = 50, minLng = -125, maxLng = -66;
-    const svgW = 900, svgH = 500;
-
-    function project(lat: number, lng: number): [number, number] {
-      const x = ((lng - minLng) / (maxLng - minLng)) * svgW;
-      const y = ((maxLat - lat) / (maxLat - minLat)) * svgH;
-      return [x, y];
-    }
+      .filter(Boolean) as (TenantHealth & { x: number; y: number })[];
 
     const healthColor = (h: string) =>
       h === 'green' ? '#22c55e' : h === 'amber' ? '#f59e0b' : '#ef4444';
-
-    const glowColor = (h: string) =>
-      h === 'green' ? '#22c55e66' : h === 'amber' ? '#f59e0b66' : '#ef444466';
 
     return (
       <div style={{ marginTop: 16 }}>
@@ -606,118 +605,76 @@ export default function CommandCenterPage() {
               <Text type="secondary">{mapTenants.length} papers across the United States</Text>
             </div>
             <Space>
-              <Badge status="success" text={<Text style={{ fontSize: 12 }}>Healthy</Text>} />
-              <Badge status="warning" text={<Text style={{ fontSize: 12 }}>Warning</Text>} />
-              <Badge status="error" text={<Text style={{ fontSize: 12 }}>Issue</Text>} />
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Led color="green" size={6} /> <Text style={{ fontSize: 12 }}>Healthy</Text>
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Led color="amber" size={6} /> <Text style={{ fontSize: 12 }}>Warning</Text>
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Led color="red" size={6} /> <Text style={{ fontSize: 12 }}>Issue</Text>
+              </span>
             </Space>
           </div>
 
-          <div style={{ width: '100%', overflowX: 'auto' }}>
-            <svg
-              viewBox={`0 0 ${svgW} ${svgH}`}
-              style={{ width: '100%', maxWidth: svgW, minWidth: 320, height: 'auto' }}
-            >
-              {/* Background grid */}
-              <defs>
-                <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                  <path
-                    d="M 30 0 L 0 0 0 30"
-                    fill="none"
-                    stroke={isDark ? '#1e293b' : '#e2e8f0'}
-                    strokeWidth="0.5"
-                  />
-                </pattern>
-                {/* Glow filter */}
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <rect width={svgW} height={svgH} fill="url(#grid)" />
-
-              {/* US continental outline */}
-              <path
-                d={US_OUTLINE}
-                fill={isDark ? '#1e293b22' : '#e2e8f022'}
-                stroke={isDark ? '#334155' : '#94a3b8'}
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-                opacity={0.6}
+          {/* Map with real US background image — same approach as front-end InteractiveMap */}
+          <div style={{ position: 'relative', width: '100%', aspectRatio: '16/10', minHeight: 300, borderRadius: 8, overflow: 'hidden' }}>
+            {/* US Map background */}
+            <div style={{ position: 'absolute', inset: 0, background: isDark ? '#0f172a' : 'linear-gradient(135deg, #eff6ff, #dbeafe)' }}>
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Blank_US_Map_%28states_only%29.svg/1280px-Blank_US_Map_%28states_only%29.svg.png"
+                alt="US Map"
+                style={{
+                  width: '100%', height: '100%', objectFit: 'contain',
+                  opacity: isDark ? 0.15 : 0.5,
+                  filter: isDark ? 'invert(1) brightness(2)' : 'contrast(1.1)',
+                }}
               />
+            </div>
 
-              {/* Connection lines between nodes */}
-              {mapTenants.length > 1 && mapTenants.map((t, i) => {
-                if (i === 0) return null;
-                const prev = mapTenants[i - 1];
-                const [x1, y1] = project(prev.lat, prev.lng);
-                const [x2, y2] = project(t.lat, t.lng);
-                return (
-                  <line
-                    key={`line-${i}`}
-                    x1={x1} y1={y1} x2={x2} y2={y2}
-                    stroke={isDark ? '#334155' : '#cbd5e1'}
-                    strokeWidth="0.5"
-                    strokeDasharray="4 4"
-                    opacity={0.5}
-                  >
-                    <animate
-                      attributeName="stroke-dashoffset"
-                      values="20;0"
-                      dur="2s"
-                      repeatCount="indefinite"
-                    />
-                  </line>
-                );
-              })}
-
-              {/* Tenant markers */}
-              {mapTenants.map((t) => {
-                const [x, y] = project(t.lat, t.lng);
-                const color = healthColor(t.health);
-                const glow = glowColor(t.health);
-                return (
-                  <g key={t.id}>
-                    {/* Pulse ring */}
-                    <circle cx={x} cy={y} r="12" fill={glow} opacity={0.4}>
-                      <animate
-                        attributeName="r"
-                        values="8;16;8"
-                        dur="3s"
-                        repeatCount="indefinite"
-                      />
-                      <animate
-                        attributeName="opacity"
-                        values="0.4;0.1;0.4"
-                        dur="3s"
-                        repeatCount="indefinite"
-                      />
-                    </circle>
-                    {/* Dot */}
-                    <circle
-                      cx={x} cy={y} r="5"
-                      fill={color}
-                      stroke={isDark ? '#0f172a' : '#fff'}
-                      strokeWidth="2"
-                      filter="url(#glow)"
-                    />
-                    {/* Label */}
-                    <text
-                      x={x} y={y - 12}
-                      textAnchor="middle"
-                      fill={isDark ? '#94a3b8' : '#475569'}
-                      fontSize="10"
-                      fontFamily="system-ui, sans-serif"
-                      fontWeight="500"
-                    >
-                      {t.city}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
+            {/* Tenant markers */}
+            <div style={{ position: 'absolute', inset: 0 }}>
+              {mapTenants.map(t => (
+                <div
+                  key={t.id}
+                  style={{
+                    position: 'absolute',
+                    left: `${t.x}%`,
+                    top: `${t.y}%`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: t.health === 'red' ? 30 : t.health === 'amber' ? 20 : 10,
+                  }}
+                >
+                  {/* Pulse ring */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%', left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: 28, height: 28,
+                    borderRadius: '50%',
+                    background: healthColor(t.health),
+                    opacity: 0.2,
+                    animation: `cc-pulse-${t.health} 2s ease-in-out infinite`,
+                  }} />
+                  {/* LED dot */}
+                  <div style={{ position: 'relative' }}>
+                    <Led color={t.health} size={12} />
+                  </div>
+                  {/* City label */}
+                  <div style={{
+                    position: 'absolute',
+                    top: -18, left: '50%',
+                    transform: 'translateX(-50%)',
+                    whiteSpace: 'nowrap',
+                    fontSize: 10, fontWeight: 600,
+                    color: isDark ? '#94a3b8' : '#334155',
+                    textShadow: isDark ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.8)',
+                  }}>
+                    {t.city}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </Card>
 
