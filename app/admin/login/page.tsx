@@ -48,7 +48,7 @@ export default function AdminLogin() {
         <img
           src="/newsroom-logo.png"
           alt="Newsroom AIOS"
-          className="h-12 w-auto brightness-0 invert mx-auto mb-4"
+          className="h-12 w-auto mx-auto mb-4 rounded-lg px-3 py-2 bg-white/90"
         />
         <Badge variant="default" className="bg-white text-brand-700">
           Platform Administration
@@ -132,7 +132,7 @@ export default function AdminLogin() {
         <img
           src="/newsroom-logo.png"
           alt="Newsroom AIOS"
-          className="h-5 w-auto brightness-0 invert mx-auto opacity-70"
+          className="h-5 w-auto mx-auto rounded px-1.5 py-0.5 bg-white/20"
         />
       </div>
     </div>

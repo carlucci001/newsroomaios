@@ -113,7 +113,7 @@ function AdminLayoutContent({
             <img
               src="/newsroom-logo.png"
               alt="Newsroom AIOS"
-              className={`h-8 w-auto ${isDark ? 'brightness-0 invert' : ''}`}
+              className={`h-8 w-auto ${isDark ? 'rounded px-2 py-1 bg-white/90' : ''}`}
             />
           </Link>
           <button
