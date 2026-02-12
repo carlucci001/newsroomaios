@@ -42,6 +42,8 @@ import {
   SaveOutlined,
   LinkOutlined,
   SyncOutlined,
+  UserOutlined,
+  UserSwitchOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -58,6 +60,23 @@ export default function TenantDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncingDomains, setSyncingDomains] = useState(false);
+  const [domainActionLoading, setDomainActionLoading] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectInput, setShowRejectInput] = useState(false);
+
+  // Users tab state
+  interface TenantUser {
+    id: string;
+    email: string;
+    displayName?: string;
+    role: string;
+    status?: string;
+    lastLoginAt?: any;
+    createdAt?: any;
+  }
+  const [tenantUsers, setTenantUsers] = useState<TenantUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersFetched, setUsersFetched] = useState(false);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -232,6 +251,63 @@ export default function TenantDetailPage() {
       message.error('Failed to sync domains from Vercel');
     } finally {
       setSyncingDomains(false);
+    }
+  }
+
+  async function handleDomainAction(action: 'approve' | 'reject') {
+    setDomainActionLoading(true);
+    try {
+      const res = await fetch('/api/tenants/approve-domain', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Platform-Secret': 'paper-partner-2024',
+        },
+        body: JSON.stringify({
+          tenantId,
+          action,
+          rejectionReason: action === 'reject' ? rejectReason : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        message.success(action === 'approve' ? 'Domain approved and registered with Vercel' : 'Domain request rejected');
+        setShowRejectInput(false);
+        setRejectReason('');
+        // Refresh tenant data
+        const db = getDb();
+        const tenantDoc = await getDoc(doc(db, 'tenants', tenantId));
+        if (tenantDoc.exists()) {
+          setTenant({ id: tenantDoc.id, ...tenantDoc.data() } as Tenant);
+        }
+      } else {
+        message.error(data.error || 'Action failed');
+      }
+    } catch (error) {
+      console.error('Domain action failed:', error);
+      message.error('Failed to process domain action');
+    } finally {
+      setDomainActionLoading(false);
+    }
+  }
+
+  async function fetchTenantUsers() {
+    if (usersFetched) return;
+    setUsersLoading(true);
+    try {
+      const db = getDb();
+      const usersSnap = await getDocs(collection(db, `tenants/${tenantId}/users`));
+      const users = usersSnap.docs.map(d => ({
+        id: d.id,
+        ...d.data(),
+      })) as TenantUser[];
+      setTenantUsers(users);
+      setUsersFetched(true);
+    } catch (error) {
+      console.error('Failed to fetch tenant users:', error);
+      message.error('Failed to load tenant users');
+    } finally {
+      setUsersLoading(false);
     }
   }
 
@@ -442,9 +518,162 @@ export default function TenantDetailPage() {
       ),
     },
     {
+      key: 'users',
+      label: (
+        <span>
+          <UserOutlined style={{ marginRight: 8 }} />
+          Users{usersFetched ? ` (${tenantUsers.length})` : ''}
+        </span>
+      ),
+      children: (
+        <Card title={<Title level={5} style={{ margin: 0 }}>Tenant Users</Title>} style={{ marginTop: '16px' }}>
+          <Table
+            columns={[
+              {
+                title: 'Name',
+                dataIndex: 'displayName',
+                key: 'displayName',
+                render: (name: string, record: TenantUser) => (
+                  <Text strong>{name || record.email?.split('@')[0] || 'Unknown'}</Text>
+                ),
+              },
+              {
+                title: 'Email',
+                dataIndex: 'email',
+                key: 'email',
+                responsive: ['md'] as any[],
+                render: (email: string) => <Text type="secondary">{email}</Text>,
+              },
+              {
+                title: 'Role',
+                dataIndex: 'role',
+                key: 'role',
+                render: (role: string) => {
+                  const colors: Record<string, string> = {
+                    owner: 'purple', admin: 'red', 'business-owner': 'orange',
+                    'editor-in-chief': 'blue', editor: 'cyan', 'content-contributor': 'green',
+                    reader: 'default', commenter: 'default',
+                  };
+                  return <Tag color={colors[role] || 'default'}>{(role || 'unknown').replace(/-/g, ' ').toUpperCase()}</Tag>;
+                },
+              },
+              {
+                title: 'Status',
+                dataIndex: 'status',
+                key: 'status',
+                responsive: ['lg'] as any[],
+                render: (status: string) => (
+                  <Tag color={status === 'active' ? 'success' : status === 'blocked' ? 'error' : 'default'}>
+                    {(status || 'unknown').toUpperCase()}
+                  </Tag>
+                ),
+              },
+              {
+                title: 'Last Login',
+                dataIndex: 'lastLoginAt',
+                key: 'lastLoginAt',
+                responsive: ['lg'] as any[],
+                render: (val: any) => <Text type="secondary" style={{ fontSize: '12px' }}>{formatTimestamp(val)}</Text>,
+              },
+              {
+                title: 'Action',
+                key: 'action',
+                render: (_: any, record: TenantUser) => {
+                  const baseUrl = tenant.siteUrl || `https://${tenant.subdomain || tenant.slug + '.newsroomaios.com'}`;
+                  return (
+                    <Button
+                      type="link"
+                      icon={<UserSwitchOutlined />}
+                      onClick={() => window.open(`${baseUrl}/admin?action=impersonate&userId=${record.id}`, '_blank')}
+                    >
+                      Impersonate
+                    </Button>
+                  );
+                },
+              },
+            ]}
+            dataSource={tenantUsers.map(u => ({ ...u, key: u.id }))}
+            loading={usersLoading}
+            pagination={{ pageSize: 10 }}
+            scroll={{ x: 600 }}
+            locale={{ emptyText: <Empty description="No users found for this tenant" /> }}
+          />
+        </Card>
+      ),
+    },
+    {
       key: 'settings',
       label: 'Settings',
       children: (
+        <>
+          {/* Domain Request Review */}
+          {tenant?.domainRequest && (
+            <Card
+              style={{
+                marginTop: '16px',
+                marginBottom: '16px',
+                borderColor: tenant.domainRequest.status === 'pending' ? '#faad14' : tenant.domainRequest.status === 'approved' ? '#52c41a' : '#ff4d4f',
+                borderWidth: 2,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <GlobalOutlined style={{ fontSize: 20, color: tenant.domainRequest.status === 'pending' ? '#faad14' : tenant.domainRequest.status === 'approved' ? '#52c41a' : '#ff4d4f' }} />
+                <div style={{ flex: 1 }}>
+                  <Text strong>Domain Request: </Text>
+                  <Text code>{tenant.domainRequest.domain}</Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Requested {new Date(tenant.domainRequest.requestedAt).toLocaleDateString()}
+                    {tenant.domainRequest.reviewedAt && ` — Reviewed ${new Date(tenant.domainRequest.reviewedAt).toLocaleDateString()}`}
+                  </Text>
+                </div>
+                <Tag color={tenant.domainRequest.status === 'pending' ? 'warning' : tenant.domainRequest.status === 'approved' ? 'success' : 'error'}>
+                  {tenant.domainRequest.status.toUpperCase()}
+                </Tag>
+              </div>
+              {tenant.domainRequest.status === 'pending' && (
+                <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Button
+                    type="primary"
+                    style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                    loading={domainActionLoading}
+                    onClick={() => handleDomainAction('approve')}
+                  >
+                    Approve
+                  </Button>
+                  {!showRejectInput ? (
+                    <Button danger onClick={() => setShowRejectInput(true)}>
+                      Reject
+                    </Button>
+                  ) : (
+                    <>
+                      <Input
+                        placeholder="Rejection reason..."
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                        style={{ maxWidth: 300 }}
+                      />
+                      <Button
+                        danger
+                        loading={domainActionLoading}
+                        onClick={() => handleDomainAction('reject')}
+                      >
+                        Confirm Reject
+                      </Button>
+                      <Button onClick={() => { setShowRejectInput(false); setRejectReason(''); }}>
+                        Cancel
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
+              {tenant.domainRequest.status === 'rejected' && tenant.domainRequest.rejectionReason && (
+                <div style={{ marginTop: 8 }}>
+                  <Text type="danger">Reason: {tenant.domainRequest.rejectionReason}</Text>
+                </div>
+              )}
+            </Card>
+          )}
         <Card title={<Title level={5} style={{ margin: 0 }}>Tenant Settings</Title>} style={{ marginTop: '16px' }}>
           <Form layout="vertical" style={{ maxWidth: '800px' }}>
             <Row gutter={[16, 0]}>
@@ -557,6 +786,7 @@ export default function TenantDetailPage() {
             </div>
           </Form>
         </Card>
+        </>
       ),
     },
   ];
@@ -599,7 +829,15 @@ export default function TenantDetailPage() {
         </div>
 
         {/* Tabs */}
-        <Tabs items={tabItems} size="large" />
+        <Tabs
+          items={tabItems}
+          size="large"
+          onChange={(key) => {
+            if (key === 'users' && !usersFetched) {
+              fetchTenantUsers();
+            }
+          }}
+        />
       </Space>
     </div>
   );

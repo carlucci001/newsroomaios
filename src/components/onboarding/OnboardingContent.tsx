@@ -7,10 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { PREDEFINED_CATEGORIES } from '@/data/categories';
 import { ServiceArea } from '@/types/tenant';
-import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Rocket, CreditCard, Check, AlertTriangle, Home, Key, Copy, ExternalLink } from 'lucide-react';
+import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Rocket, CreditCard, Check, AlertTriangle, Home, Key, Copy, ExternalLink, Loader2 } from 'lucide-react';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -56,18 +55,39 @@ const PLANS = [
   },
 ];
 
-const DIRECTORY_CATEGORIES = [
-  { name: 'Restaurants & Dining', slug: 'restaurants-dining' },
-  { name: 'Shopping & Retail', slug: 'shopping-retail' },
-  { name: 'Health & Medical', slug: 'health-medical' },
-  { name: 'Professional Services', slug: 'professional-services' },
-  { name: 'Home Services', slug: 'home-services' },
-  { name: 'Automotive', slug: 'automotive' },
-  { name: 'Beauty & Personal Care', slug: 'beauty-personal-care' },
-  { name: 'Entertainment & Recreation', slug: 'entertainment-recreation' },
-  { name: 'Real Estate', slug: 'real-estate' },
-  { name: 'Education & Childcare', slug: 'education-childcare' },
+// 20 curated news categories shown during onboarding (from the full list in categories.ts)
+const ONBOARDING_CATEGORY_IDS = [
+  'news', 'sports', 'business', 'entertainment', 'lifestyle',
+  'health', 'education', 'crime', 'politics', 'real-estate',
+  'food-dining', 'outdoors', 'events', 'opinion', 'technology',
+  'environment', 'faith', 'history', 'agriculture', 'veterans',
 ];
+const ONBOARDING_CATEGORIES = PREDEFINED_CATEGORIES.filter(c => ONBOARDING_CATEGORY_IDS.includes(c.id));
+
+// 20 directory categories — first 10 are pre-selected (included with every plan)
+const DIRECTORY_CATEGORIES = [
+  { name: 'Restaurants & Dining', slug: 'restaurants-dining', preselected: true },
+  { name: 'Shopping & Retail', slug: 'shopping-retail', preselected: true },
+  { name: 'Health & Medical', slug: 'health-medical', preselected: true },
+  { name: 'Professional Services', slug: 'professional-services', preselected: true },
+  { name: 'Home Services', slug: 'home-services', preselected: true },
+  { name: 'Automotive', slug: 'automotive', preselected: true },
+  { name: 'Beauty & Wellness', slug: 'beauty-wellness', preselected: true },
+  { name: 'Entertainment & Recreation', slug: 'entertainment-recreation', preselected: true },
+  { name: 'Real Estate', slug: 'real-estate', preselected: true },
+  { name: 'Education & Childcare', slug: 'education-childcare', preselected: true },
+  { name: 'Financial Services', slug: 'financial-services', preselected: false },
+  { name: 'Pet Services', slug: 'pet-services', preselected: false },
+  { name: 'Fitness & Sports', slug: 'fitness-sports', preselected: false },
+  { name: 'Hotels & Lodging', slug: 'hotels-lodging', preselected: false },
+  { name: 'Religious Organizations', slug: 'religious-organizations', preselected: false },
+  { name: 'Nonprofits & Community', slug: 'nonprofits-community', preselected: false },
+  { name: 'Government Services', slug: 'government-services', preselected: false },
+  { name: 'Technology Services', slug: 'technology-services', preselected: false },
+  { name: 'Agriculture & Farm', slug: 'agriculture-farm', preselected: false },
+  { name: 'Senior Care', slug: 'senior-care', preselected: false },
+];
+const DEFAULT_DIRECTORY_SELECTIONS = DIRECTORY_CATEGORIES.filter(c => c.preselected).map(c => c.slug);
 
 function PaymentForm({
   onSuccess,
@@ -136,13 +156,48 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
   const [formData, setFormData] = useState({
     newspaperName: '',
     ownerEmail: '',
-    domainOption: 'have' as 'have' | 'check' | 'help',
-    domain: '',
+    subdomain: '',
     serviceArea: { city: '', state: '', region: '' } as ServiceArea,
-    selectedCategories: [] as string[],
-    selectedDirectoryCategories: DIRECTORY_CATEGORIES.map(c => c.slug),
+    selectedCategories: ['news', 'sports'] as string[],
+    selectedDirectoryCategories: DEFAULT_DIRECTORY_SELECTIONS,
     selectedPlan: initialPlan || 'growth',
   });
+
+  // Subdomain picker state
+  const [subdomainEdited, setSubdomainEdited] = useState(false);
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [slugChecking, setSlugChecking] = useState(false);
+
+  // Auto-generate subdomain from newspaper name (until user manually edits it)
+  useEffect(() => {
+    if (!subdomainEdited && formData.newspaperName) {
+      const generated = formData.newspaperName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      setFormData(prev => ({ ...prev, subdomain: generated }));
+    }
+  }, [formData.newspaperName, subdomainEdited]);
+
+  // Debounced slug availability check
+  useEffect(() => {
+    if (!formData.subdomain || formData.subdomain.length < 3) {
+      setSlugAvailable(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSlugChecking(true);
+      try {
+        const res = await fetch(`/api/tenants/check-slug?slug=${encodeURIComponent(formData.subdomain)}`);
+        const data = await res.json();
+        setSlugAvailable(data.available ?? false);
+      } catch {
+        setSlugAvailable(null);
+      } finally {
+        setSlugChecking(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.subdomain]);
 
   // Restore form data on mount (after payment redirect)
   useEffect(() => {
@@ -197,9 +252,27 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
   };
 
   const handleNext = async () => {
-    if (currentStep === 1 && (!formData.newspaperName || !formData.ownerEmail || !formData.domain)) {
-      setError('Please fill in all required fields');
-      return;
+    if (currentStep === 1) {
+      if (!formData.newspaperName || !formData.ownerEmail || !formData.subdomain) {
+        setError('Please fill in all required fields');
+        return;
+      }
+      if (formData.subdomain.length < 3) {
+        setError('Subdomain must be at least 3 characters');
+        return;
+      }
+      if (!/^[a-z0-9]+$/.test(formData.subdomain)) {
+        setError('Subdomain can only contain lowercase letters and numbers');
+        return;
+      }
+      if (slugChecking) {
+        setError('Please wait while we check availability');
+        return;
+      }
+      if (slugAvailable === false) {
+        setError('This subdomain is already taken. Please choose a different one.');
+        return;
+      }
     }
     if (currentStep === 2 && (!formData.serviceArea.city || !formData.serviceArea.state)) {
       setError('Please enter city and state');
@@ -245,7 +318,7 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
         body: JSON.stringify({
           businessName: formData.newspaperName,
           ownerEmail: formData.ownerEmail,
-          domain: formData.domain,
+          subdomain: formData.subdomain,
           serviceArea: formData.serviceArea,
           selectedCategories: selectedCategoryObjects,
           directoryCategories: formData.selectedDirectoryCategories,
@@ -392,7 +465,7 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
               {currentStep === 9 && 'Your Newspaper is Ready!'}
             </CardTitle>
             <CardDescription>
-              {currentStep === 1 && 'Enter your newspaper details and domain'}
+              {currentStep === 1 && 'Enter your newspaper details and choose your web address'}
               {currentStep === 2 && 'Define the geographic area your newspaper will serve'}
               {currentStep === 3 && 'Tap to select exactly 6 categories for your news sections'}
               {currentStep === 4 && 'Choose which business directory categories to include (all selected by default)'}
@@ -412,7 +485,7 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
                   <Label htmlFor="newspaperName" className="text-base">Newspaper Name *</Label>
                   <Input
                     id="newspaperName"
-                    placeholder="Mountain View Times"
+                    placeholder="Los Angeles Times"
                     value={formData.newspaperName}
                     onChange={(e) => setFormData({ ...formData, newspaperName: e.target.value })}
                     className="mt-2"
@@ -430,35 +503,53 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
                   />
                 </div>
                 <div>
-                  <Label className="text-base mb-4 block">Domain Option *</Label>
-                  <RadioGroup
-                    value={formData.domainOption}
-                    onValueChange={(value: 'have' | 'check' | 'help') => setFormData({ ...formData, domainOption: value })}
-                    className="space-y-3"
-                  >
-                    <div className="flex items-center space-x-2 border rounded-lg p-4">
-                      <RadioGroupItem value="have" id="have" />
-                      <Label htmlFor="have" className="cursor-pointer flex-1">I already have a domain</Label>
+                  <Label htmlFor="subdomain" className="text-base">Your Web Address *</Label>
+                  <div className="mt-2 flex items-center">
+                    <Input
+                      id="subdomain"
+                      placeholder="losangeles"
+                      value={formData.subdomain}
+                      onChange={(e) => {
+                        const val = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        setFormData({ ...formData, subdomain: val });
+                        setSubdomainEdited(true);
+                      }}
+                      className="rounded-r-none border-r-0"
+                    />
+                    <span className="inline-flex items-center px-2 sm:px-3 h-9 border border-l-0 border-input rounded-r-md bg-muted text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                      .newsroomaios.com
+                    </span>
+                  </div>
+                  {formData.subdomain && (
+                    <div className="mt-2 text-sm">
+                      {formData.subdomain.length < 3 ? (
+                        <span className="text-muted-foreground">Must be at least 3 characters</span>
+                      ) : !/^[a-z0-9]+$/.test(formData.subdomain) ? (
+                        <span className="text-red-600 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                          Only lowercase letters and numbers
+                        </span>
+                      ) : slugChecking ? (
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Checking availability...
+                        </span>
+                      ) : slugAvailable === true ? (
+                        <span className="text-green-600 flex items-center gap-1">
+                          <CheckCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                          {formData.subdomain}.newsroomaios.com is available!
+                        </span>
+                      ) : slugAvailable === false ? (
+                        <span className="text-red-600 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                          This name is already taken
+                        </span>
+                      ) : null}
                     </div>
-                    <div className="flex items-center space-x-2 border rounded-lg p-4">
-                      <RadioGroupItem value="check" id="check" />
-                      <Label htmlFor="check" className="cursor-pointer flex-1">Check if domain is available</Label>
-                    </div>
-                    <div className="flex items-center space-x-2 border rounded-lg p-4">
-                      <RadioGroupItem value="help" id="help" />
-                      <Label htmlFor="help" className="cursor-pointer flex-1">Help me find a domain</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-                <div>
-                  <Label htmlFor="domain" className="text-base">Domain Name *</Label>
-                  <Input
-                    id="domain"
-                    placeholder="mountainviewtimes.com"
-                    value={formData.domain}
-                    onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                    className="mt-2"
-                  />
+                  )}
+                  <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                    This is your newspaper&apos;s web address. You can connect a custom domain (e.g., yournews.com) later from your newspaper&apos;s settings.
+                  </div>
                 </div>
               </div>
             )}
@@ -511,7 +602,7 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {PREDEFINED_CATEGORIES.map((category) => {
+                  {ONBOARDING_CATEGORIES.map((category) => {
                     const isSelected = formData.selectedCategories.includes(category.id);
                     const isDisabled = !isSelected && formData.selectedCategories.length >= 6;
                     return (
@@ -590,7 +681,7 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
                 <div className="grid gap-4 text-sm">
                   <div><div className="text-muted-foreground">Name:</div><div className="font-medium">{formData.newspaperName}</div></div>
                   <div><div className="text-muted-foreground">Email:</div><div className="font-medium">{formData.ownerEmail}</div></div>
-                  <div><div className="text-muted-foreground">Domain:</div><div className="font-medium">{formData.domain}</div></div>
+                  <div><div className="text-muted-foreground">Website:</div><div className="font-medium">{formData.subdomain}.newsroomaios.com</div></div>
                   <div><div className="text-muted-foreground">Service Area:</div><div className="font-medium">{formData.serviceArea.city}, {formData.serviceArea.state}</div></div>
                   <div><div className="text-muted-foreground">News Categories:</div><div className="font-medium">{formData.selectedCategories.map(id => PREDEFINED_CATEGORIES.find(c => c.id === id)?.name).join(', ')}</div></div>
                   <div><div className="text-muted-foreground">Directory Categories:</div><div className="font-medium">{formData.selectedDirectoryCategories.map(slug => DIRECTORY_CATEGORIES.find(c => c.slug === slug)?.name).join(', ')}</div></div>
@@ -707,7 +798,7 @@ export function OnboardingContent({ onSuccess, onBack, initialPlan }: Onboarding
                   <h3 className="font-semibold">Final Review:</h3>
                   <div className="grid gap-4 text-sm">
                     <div><div className="text-muted-foreground">Newspaper:</div><div className="font-medium">{formData.newspaperName}</div></div>
-                    <div><div className="text-muted-foreground">Domain:</div><div className="font-medium">{formData.domain}</div></div>
+                    <div><div className="text-muted-foreground">Website:</div><div className="font-medium">{formData.subdomain}.newsroomaios.com</div></div>
                     <div><div className="text-muted-foreground">Plan:</div><div className="font-medium">{selectedPlanData?.name} - ${selectedPlanData?.price}/month</div></div>
                     <div><div className="text-muted-foreground">Service Area:</div><div className="font-medium">{formData.serviceArea.city}, {formData.serviceArea.state}</div></div>
                   </div>

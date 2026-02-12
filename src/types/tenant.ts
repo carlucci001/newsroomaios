@@ -38,6 +38,15 @@ export interface OnboardingProgress {
   updatedAt: Date;
 }
 
+export interface DomainRequest {
+  domain: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  rejectionReason?: string;
+}
+
 export interface Tenant {
   id: string;                    // Firestore doc ID
   businessName: string;          // "Mountain View Times"
@@ -71,6 +80,7 @@ export interface Tenant {
   siteUrl?: string;              // e.g., "https://the42.newsroomaios.com"
   subdomain?: string;            // e.g., "the42.newsroomaios.com"
   customDomain?: string;         // e.g., "the42news.com" (tenant's own domain)
+  domainRequest?: DomainRequest;
   currentVersion?: string;       // Template version, e.g., "v1.0.1"
   deployedAt?: Date;
   deploymentError?: string;
