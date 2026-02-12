@@ -22,6 +22,7 @@ import {
   ExternalLink,
   Users,
   Bot,
+  Radar,
 } from 'lucide-react';
 
 interface NavItem {
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
   { label: 'Credits', href: '/admin/credits', icon: Coins },
   { label: 'Updates', href: '/admin/updates', icon: Upload },
   { label: 'AI Config', href: '/admin/ai-settings', icon: Bot },
+  { label: 'Command Center', href: '/admin/command-center', icon: Radar },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
