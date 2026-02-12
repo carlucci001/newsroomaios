@@ -134,18 +134,48 @@ const CITY_COORDS: Record<string, [number, number]> = {
   'atlanta': [33.75, -84.39], 'chicago': [41.88, -87.63],
   'minneapolis': [44.98, -93.27], 'omaha': [41.26, -95.93],
   'portland': [45.51, -122.68], 'st. petersburg': [27.77, -82.64],
+  'saint petersburg': [27.77, -82.64],
   'san diego': [32.72, -117.16], 'oceanside': [33.20, -117.38],
   'seattle': [47.61, -122.33], 'denver': [39.74, -104.98],
   'austin': [30.27, -97.74], 'nashville': [36.16, -86.78],
-  'phoenix': [33.45, -112.07],
+  'phoenix': [33.45, -112.07], 'miami': [25.76, -80.19],
+  'cincinnati': [39.10, -84.51], 'colorado springs': [38.83, -104.82],
 };
 
+// Full state name → abbreviation for coordinate lookup
+const STATE_NAME_TO_ABBR: Record<string, string> = {
+  'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR',
+  'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE',
+  'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID',
+  'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS',
+  'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+  'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
+  'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV',
+  'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY',
+  'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK',
+  'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
+  'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT',
+  'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV',
+  'wisconsin': 'WI', 'wyoming': 'WY',
+};
+
+function normalizeState(state: string): string {
+  if (!state) return '';
+  const trimmed = state.trim();
+  if (trimmed.length <= 2) return trimmed.toUpperCase();
+  return STATE_NAME_TO_ABBR[trimmed.toLowerCase()] || trimmed.toUpperCase();
+}
+
 function getCityCoords(city: string, state: string): [number, number] | null {
-  const cityKey = city.toLowerCase();
+  const cityKey = city.toLowerCase().trim();
   if (CITY_COORDS[cityKey]) return CITY_COORDS[cityKey];
-  if (STATE_COORDS[state]) return STATE_COORDS[state];
+  const abbr = normalizeState(state);
+  if (STATE_COORDS[abbr]) return STATE_COORDS[abbr];
   return null;
 }
+
+// Simplified US continental outline as SVG path (for map background)
+const US_OUTLINE = 'M 130 95 L 145 90 L 155 85 L 170 80 L 185 78 L 200 80 L 218 85 L 230 90 L 245 88 L 260 85 L 280 82 L 300 78 L 320 72 L 340 68 L 360 65 L 380 62 L 400 58 L 420 55 L 445 50 L 465 48 L 485 50 L 510 55 L 530 58 L 550 55 L 570 52 L 590 50 L 610 48 L 635 50 L 655 55 L 670 60 L 685 65 L 700 70 L 715 78 L 728 85 L 740 95 L 750 105 L 758 118 L 762 130 L 768 145 L 772 160 L 778 175 L 782 190 L 785 205 L 788 225 L 785 240 L 780 255 L 772 268 L 760 280 L 748 290 L 735 298 L 720 308 L 708 318 L 700 325 L 688 335 L 675 340 L 660 345 L 645 348 L 628 355 L 612 362 L 595 370 L 578 375 L 560 378 L 540 380 L 520 382 L 500 385 L 480 388 L 458 392 L 438 395 L 418 398 L 395 400 L 370 402 L 345 405 L 320 408 L 295 405 L 270 400 L 248 395 L 230 388 L 215 380 L 200 370 L 188 358 L 178 348 L 168 340 L 155 332 L 142 328 L 128 325 L 115 320 L 105 312 L 95 300 L 88 288 L 82 275 L 78 260 L 75 245 L 72 228 L 70 210 L 68 195 L 65 178 L 68 160 L 72 145 L 78 132 L 85 120 L 95 108 L 108 100 L 120 95 Z';
 
 // ─── Main Component ──────────────────────────────────────────────────────
 
@@ -607,6 +637,16 @@ export default function CommandCenterPage() {
                 </filter>
               </defs>
               <rect width={svgW} height={svgH} fill="url(#grid)" />
+
+              {/* US continental outline */}
+              <path
+                d={US_OUTLINE}
+                fill={isDark ? '#1e293b22' : '#e2e8f022'}
+                stroke={isDark ? '#334155' : '#94a3b8'}
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+                opacity={0.6}
+              />
 
               {/* Connection lines between nodes */}
               {mapTenants.length > 1 && mapTenants.map((t, i) => {
