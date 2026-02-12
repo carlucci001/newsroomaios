@@ -118,9 +118,12 @@ function AccountLayoutContent({ children }: { children: React.ReactNode }) {
       >
         {/* Logo */}
         <div className={`h-16 flex items-center justify-between px-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-          <Link href="/account" className="flex items-center gap-2">
-            <Newspaper className="w-6 h-6 text-brand-600" />
-            <span className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>newsroomaios</span>
+          <Link href="/account" className="flex items-center">
+            <img
+              src="/newsroom-logo.png"
+              alt="Newsroom AIOS"
+              className={`h-8 w-auto ${isDark ? 'brightness-0 invert' : ''}`}
+            />
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Loader2, Newspaper } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -45,12 +45,11 @@ export default function AdminLogin() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 px-4">
       {/* Logo */}
       <div className="mb-8 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm mb-4">
-          <Newspaper className="w-8 h-8 text-white" />
-        </div>
-        <h1 className="text-4xl font-bold text-white mb-2">
-          Newsroom AIOS
-        </h1>
+        <img
+          src="/newsroom-logo.png"
+          alt="Newsroom AIOS"
+          className="h-12 w-auto brightness-0 invert mx-auto mb-4"
+        />
         <Badge variant="default" className="bg-white text-brand-700">
           Platform Administration
         </Badge>
@@ -130,9 +129,11 @@ export default function AdminLogin() {
 
       {/* Footer */}
       <div className="mt-8 text-center">
-        <p className="text-sm text-white/70">
-          Paper Partner Program by Newsroom AIOS
-        </p>
+        <img
+          src="/newsroom-logo.png"
+          alt="Newsroom AIOS"
+          className="h-5 w-auto brightness-0 invert mx-auto opacity-70"
+        />
       </div>
     </div>
   );
