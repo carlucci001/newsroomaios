@@ -115,7 +115,26 @@ export default function SettingsPage() {
   };
 
   const handleCancelSubscription = async () => {
-    message.info('Subscription cancellation will be implemented with Stripe integration.');
+    if (!tenant?.id) return;
+
+    try {
+      const res = await fetch('/api/stripe/customer-portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId: tenant.id }),
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        message.error(data.error || 'Could not open billing portal. Contact support.');
+      }
+    } catch (error) {
+      console.error('Cancel subscription error:', error);
+      message.error('Failed to open billing portal. Please try again.');
+    }
+
     setShowCancelModal(false);
   };
 

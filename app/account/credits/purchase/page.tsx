@@ -1,8 +1,9 @@
 'use client';
 
 import 'antd/dist/reset.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getCurrentUser, getUserTenant } from '@/lib/accountAuth';
 import { useTheme } from '@/components/providers/AntdProvider';
 import {
   Card,
@@ -12,12 +13,12 @@ import {
   Tag,
   Row,
   Col,
+  Spin,
   message,
 } from 'antd';
 import {
   ArrowLeftOutlined,
   CheckOutlined,
-  InfoCircleOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -27,14 +28,12 @@ const CREDIT_PACKAGES = [
     id: 'credits_100',
     credits: 100,
     price: 19,
-    priceId: 'price_credits_100',
     popular: false,
   },
   {
     id: 'credits_250',
     credits: 250,
     price: 45,
-    priceId: 'price_credits_250',
     popular: true,
     savings: '5%',
   },
@@ -42,7 +41,6 @@ const CREDIT_PACKAGES = [
     id: 'credits_500',
     credits: 500,
     price: 85,
-    priceId: 'price_credits_500',
     popular: false,
     savings: '10%',
   },
@@ -50,7 +48,6 @@ const CREDIT_PACKAGES = [
     id: 'credits_1000',
     credits: 1000,
     price: 150,
-    priceId: 'price_credits_1000',
     popular: false,
     savings: '21%',
   },
@@ -58,14 +55,47 @@ const CREDIT_PACKAGES = [
 
 export default function PurchaseCreditsPage() {
   const { isDark } = useTheme();
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
 
-  const handlePurchase = async (packageId: string, priceId: string) => {
+  useEffect(() => {
+    async function loadTenant() {
+      try {
+        const user = await getCurrentUser();
+        if (!user) return;
+        const tenant = await getUserTenant(user.uid);
+        if (tenant?.id) setTenantId(tenant.id);
+      } catch (err) {
+        console.error('Error loading tenant:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadTenant();
+  }, []);
+
+  const handlePurchase = async (packageId: string) => {
+    if (!tenantId) {
+      message.error('Account not found. Please try again.');
+      return;
+    }
+
     setPurchasing(packageId);
 
     try {
-      // TODO: Implement Stripe checkout for one-time credit purchase
-      message.info('Credit purchase coming soon! This will create a Stripe checkout session.');
+      const res = await fetch('/api/stripe/credit-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId, packId: packageId }),
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        message.error(data.error || 'Failed to start checkout');
+      }
     } catch (error) {
       console.error('Purchase error:', error);
       message.error('Failed to initiate purchase. Please try again.');
@@ -73,6 +103,14 @@ export default function PurchaseCreditsPage() {
       setPurchasing(null);
     }
   };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto', minHeight: '100vh' }}>
@@ -173,9 +211,9 @@ export default function PurchaseCreditsPage() {
                   type={pkg.popular ? 'primary' : 'default'}
                   block
                   size="large"
-                  onClick={() => handlePurchase(pkg.id, pkg.priceId)}
+                  onClick={() => handlePurchase(pkg.id)}
                   loading={purchasing === pkg.id}
-                  disabled={purchasing !== null && purchasing !== pkg.id}
+                  disabled={!tenantId || (purchasing !== null && purchasing !== pkg.id)}
                 >
                   {purchasing === pkg.id ? 'Processing...' : 'Purchase'}
                 </Button>

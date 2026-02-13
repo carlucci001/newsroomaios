@@ -1,8 +1,9 @@
 'use client';
 
 import 'antd/dist/reset.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { getCurrentUser, getUserTenant } from '@/lib/accountAuth';
 import { getDb } from '@/lib/firebase';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
@@ -19,6 +20,8 @@ import {
   Tag,
   Spin,
   Empty,
+  message,
+  Alert,
 } from 'antd';
 import {
   CreditCardOutlined,
@@ -43,10 +46,57 @@ interface CreditTransaction {
 }
 
 export default function CreditsPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" />
+      </div>
+    }>
+      <CreditsPageContent />
+    </Suspense>
+  );
+}
+
+function CreditsPageContent() {
   const { isDark } = useTheme();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [tenant, setTenant] = useState<any>(null);
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+  const confirmedRef = useRef(false);
+
+  // Handle return from Stripe Checkout
+  useEffect(() => {
+    const purchase = searchParams.get('purchase');
+    const sessionId = searchParams.get('session_id');
+
+    if (purchase === 'success' && sessionId && !confirmedRef.current) {
+      confirmedRef.current = true;
+
+      fetch('/api/stripe/confirm-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setPurchaseSuccess(true);
+            message.success(`${data.creditsAdded} credits added to your account!`);
+            // Clean URL params
+            router.replace('/account/credits');
+          } else {
+            message.error(data.error || 'Failed to confirm purchase');
+          }
+        })
+        .catch(err => {
+          console.error('Confirm checkout error:', err);
+          message.error('Could not confirm purchase. Credits may still be applied.');
+        });
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     async function loadData() {
@@ -85,7 +135,7 @@ export default function CreditsPage() {
     }
 
     loadData();
-  }, []);
+  }, [purchaseSuccess]);
 
   if (loading) {
     return (
