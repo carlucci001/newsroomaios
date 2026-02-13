@@ -98,6 +98,51 @@ export default function PrivacyPolicy() {
             </section>
 
             <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">California Privacy Rights (CCPA)</h2>
+              <p className="text-foreground/80 leading-relaxed mb-4">
+                If you are a California resident, you have specific rights under the California Consumer Privacy Act (CCPA):
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-foreground/80">
+                <li><strong>Right to Know:</strong> You may request that we disclose what personal information we have collected,
+                  used, disclosed, and sold about you in the preceding 12 months.</li>
+                <li><strong>Right to Delete:</strong> You may request that we delete personal information we have collected from you,
+                  subject to certain exceptions.</li>
+                <li><strong>Right to Opt-Out:</strong> You have the right to opt out of the sale of your personal information.
+                  We do not sell your personal information.</li>
+                <li><strong>Right to Non-Discrimination:</strong> We will not discriminate against you for exercising any of your
+                  CCPA rights.</li>
+              </ul>
+              <p className="text-foreground/80 leading-relaxed mt-4">
+                To exercise these rights, contact us at <strong>privacy@newsroomaios.com</strong>. We will respond to
+                verifiable requests within 45 days.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">European Privacy Rights (GDPR)</h2>
+              <p className="text-foreground/80 leading-relaxed mb-4">
+                If you are located in the European Economic Area (EEA), United Kingdom, or Switzerland, you have
+                additional rights under the General Data Protection Regulation (GDPR):
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-foreground/80">
+                <li><strong>Lawful Basis:</strong> We process your personal data based on: (a) your consent,
+                  (b) performance of a contract, (c) compliance with legal obligations, or (d) our legitimate interests
+                  in providing and improving our services.</li>
+                <li><strong>Data Transfer:</strong> Your information may be transferred to and stored on servers
+                  in the United States. By using our platform, you consent to this transfer. We implement appropriate
+                  safeguards for international data transfers.</li>
+                <li><strong>Right to Lodge a Complaint:</strong> You have the right to lodge a complaint with
+                  your local data protection authority if you believe your rights have been violated.</li>
+                <li><strong>Data Retention:</strong> We retain your personal information for as long as your account
+                  is active or as needed to provide services. After account closure, we retain data for 90 days
+                  before permanent deletion, unless longer retention is required by law.</li>
+              </ul>
+              <p className="text-foreground/80 leading-relaxed mt-4">
+                For GDPR-related inquiries, contact us at <strong>privacy@newsroomaios.com</strong>.
+              </p>
+            </section>
+
+            <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">Cookies and Tracking</h2>
               <p className="text-foreground/80 leading-relaxed mb-4">
                 We use cookies and similar tracking technologies to track activity on our platform and hold certain information.

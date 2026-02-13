@@ -49,39 +49,124 @@ Firebase project IDs are **permanent and cannot be changed**. The project was in
 
 ---
 
-## Code Independence from WNC Times
+## WNC Times — Special Architecture (CRITICAL)
 
-**Critical Consideration**: This project shares code patterns and dependencies with WNC Times production site. Changes to shared components must not break either system.
+> **READ THIS BEFORE ANY ROLLOUT, DEPLOYMENT, OR DATABASE WORK.**
+>
+> WNC Times is the ONLY tenant that uses a different Firebase project and database.
+> Every other tenant shares the platform's Firebase project (`newsroomasios`) and
+> its default Firestore database. WNC Times does NOT. Getting this wrong will take
+> the site down or make 800+ articles disappear.
 
-### Independence Strategies
+### Why WNC Times Is Different
 
-1. **Separate Repositories** (Current State)
-   - `c:\dev\wnct-next` - Production newspaper site
-   - `c:\dev\newsroomaios` - SaaS platform
-   - No direct code dependencies between them
+WNC Times existed as a standalone newspaper app BEFORE the multi-tenant platform
+was built. It has its own Firebase project with years of production data. Rather
+than risk migrating 800+ articles, 100+ businesses, 12 users, and 689 media items
+mid-production, the platform was designed to support WNC Times via environment
+variables that route it to its own database.
 
-2. **Version Pinning**
-   - Lock dependency versions in package.json
-   - Test thoroughly before upgrading shared packages
-   - Never use `^` or `~` for critical dependencies
+### The Architecture
 
-3. **Shared Component Library** (Future)
-   - Extract common UI components to separate npm package
-   - Versioned releases prevent breaking changes
-   - Each project controls which version to use
+| Component | Regular Tenants | WNC Times |
+|---|---|---|
+| Firebase project | `newsroomasios` | `gen-lang-client-0242565142` |
+| Firestore database | `(default)` | `gwnct` (named database) |
+| Code repository | `carlucci001/wnct-template` | `carlucci001/wnct-template` (SAME) |
+| Data path | `tenants/{tenantId}/articles/` | `tenants/wnct-times/articles/` |
+| `FIREBASE_DATABASE_ID` | Not set (uses default) | `gwnct` |
+| `NEXT_PUBLIC_FIREBASE_DATABASE_ID` | Not set | `gwnct` |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | `newsroomasios` | `gen-lang-client-0242565142` |
+| All 6 `NEXT_PUBLIC_FIREBASE_*` vars | Point to `newsroomasios` | Point to `gen-lang-client-0242565142` |
 
-4. **Separate Firebase Projects**
-   - WNC Times: `gwnct` database
-   - Newsroom AIOS: `newsroomasios` project
-   - No data sharing or cross-contamination
+### How It Works During Rollouts
 
-### Testing Before Updates
+All tenants — including WNC Times — run the SAME codebase (`wnct-template`).
+The code is env-var-driven, not hardcoded:
 
-Before updating any shared dependency:
-1. Test in newsroomaios dev environment
-2. Create git branch for update
-3. Verify WNC Times still works
-4. Deploy only after both pass
+1. `firebase.ts` reads `NEXT_PUBLIC_FIREBASE_DATABASE_ID` to select the database.
+   If set to `gwnct`, it calls `getFirestore(app, 'gwnct')`.
+   If not set, it calls `getFirestore(app)` (default database).
+
+2. `firebaseAdmin.ts` reads `FIREBASE_DATABASE_ID` for server-side routes.
+   Same logic: `gwnct` → named database, unset → default.
+
+3. `tenantConfig.ts` reads `NEXT_PUBLIC_TENANT_ID` to build collection paths.
+   `tenants/wnct-times/articles/` on gwnct vs `tenants/the-atlanta-42/articles/` on default.
+
+During a rollout, the platform redeploys all active tenants from `wnct-template`.
+Each tenant's Vercel project has its own env vars baked in at build time.
+WNC Times gets the same code, but its env vars route it to the `gwnct` database
+on the `gen-lang-client-0242565142` project. No special code paths needed.
+
+### Critical Env Vars on WNC Times (DO NOT REMOVE)
+
+These env vars on the `newspaper-wnct-times` Vercel project are what make
+WNC Times work. Removing any of them will break the site:
+
+```
+FIREBASE_DATABASE_ID=gwnct                         # Server-side database routing
+NEXT_PUBLIC_FIREBASE_DATABASE_ID=gwnct              # Client-side database routing
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=gen-lang-client-0242565142
+NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyCeqkh-...        # WNC Times Firebase project key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=gen-lang-client-0242565142.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=gen-lang-client-0242565142.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=976122475870
+NEXT_PUBLIC_FIREBASE_APP_ID=1:976122475870:web:...
+FIREBASE_SERVICE_ACCOUNT=<WNC Times service account JSON>
+```
+
+### Rollout Safety: What Can Go Wrong
+
+1. **Env var backfill overwrites Firebase config**: The `redeployTenant()` function
+   in `vercel.ts` backfills missing env vars using the PLATFORM's Firebase config.
+   It does NOT overwrite existing vars. But if someone deletes WNC Times' Firebase
+   env vars and then runs a rollout, the backfill would inject the WRONG Firebase
+   config (platform's `newsroomasios` instead of `gen-lang-client-0242565142`).
+   **Result: WNC Times connects to wrong database, articles disappear.**
+
+2. **Missing `FIREBASE_DATABASE_ID`**: If `FIREBASE_DATABASE_ID=gwnct` is removed,
+   server-side routes (article generation, API calls) would connect to the default
+   database, which has no WNC Times data. Client-side would also fail if
+   `NEXT_PUBLIC_FIREBASE_DATABASE_ID` is missing.
+   **Result: Site loads but shows 0 articles, 0 businesses.**
+
+3. **Firestore rules on gwnct**: The `gwnct` database has its own security rules,
+   separate from the platform's rules. Client-side writes (e.g., directory seeding
+   via the seed API endpoint) may be blocked by these rules. Use Firebase Admin SDK
+   scripts for direct database operations on gwnct.
+
+### If WNC Times Breaks After a Rollout
+
+1. Check `FIREBASE_DATABASE_ID=gwnct` is still set on Vercel project `newspaper-wnct-times`
+2. Check `NEXT_PUBLIC_FIREBASE_DATABASE_ID=gwnct` is still set
+3. Check all 6 `NEXT_PUBLIC_FIREBASE_*` vars point to `gen-lang-client-0242565142` (NOT `newsroomasios`)
+4. Verify data exists: run `scripts/check-gwnct-database.js` or `scripts/snapshot-wnct-data.js`
+5. If env vars were overwritten, restore them from the table above and trigger a fresh build
+
+### Data Counts (as of Feb 12, 2026)
+
+- Articles: 805 (at `gwnct:tenants/wnct-times/articles/`)
+- Businesses: 105 (at `gwnct:tenants/wnct-times/businesses/`)
+- Users: 12
+- Media: 689
+- AI Journalists: 6
+- Menus: 4
+- Root-level backup: 798 articles at `gwnct:articles/` (pre-migration)
+
+### Future: Migrating Off gwnct
+
+If WNC Times is ever migrated to the platform's `newsroomasios` default database:
+1. Export all data from `gwnct:tenants/wnct-times/` collections
+2. Import into `newsroomasios:tenants/wnct-times/` collections
+3. Update WNC Times' Vercel env vars to point to `newsroomasios` Firebase config
+4. Remove `FIREBASE_DATABASE_ID` and `NEXT_PUBLIC_FIREBASE_DATABASE_ID`
+5. Trigger fresh build
+6. Verify all data accessible
+7. Keep gwnct as read-only backup for 30 days before decommissioning
+
+This migration is optional. The current env-var-driven architecture works correctly
+and WNC Times deploys identically to all other tenants during rollouts
 
 ---
 
@@ -226,17 +311,20 @@ interface NetworkRevenueTransaction extends RevenueTransaction {
 
 ### Separation of Concerns
 
-**WNC Times** (`wnct-next`):
-- Single newspaper website
-- Focus: Content delivery to readers
-- Revenue: Platform licensing fee ($199/mo per paper)
+**WNC Times** (tenant `wnct-times` on `wnct-template`):
+- First newspaper on the platform, originally standalone (`wnct-next` repo, now retired)
+- Re-linked to `wnct-template` on Feb 12, 2026 — same codebase as all other tenants
+- Uses separate Firebase project + named database `gwnct` (see section above)
 
 **Newsroom AIOS** (`newsroomaios`):
-- Multi-tenant SaaS platform
-- Focus: Tools for newspapers to run their business
-- Revenue: Three streams (advertising, directory, subscriptions) per tenant
+- Multi-tenant SaaS platform (newsroomaios.com)
+- Admin area for tenant provisioning, API key management, credit tracking
+- Rollout endpoint deploys latest `wnct-template` code to ALL tenants including WNC Times
 
-**No direct connection** - They should function independently even if one has issues.
+**All tenant sites** (`wnct-template`):
+- Shared codebase for all newspaper frontends
+- Each tenant is an independent Vercel deployment with its own env vars
+- Data isolation via Firestore tenant-scoped collection paths
 
 ---
 

@@ -152,6 +152,88 @@ export default function TermsOfUse() {
             </section>
 
             <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">Data Ownership & Portability</h2>
+              <p className="text-foreground/80 leading-relaxed mb-4">
+                You retain ownership of all content generated for your newspaper through our platform, including articles,
+                images you have licensed, and business directory data you have collected.
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-foreground/80">
+                <li>
+                  <strong>Your Content:</strong> AI-generated articles, editorial content, and custom configurations
+                  created for your newspaper are your property.
+                </li>
+                <li>
+                  <strong>Data Export:</strong> Upon request, we will provide an export of your article content
+                  and subscriber data in a standard format within 30 days.
+                </li>
+                <li>
+                  <strong>After Cancellation:</strong> Your newspaper and all associated data will be deactivated
+                  at the end of your billing period. Data is retained for 90 days after cancellation to allow for
+                  reactivation, after which it may be permanently deleted.
+                </li>
+                <li>
+                  <strong>Platform IP:</strong> The Newsroom AIOS platform, templates, software, and proprietary
+                  systems remain the exclusive property of Farrington Development LLC. Your license to use the
+                  platform ends upon termination.
+                </li>
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">AI Content Liability</h2>
+              <p className="text-foreground/80 leading-relaxed mb-4">
+                Our platform uses artificial intelligence to assist in generating news content for your newspaper.
+                By using our platform, you acknowledge and agree to the following:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-foreground/80">
+                <li>
+                  <strong>Editorial Responsibility:</strong> You are the publisher of your newspaper and bear
+                  ultimate responsibility for all content published on your site, whether AI-generated or not.
+                </li>
+                <li>
+                  <strong>Review Obligation:</strong> AI-generated content should be reviewed for accuracy,
+                  fairness, and compliance with applicable laws before publication.
+                </li>
+                <li>
+                  <strong>No Warranty of Accuracy:</strong> While we strive for high-quality AI output, we make
+                  no warranty that AI-generated content is free from errors, omissions, or bias.
+                </li>
+                <li>
+                  <strong>Indemnification:</strong> You agree to indemnify Farrington Development LLC against
+                  any claims arising from content published on your newspaper site, including claims of defamation,
+                  copyright infringement, or privacy violations.
+                </li>
+                <li>
+                  <strong>AI Transparency:</strong> We recommend that you maintain transparency with your readers
+                  about the use of AI in your editorial process. Our platform provides an AI Disclosure page
+                  template for this purpose.
+                </li>
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">Acceptable Use</h2>
+              <p className="text-foreground/80 leading-relaxed mb-4">
+                The Newsroom AIOS platform is designed for legitimate local news publishing. You agree not to use
+                the platform for:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-foreground/80">
+                <li>Publishing hate speech, content that promotes violence, or discriminatory material</li>
+                <li>Generating or distributing intentional misinformation or disinformation</li>
+                <li>Operating a website that primarily serves as a vehicle for spam, scams, or fraud</li>
+                <li>Publishing content that violates any applicable federal, state, or local law</li>
+                <li>Impersonating a legitimate news organization or public official</li>
+                <li>Using the platform to harass, threaten, or intimidate individuals</li>
+                <li>Attempting to reverse-engineer, copy, or redistribute the platform software</li>
+                <li>Sharing your platform credentials or API keys with unauthorized third parties</li>
+              </ul>
+              <p className="text-foreground/80 leading-relaxed mt-4">
+                Violation of this Acceptable Use policy may result in immediate suspension or termination
+                of your account without refund.
+              </p>
+            </section>
+
+            <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">Termination</h2>
               <p className="text-foreground/80 leading-relaxed mb-4">
                 We may terminate or suspend your account and access to the platform immediately, without prior notice,

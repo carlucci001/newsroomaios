@@ -191,5 +191,131 @@ service cloud.firestore {
       allow create: if true;  // Allow creating activities when leads are created
       allow update, delete: if isAdmin();  // Only admins can modify/delete
     }
+
+    // ============================================
+    // MEDIA LIBRARY (Tenant media file metadata)
+    // ============================================
+    match /media/{mediaId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // ============================================
+    // ARTICLES (Root-level for tenant sites)
+    // ============================================
+    match /articles/{articleId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // ============================================
+    // COMMENTS
+    // ============================================
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+
+    // ============================================
+    // EVENTS (Community calendar)
+    // ============================================
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // ============================================
+    // BLOG POSTS
+    // ============================================
+    match /blogPosts/{postId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // ============================================
+    // COMMUNITY POSTS
+    // ============================================
+    match /communityPosts/{postId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+
+    // ============================================
+    // COMPONENT SETTINGS
+    // ============================================
+    match /componentSettings/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // ============================================
+    // CONTENT SOURCES & ITEMS
+    // ============================================
+    match /contentSources/{sourceId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /contentItems/{itemId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // ============================================
+    // SCHEDULED TASKS
+    // ============================================
+    match /scheduledTasks/{taskId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // ============================================
+    // AGENT PROMPTS
+    // ============================================
+    match /agentPrompts/{promptId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // ============================================
+    // NEWSLETTERS
+    // ============================================
+    match /newsletters/{newsletterId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /newsletter_subscriptions/{subscriptionId} {
+      allow read: if isAuthenticated();
+      allow write: if true;
+    }
+
+    match /newsletter_templates/{templateId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // ============================================
+    // ADVERTISING
+    // ============================================
+    match /advertising/{adId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /tenantAds/{adId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // ============================================
+    // COMMUNITY (directory, events, etc.)
+    // ============================================
+    match /community/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
   }
 }

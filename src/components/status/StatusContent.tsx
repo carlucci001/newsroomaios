@@ -10,6 +10,7 @@ import { Home } from 'lucide-react';
 // Comprehensive category metadata for all 34 categories
 const categoryMeta: Record<string, { icon: string; color: string; bgColor: string }> = {
   // Core News
+  'news': { icon: '🏛️', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
   'local-news': { icon: '🏛️', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
   'breaking-news': { icon: '🚨', color: 'text-red-400', bgColor: 'bg-red-500/20' },
   'politics': { icon: '🏛️', color: 'text-indigo-400', bgColor: 'bg-indigo-500/20' },
@@ -173,7 +174,7 @@ export function StatusContent({ tenantId, onBack, adminCredentials, newspaperUrl
           const catId = currentCategory.toLowerCase().replace(' ', '-');
           const catMeta = categoryMeta[catId] || { icon: '📰' };
           setNotifications((prev) => [...prev, {
-            id: `notif-${Date.now()}`,
+            id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             title: `${currentCategory} article created!`,
             category: currentCategory,
             categoryIcon: catMeta.icon,

@@ -3,9 +3,9 @@ import { NewsCategory } from '@/types/tenant';
 export const PREDEFINED_CATEGORIES: NewsCategory[] = [
   // Core News Categories
   {
-    id: 'local-news',
-    name: 'Local News',
-    slug: 'local-news',
+    id: 'news',
+    name: 'News',
+    slug: 'news',
     directive: 'Cover local community events, city council meetings, local business openings, neighborhood developments, and stories that directly impact residents in the service area.',
     enabled: true,
   },

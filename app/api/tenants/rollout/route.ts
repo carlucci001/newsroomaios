@@ -18,6 +18,16 @@ interface RolloutResult {
  * When the wnct-template repo gets a fix, call this to roll it out
  * to every active newspaper site.
  *
+ * ⚠️  WNC TIMES CAVEAT (tenant: wnct-times, project: newspaper-wnct-times)
+ * WNC Times uses a DIFFERENT Firebase project (gen-lang-client-0242565142) and
+ * a NAMED Firestore database (gwnct). It deploys the same wnct-template code as
+ * every other tenant, but its Vercel env vars route it to gwnct instead of the
+ * platform's default database. The rollout's env var backfill (ensureEnvVars) only
+ * ADDS missing vars — it will NOT overwrite WNC Times' Firebase config. However,
+ * if WNC Times' Firebase env vars are ever deleted, the backfill would inject the
+ * WRONG values (platform's newsroomasios instead of gen-lang-client-0242565142).
+ * See ARCHITECTURE.md "WNC Times — Special Architecture" for full details.
+ *
  * Requires: PLATFORM_SECRET header
  * Optional body: { version?: string, dryRun?: boolean }
  */

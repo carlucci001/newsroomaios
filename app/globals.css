@@ -194,3 +194,39 @@
     transition: transform 0.02s ease-out;
   }
 }
+
+/*
+ * BUTTON TEXT CONTRAST PROTECTION
+ * Tailwind Preflight resets button color to inherit (black from body text-foreground).
+ * These rules guarantee white text on colored buttons survives any load-order or
+ * specificity conflict between Tailwind, Ant Design, and shadcn.
+ */
+
+/* Ant Design primary / danger / colored buttons — always white text */
+.ant-btn-primary,
+.ant-btn-primary:hover,
+.ant-btn-primary:focus,
+.ant-btn-primary:active,
+.ant-btn-dangerous.ant-btn-primary,
+.ant-btn-dangerous.ant-btn-primary:hover {
+  color: #ffffff !important;
+}
+
+/* shadcn Button default variant and any explicit bg-brand-blue buttons */
+[data-slot="button"][data-variant="default"],
+[data-slot="button"][data-variant="primary"],
+[data-slot="button"][data-variant="destructive"],
+[data-slot="button"][data-variant="danger"],
+[data-slot="button"][data-variant="success"] {
+  color: #ffffff !important;
+}
+
+/* Catch-all: any button or link-styled-as-button with an explicit blue/brand background */
+button[class*="bg-brand-blue-"],
+button[class*="bg-blue-"],
+a[class*="bg-brand-blue-"],
+a[class*="bg-blue-"],
+[role="button"][class*="bg-brand-blue-"],
+[role="button"][class*="bg-blue-"] {
+  color: #ffffff !important;
+}

@@ -36,6 +36,8 @@ import {
   EyeInvisibleOutlined,
   LoadingOutlined,
   ThunderboltOutlined,
+  SoundOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -72,6 +74,15 @@ interface AIConfig {
     articlesPerCategory: number;
     webSearchArticles: number;
   };
+  tts: {
+    provider: string;
+    elevenLabsVoiceId: string;
+    elevenLabsModel: string;
+    stability: number;
+    similarityBoost: number;
+    style: number;
+    useSpeakerBoost: boolean;
+  };
 }
 
 const defaultConfig: AIConfig = {
@@ -102,6 +113,15 @@ const defaultConfig: AIConfig = {
   seeding: {
     articlesPerCategory: 6,
     webSearchArticles: 2,
+  },
+  tts: {
+    provider: 'google',
+    elevenLabsVoiceId: '',
+    elevenLabsModel: 'eleven_turbo_v2',
+    stability: 0.5,
+    similarityBoost: 0.75,
+    style: 0,
+    useSpeakerBoost: true,
   },
 };
 
@@ -161,6 +181,7 @@ export default function AISettingsPage() {
           tone: { ...defaultConfig.tone, ...data.tone },
           articleLength: { ...defaultConfig.articleLength, ...data.articleLength },
           seeding: { ...defaultConfig.seeding, ...data.seeding },
+          tts: { ...defaultConfig.tts, ...data.tts },
         });
       }
     } catch (error) {
@@ -324,6 +345,49 @@ export default function AISettingsPage() {
       ...prev,
       seeding: { ...prev.seeding, [field]: value },
     }));
+  }
+
+  function updateTts(field: string, value: unknown) {
+    setConfig(prev => ({
+      ...prev,
+      tts: { ...prev.tts, [field]: value },
+    }));
+  }
+
+  const [pushingTts, setPushingTts] = useState(false);
+
+  async function pushTtsToTenants() {
+    setPushingTts(true);
+    try {
+      // Save config first
+      await saveConfig();
+
+      const res = await fetch('/api/admin/push-tts-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ttsProvider: config.tts.provider,
+          elevenLabsVoiceId: config.tts.elevenLabsVoiceId,
+          elevenLabsModel: config.tts.elevenLabsModel,
+          elevenLabsStability: config.tts.stability,
+          elevenLabsSimilarity: config.tts.similarityBoost,
+          elevenLabsStyle: config.tts.style,
+          elevenLabsSpeakerBoost: config.tts.useSpeakerBoost,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        message.success(`TTS settings pushed to ${data.updated} tenant(s).${data.skipped ? ` ${data.skipped} skipped (separate database).` : ''}`);
+      } else {
+        message.error(data.error || 'Failed to push TTS settings');
+      }
+    } catch (error) {
+      console.error('Push TTS error:', error);
+      message.error('Failed to push TTS settings to tenants');
+    } finally {
+      setPushingTts(false);
+    }
   }
 
   if (loading) {
@@ -915,6 +979,174 @@ export default function AISettingsPage() {
               Save Seeding Settings
             </Button>
           </div>
+        </Space>
+      ),
+    },
+    {
+      key: 'tts',
+      label: (
+        <span>
+          <SoundOutlined style={{ marginRight: 8 }} />
+          Voice & TTS
+        </span>
+      ),
+      children: (
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <Alert
+            type="info"
+            showIcon
+            message="Controls text-to-speech settings for AI journalist conversations across all tenant newspapers."
+          />
+
+          <div>
+            <Text strong>TTS Provider</Text>
+            <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+              Select the voice synthesis engine used for AI journalist audio.
+            </Text>
+            <Radio.Group
+              value={config.tts.provider}
+              onChange={(e) => updateTts('provider', e.target.value)}
+              optionType="button"
+              buttonStyle="solid"
+              size="large"
+            >
+              <Radio.Button value="google">Google TTS</Radio.Button>
+              <Radio.Button value="elevenlabs">ElevenLabs</Radio.Button>
+            </Radio.Group>
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary">
+                {config.tts.provider === 'google' && 'Google Cloud TTS — Decent quality, uses Gemini API key. Free tier available.'}
+                {config.tts.provider === 'elevenlabs' && 'ElevenLabs — Premium, natural-sounding voices. Requires ElevenLabs API key (set in API Keys tab).'}
+              </Text>
+            </div>
+          </div>
+
+          {config.tts.provider === 'elevenlabs' && (
+            <>
+              <Divider>ElevenLabs Settings</Divider>
+
+              <div>
+                <Text strong>Default Voice ID</Text>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                  The ElevenLabs voice ID used when no persona-specific voice is configured.
+                  Find voice IDs at elevenlabs.io/voice-library.
+                </Text>
+                <Input
+                  value={config.tts.elevenLabsVoiceId}
+                  onChange={(e) => updateTts('elevenLabsVoiceId', e.target.value)}
+                  placeholder="e.g. 21m00Tcm4TlvDq8ikWAM"
+                  style={{ maxWidth: 400, fontFamily: 'monospace' }}
+                />
+              </div>
+
+              <div>
+                <Text strong>Model</Text>
+                <div style={{ marginTop: 8 }}>
+                  <Select
+                    value={config.tts.elevenLabsModel}
+                    onChange={(v) => updateTts('elevenLabsModel', v)}
+                    options={[
+                      { value: 'eleven_turbo_v2', label: 'Turbo v2 (Fast, Low Latency)' },
+                      { value: 'eleven_monolingual_v1', label: 'Monolingual v1 (English Only)' },
+                      { value: 'eleven_multilingual_v2', label: 'Multilingual v2 (Highest Quality)' },
+                    ]}
+                    style={{ width: '100%', maxWidth: 400 }}
+                    size="large"
+                  />
+                </div>
+              </div>
+
+              <Row gutter={[32, 16]}>
+                <Col xs={24} sm={12}>
+                  <Text strong>Stability</Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                    Higher = more consistent. Lower = more expressive.
+                  </Text>
+                  <Slider
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={config.tts.stability}
+                    onChange={(v) => updateTts('stability', v)}
+                    marks={{ 0: 'Expressive', 0.5: 'Balanced', 1: 'Stable' }}
+                  />
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Text strong>Similarity Boost</Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                    How closely to match the original voice. Higher = closer match.
+                  </Text>
+                  <Slider
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={config.tts.similarityBoost}
+                    onChange={(v) => updateTts('similarityBoost', v)}
+                    marks={{ 0: 'Low', 0.5: '0.5', 1: 'High' }}
+                  />
+                </Col>
+              </Row>
+
+              <Row gutter={[32, 16]}>
+                <Col xs={24} sm={12}>
+                  <Text strong>Style</Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                    Stylistic exaggeration. 0 = neutral, higher = more pronounced.
+                  </Text>
+                  <Slider
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={config.tts.style}
+                    onChange={(v) => updateTts('style', v)}
+                    marks={{ 0: 'Neutral', 0.5: '0.5', 1: 'Max' }}
+                  />
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Text strong>Speaker Boost</Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                    Enhances speaker similarity. Recommended for most voices.
+                  </Text>
+                  <Radio.Group
+                    value={config.tts.useSpeakerBoost}
+                    onChange={(e) => updateTts('useSpeakerBoost', e.target.value)}
+                  >
+                    <Radio value={true}>Enabled</Radio>
+                    <Radio value={false}>Disabled</Radio>
+                  </Radio.Group>
+                </Col>
+              </Row>
+            </>
+          )}
+
+          <div style={{ marginTop: 16 }}>
+            <Button
+              type="primary"
+              icon={<SaveOutlined />}
+              onClick={saveConfig}
+              loading={saving}
+              size="large"
+            >
+              Save TTS Settings
+            </Button>
+          </div>
+
+          <Divider>Push to Tenant Newspapers</Divider>
+
+          <Alert
+            type="warning"
+            showIcon
+            message="This will update TTS settings for all active tenant newspapers. Persona-specific voice overrides will still take priority."
+          />
+
+          <Button
+            icon={<SyncOutlined />}
+            onClick={pushTtsToTenants}
+            loading={pushingTts}
+            size="large"
+          >
+            Push TTS Settings to All Tenants
+          </Button>
         </Space>
       ),
     },

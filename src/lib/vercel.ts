@@ -1,6 +1,14 @@
 /**
  * Vercel API Service
- * Handles programmatic deployment of tenant newspaper sites
+ * Handles programmatic deployment of tenant newspaper sites.
+ *
+ * All tenants deploy from carlucci001/wnct-template (repoId 1148332475).
+ * Each tenant's Vercel project has its own env vars injected at build time.
+ *
+ * ⚠️  WNC TIMES EXCEPTION: Tenant "wnct-times" (project "newspaper-wnct-times")
+ * uses Firebase project gen-lang-client-0242565142 with named database "gwnct",
+ * NOT the platform's newsroomasios project. Its NEXT_PUBLIC_FIREBASE_* env vars
+ * point to this separate project. See ARCHITECTURE.md for full details.
  */
 
 const VERCEL_API_BASE = 'https://api.vercel.com';
@@ -406,6 +414,12 @@ class VercelService {
   /**
    * Redeploy an existing tenant project with latest template code.
    * If tenantConfig is provided, audits and backfills missing env vars first.
+   *
+   * ⚠️  WNC TIMES: This backfills env vars from the PLATFORM's Firebase config.
+   * WNC Times (wnct-times) uses a DIFFERENT Firebase project and named database (gwnct).
+   * ensureEnvVars() only adds MISSING vars, so it won't overwrite WNC Times' correct
+   * Firebase config. But if those vars are ever deleted, the backfill would inject wrong
+   * values. See ARCHITECTURE.md "WNC Times — Special Architecture" for details.
    */
   async redeployTenant(
     slug: string,

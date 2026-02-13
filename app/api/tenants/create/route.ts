@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       businessName,
       ownerEmail,
       domain,
+      subdomain,    // User-chosen subdomain slug from onboarding (no hyphens)
       serviceArea,
       selectedCategories,
       directoryCategories,
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     } = await request.json();
 
     // Validation
-    if (!businessName || !ownerEmail || !domain || !serviceArea || !selectedCategories) {
+    if (!businessName || !ownerEmail || !serviceArea || !selectedCategories) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -54,20 +55,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if domain already exists
-    const existingTenants = await db.collection('tenants')
-      .where('domain', '==', domain)
-      .get();
+    // Check if domain already exists (only when a custom domain is provided)
+    if (domain) {
+      const existingTenants = await db.collection('tenants')
+        .where('domain', '==', domain)
+        .get();
 
-    if (!existingTenants.empty) {
+      if (!existingTenants.empty) {
+        return NextResponse.json(
+          { error: 'Domain already in use' },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Use user-chosen subdomain if provided, else generate from business name
+    const slug = subdomain
+      ? subdomain.toLowerCase().replace(/[^a-z0-9]/g, '')
+      : generateSlug(businessName);
+
+    // Check slug uniqueness
+    const existingSlugs = await db.collection('tenants').where('slug', '==', slug).get();
+    if (!existingSlugs.empty) {
       return NextResponse.json(
-        { error: 'Domain already in use' },
+        { error: 'This subdomain is already taken. Please choose a different one.' },
         { status: 409 }
       );
     }
-
-    // Create tenant record
-    const slug = generateSlug(businessName);
     const tenantId = `tenant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const apiKey = `${slug}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -75,7 +89,7 @@ export async function POST(request: NextRequest) {
       id: tenantId,
       businessName,
       slug,
-      domain,
+      domain: domain || `${slug}.newsroomaios.com`,
       ownerEmail,
       apiKey,
       serviceArea,
@@ -83,6 +97,7 @@ export async function POST(request: NextRequest) {
       status: 'provisioning',
       licensingStatus: 'active',
       createdAt: new Date(),
+      subdomain: `${slug}.newsroomaios.com`,
       ...(stripeCustomerId && { stripeCustomerId }),
       ...(directoryCategories && { directoryCategories }),
     };
@@ -194,21 +209,27 @@ export async function POST(request: NextRequest) {
 
     // Create categories subcollection for template compatibility
     const categoryColors: Record<string, string> = {
+      'news': '#1d4ed8',
       'local-news': '#1d4ed8',
       'sports': '#dc2626',
       'business': '#059669',
       'politics': '#6366f1',
       'entertainment': '#7c3aed',
-      'weather': '#0ea5e9',
       'lifestyle': '#db2777',
       'outdoors': '#16a34a',
-      'community': '#f59e0b',
       'crime': '#991b1b',
       'agriculture': '#15803d',
       'education': '#1e40af',
       'health': '#0d9488',
       'real-estate': '#7c2d12',
       'technology': '#4f46e5',
+      'environment': '#059669',
+      'faith': '#7c3aed',
+      'history': '#92400e',
+      'veterans': '#1e3a5f',
+      'events': '#ea580c',
+      'opinion': '#6b21a8',
+      'food-dining': '#dc2626',
     };
 
     const catBatch = db.batch();
