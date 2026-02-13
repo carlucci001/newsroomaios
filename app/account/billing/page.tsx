@@ -1,10 +1,12 @@
 'use client';
 
 import 'antd/dist/reset.css';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getCurrentUser, getUserTenant } from '@/lib/accountAuth';
 import { getDb } from '@/lib/firebase';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import {
   Card,
   Typography,
@@ -26,9 +28,14 @@ import {
   CalendarOutlined,
   QuestionCircleOutlined,
   ExclamationCircleOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  StarOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const PLANS = [
   {
@@ -84,6 +91,59 @@ interface Invoice {
   hostedInvoiceUrl?: string;
 }
 
+interface PaymentMethod {
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+  isDefault: boolean;
+}
+
+function AddCardForm({ onSuccess, onError }: { onSuccess: () => void; onError: (msg: string) => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isReady, setIsReady] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!stripe || !elements || !isReady) return;
+    setSubmitting(true);
+    const { error } = await stripe.confirmSetup({
+      elements,
+      confirmParams: {
+        return_url: window.location.href,
+      },
+      redirect: 'if_required',
+    });
+    setSubmitting(false);
+    if (error) {
+      onError(error.message || 'Failed to save card');
+    } else {
+      onSuccess();
+    }
+  };
+
+  return (
+    <div>
+      <PaymentElement onReady={() => setIsReady(true)} />
+      <div style={{ marginTop: 16 }}>
+        <Button
+          type="primary"
+          block
+          size="large"
+          loading={submitting}
+          disabled={!stripe || !isReady}
+          onClick={handleSubmit}
+          icon={<CreditCardOutlined />}
+        >
+          {submitting ? 'Saving...' : isReady ? 'Save Card' : 'Loading...'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function BillingPage() {
   const [tenant, setTenant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -91,6 +151,39 @@ export default function BillingPage() {
   const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [confirmPlan, setConfirmPlan] = useState<string | null>(null);
+
+  // Payment method state
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [pmLoading, setPmLoading] = useState(false);
+  const [addCardOpen, setAddCardOpen] = useState(false);
+  const [addCardClientSecret, setAddCardClientSecret] = useState<string | null>(null);
+  const [settingDefault, setSettingDefault] = useState<string | null>(null);
+  const [deletingCard, setDeletingCard] = useState<string | null>(null);
+
+  const loadPaymentMethods = useCallback(async (tenantId: string) => {
+    setPmLoading(true);
+    try {
+      const res = await fetch(`/api/stripe/payment-methods?tenantId=${encodeURIComponent(tenantId)}`);
+      const data = await res.json();
+      if (data.paymentMethods) {
+        setPaymentMethods(data.paymentMethods);
+
+        // Auto-set default if there's exactly one card and it's not default
+        if (data.paymentMethods.length === 1 && !data.paymentMethods[0].isDefault) {
+          await fetch('/api/stripe/set-default-payment-method', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenantId, paymentMethodId: data.paymentMethods[0].id }),
+          });
+          setPaymentMethods([{ ...data.paymentMethods[0], isDefault: true }]);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load payment methods:', err);
+    } finally {
+      setPmLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     async function loadData() {
@@ -115,6 +208,10 @@ export default function BillingPage() {
           } catch (err) {
             console.warn('Could not load invoices:', err);
           }
+
+          if (userTenant.stripeCustomerId) {
+            await loadPaymentMethods(userTenant.id);
+          }
         }
       } catch (error) {
         console.error('Error loading billing data:', error);
@@ -124,7 +221,7 @@ export default function BillingPage() {
     }
 
     loadData();
-  }, []);
+  }, [loadPaymentMethods]);
 
   const openStripePortal = async () => {
     if (!tenant?.id) return;
@@ -176,6 +273,88 @@ export default function BillingPage() {
     } finally {
       setUpgradeLoading(null);
     }
+  };
+
+  const handleAddCard = async () => {
+    if (!tenant?.id) return;
+    setAddCardOpen(true);
+    setAddCardClientSecret(null);
+
+    try {
+      const res = await fetch('/api/stripe/setup-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId: tenant.id }),
+      });
+      const data = await res.json();
+      if (data.clientSecret) {
+        setAddCardClientSecret(data.clientSecret);
+      } else {
+        message.error(data.error || 'Failed to prepare card form');
+        setAddCardOpen(false);
+      }
+    } catch (error) {
+      console.error('Setup intent error:', error);
+      message.error('Failed to prepare card form');
+      setAddCardOpen(false);
+    }
+  };
+
+  const handleSetDefault = async (paymentMethodId: string) => {
+    if (!tenant?.id) return;
+    setSettingDefault(paymentMethodId);
+
+    try {
+      const res = await fetch('/api/stripe/set-default-payment-method', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId: tenant.id, paymentMethodId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        message.success('Default payment method updated');
+        await loadPaymentMethods(tenant.id);
+      } else {
+        message.error(data.error || 'Failed to update default');
+      }
+    } catch (error) {
+      console.error('Set default error:', error);
+      message.error('Failed to update default payment method');
+    } finally {
+      setSettingDefault(null);
+    }
+  };
+
+  const handleDeleteCard = (paymentMethodId: string) => {
+    Modal.confirm({
+      title: 'Remove Card',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Are you sure you want to remove this card? This cannot be undone.',
+      okText: 'Remove',
+      okType: 'danger',
+      onOk: async () => {
+        setDeletingCard(paymentMethodId);
+        try {
+          const res = await fetch('/api/stripe/detach-payment-method', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenantId: tenant.id, paymentMethodId }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            message.success('Card removed');
+            await loadPaymentMethods(tenant.id);
+          } else {
+            message.error(data.error || 'Failed to remove card');
+          }
+        } catch (error) {
+          console.error('Delete card error:', error);
+          message.error('Failed to remove card');
+        } finally {
+          setDeletingCard(null);
+        }
+      },
+    });
   };
 
   if (loading) {
@@ -277,19 +456,92 @@ export default function BillingPage() {
           </Space>
         </Card>
 
-        {/* Manage Buttons */}
-        <Card>
-          {hasStripe ? (
-            <Space wrap>
-              <Button
-                type="primary"
-                icon={<CreditCardOutlined />}
-                size="large"
-                onClick={openStripePortal}
-                loading={portalLoading}
-              >
-                Manage Payment Method
+        {/* Payment Methods */}
+        <Card
+          title={<Title level={4} style={{ margin: 0 }}>Payment Methods</Title>}
+          extra={
+            hasStripe && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCard}>
+                Add Card
               </Button>
+            )
+          }
+        >
+          {!hasStripe ? (
+            <Text type="secondary">
+              No payment method on file. Contact support to set up billing.
+            </Text>
+          ) : pmLoading ? (
+            <div style={{ textAlign: 'center', padding: '24px' }}>
+              <Spin />
+            </div>
+          ) : paymentMethods.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px' }}>
+              <CreditCardOutlined style={{ fontSize: '40px', color: '#d9d9d9', display: 'block', marginBottom: '12px' }} />
+              <Text type="secondary" style={{ display: 'block', marginBottom: '12px' }}>No cards on file</Text>
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCard}>
+                Add Your First Card
+              </Button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {paymentMethods.map(pm => (
+                <div
+                  key={pm.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    border: pm.isDefault ? '2px solid #1890ff' : '1px solid #d9d9d9',
+                    borderRadius: '8px',
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                  }}
+                >
+                  <Space>
+                    <CreditCardOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                    <div>
+                      <div>
+                        <Text strong style={{ textTransform: 'capitalize' }}>{pm.brand}</Text>
+                        <Text> ending in </Text>
+                        <Text strong>{pm.last4}</Text>
+                        {pm.isDefault && (
+                          <Tag color="blue" style={{ marginLeft: '8px' }}>Default</Tag>
+                        )}
+                      </div>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        Expires {pm.expMonth}/{pm.expYear}
+                      </Text>
+                    </div>
+                  </Space>
+                  {!pm.isDefault && (
+                    <Space>
+                      <Button
+                        size="small"
+                        icon={<StarOutlined />}
+                        loading={settingDefault === pm.id}
+                        onClick={() => handleSetDefault(pm.id)}
+                      >
+                        Set Default
+                      </Button>
+                      <Button
+                        size="small"
+                        danger
+                        icon={<DeleteOutlined />}
+                        loading={deletingCard === pm.id}
+                        onClick={() => handleDeleteCard(pm.id)}
+                      />
+                    </Space>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Cancel Subscription */}
+          {hasStripe && (
+            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f0f0f0' }}>
               <Button
                 danger
                 size="large"
@@ -298,11 +550,7 @@ export default function BillingPage() {
               >
                 Cancel Subscription
               </Button>
-            </Space>
-          ) : (
-            <Text type="secondary">
-              No payment method on file. Contact support to set up billing.
-            </Text>
+            </div>
           )}
         </Card>
 
@@ -501,6 +749,45 @@ export default function BillingPage() {
             </Space>
           );
         })()}
+      </Modal>
+
+      {/* Add Card Modal */}
+      <Modal
+        title="Add Payment Method"
+        open={addCardOpen}
+        onCancel={() => {
+          setAddCardOpen(false);
+          setAddCardClientSecret(null);
+        }}
+        footer={null}
+        destroyOnClose
+      >
+        {addCardClientSecret ? (
+          <Elements
+            stripe={stripePromise}
+            options={{
+              clientSecret: addCardClientSecret,
+              appearance: { theme: 'stripe', variables: { colorPrimary: '#1890ff' } },
+            }}
+          >
+            <AddCardForm
+              onSuccess={() => {
+                message.success('Card added successfully');
+                setAddCardOpen(false);
+                setAddCardClientSecret(null);
+                if (tenant?.id) loadPaymentMethods(tenant.id);
+              }}
+              onError={(msg) => message.error(msg)}
+            />
+          </Elements>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '24px' }}>
+            <Spin />
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary">Preparing secure card form...</Text>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
