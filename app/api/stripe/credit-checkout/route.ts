@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
+import { safeEnv } from '@/lib/env';
 
 const CREDIT_PACKS: Record<string, { credits: number; amount: number; name: string }> = {
   credits_100: { credits: 100, amount: 1900, name: '100 Credits' },
@@ -16,7 +17,7 @@ const CREDIT_PACKS: Record<string, { credits: number; amount: number; name: stri
  */
 export async function POST(request: NextRequest) {
   try {
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    const stripeKey = safeEnv('STRIPE_SECRET_KEY');
     if (!stripeKey) {
       return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
     }
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
       await db.collection('tenants').doc(tenantId).update({ stripeCustomerId: customerId });
     }
 
-    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://newsroomaios.com').trim();
+    const baseUrl = safeEnv('NEXT_PUBLIC_BASE_URL', 'https://newsroomaios.com');
 
     // Create Checkout Session
     const sessionRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {

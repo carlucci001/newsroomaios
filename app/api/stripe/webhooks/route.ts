@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
+import { safeEnv } from '@/lib/env';
 
 const PLAN_CREDITS = {
   starter: 250,
@@ -20,8 +21,8 @@ const PLAN_CREDITS = {
  */
 export async function POST(request: NextRequest) {
   try {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    const webhookSecret = safeEnv('STRIPE_WEBHOOK_SECRET');
+    const stripeKey = safeEnv('STRIPE_SECRET_KEY');
 
     if (!webhookSecret || !stripeKey) {
       console.error('[Webhook] Stripe not configured');

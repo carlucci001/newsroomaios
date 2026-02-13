@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import Stripe from 'stripe';
+import { safeEnv } from '@/lib/env';
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
-const connectWebhookSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET || '';
+const stripeSecretKey = safeEnv('STRIPE_SECRET_KEY');
+const connectWebhookSecret = safeEnv('STRIPE_CONNECT_WEBHOOK_SECRET');
 
 /**
  * POST /api/stripe/connect-webhooks

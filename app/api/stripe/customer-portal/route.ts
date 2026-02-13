@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
+import { safeEnv } from '@/lib/env';
 
 /**
  * Create a Stripe Customer Portal session
@@ -7,7 +8,7 @@ import { getAdminDb } from '@/lib/firebaseAdmin';
  */
 export async function POST(request: NextRequest) {
   try {
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    const stripeKey = safeEnv('STRIPE_SECRET_KEY');
     if (!stripeKey) {
       return NextResponse.json(
         { error: 'Stripe is not configured' },
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Customer Portal session using REST API
-    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://newsroomaios.com').trim();
+    const baseUrl = safeEnv('NEXT_PUBLIC_BASE_URL', 'https://newsroomaios.com');
     const response = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
       method: 'POST',
       headers: {

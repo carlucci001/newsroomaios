@@ -1,29 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
+import { safeEnv } from '@/lib/env';
 
 const CREDIT_PACKS: Record<string, { credits: number; amount: number; priceId: string; name: string }> = {
   credits_50: {
     credits: 50,
     amount: 2900,
-    priceId: process.env.STRIPE_PRICE_CREDITS_50 || 'price_credits_50',
+    priceId: safeEnv('STRIPE_PRICE_CREDITS_50', 'price_credits_50'),
     name: '50 Credits',
   },
   credits_100: {
     credits: 100,
     amount: 4900,
-    priceId: process.env.STRIPE_PRICE_CREDITS_100 || 'price_credits_100',
+    priceId: safeEnv('STRIPE_PRICE_CREDITS_100', 'price_credits_100'),
     name: '100 Credits',
   },
   credits_250: {
     credits: 250,
     amount: 9900,
-    priceId: process.env.STRIPE_PRICE_CREDITS_250 || 'price_credits_250',
+    priceId: safeEnv('STRIPE_PRICE_CREDITS_250', 'price_credits_250'),
     name: '250 Credits',
   },
 };
 
 async function stripeAPI(endpoint: string, method: string, params?: Record<string, string>) {
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const stripeKey = safeEnv('STRIPE_SECRET_KEY');
   if (!stripeKey) throw new Error('STRIPE_SECRET_KEY not configured');
 
   const url = `https://api.stripe.com/v1${endpoint}`;

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
+import { safeEnv } from '@/lib/env';
 
 const CREDIT_PACKS: Record<string, { credits: number; amount: number }> = {
   credits_50: { credits: 50, amount: 2900 },
@@ -8,7 +9,7 @@ const CREDIT_PACKS: Record<string, { credits: number; amount: number }> = {
 };
 
 async function stripeAPI(endpoint: string, method: string) {
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const stripeKey = safeEnv('STRIPE_SECRET_KEY');
   if (!stripeKey) throw new Error('STRIPE_SECRET_KEY not configured');
 
   const response = await fetch(`https://api.stripe.com/v1${endpoint}`, {

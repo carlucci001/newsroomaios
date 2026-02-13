@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
+import { safeEnv } from '@/lib/env';
 
 const PLAN_PRICE_IDS: Record<string, string> = {
-  starter: process.env.STRIPE_PRICE_STARTER || 'price_starter',
-  growth: process.env.STRIPE_PRICE_GROWTH || 'price_growth',
-  professional: process.env.STRIPE_PRICE_PROFESSIONAL || 'price_professional',
+  starter: safeEnv('STRIPE_PRICE_STARTER', 'price_starter'),
+  growth: safeEnv('STRIPE_PRICE_GROWTH', 'price_growth'),
+  professional: safeEnv('STRIPE_PRICE_PROFESSIONAL', 'price_professional'),
 };
 
 async function stripeAPI(endpoint: string, method: string, params?: Record<string, string>) {
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const stripeKey = safeEnv('STRIPE_SECRET_KEY');
   if (!stripeKey) throw new Error('STRIPE_SECRET_KEY not configured');
 
   const url = `https://api.stripe.com/v1${endpoint}`;

@@ -36,6 +36,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check env var safety (no raw process.env for Stripe keys/URLs)
+        run: |
+          echo "Checking for raw process.env.STRIPE_SECRET_KEY in Stripe routes..."
+          if grep -r "process\.env\.STRIPE_SECRET_KEY" app/api/stripe/ --include="*.ts" | grep -v node_modules; then
+            echo "::error::Found raw process.env.STRIPE_SECRET_KEY usage. Use safeEnv('STRIPE_SECRET_KEY') from @/lib/env instead."
+            exit 1
+          fi
+          echo "Checking for raw process.env.NEXT_PUBLIC_BASE_URL in Stripe routes..."
+          if grep -r "process\.env\.NEXT_PUBLIC_BASE_URL" app/api/stripe/ --include="*.ts" | grep -v node_modules; then
+            echo "::error::Found raw process.env.NEXT_PUBLIC_BASE_URL usage. Use safeEnv('NEXT_PUBLIC_BASE_URL', 'https://newsroomaios.com') from @/lib/env instead."
+            exit 1
+          fi
+          echo "All Stripe routes use safeEnv() — env vars are protected."
+
       - name: Build
         run: npm run build
 

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { verifyPlatformSecret } from '@/lib/platformAuth';
+import { safeEnv } from '@/lib/env';
 
-const PLATFORM_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.newsroomaios.com').trim();
+const PLATFORM_URL = safeEnv('NEXT_PUBLIC_SITE_URL', 'https://www.newsroomaios.com');
 
 async function stripeAPI(endpoint: string, method: string, params?: Record<string, string>) {
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const stripeKey = safeEnv('STRIPE_SECRET_KEY');
   if (!stripeKey) throw new Error('STRIPE_SECRET_KEY not configured');
 
   const url = `https://api.stripe.com/v1${endpoint}`;

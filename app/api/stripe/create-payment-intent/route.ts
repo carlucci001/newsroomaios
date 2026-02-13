@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeEnv } from '@/lib/env';
 
 // Pricing tiers in cents
 const PRICING = {
@@ -10,7 +11,7 @@ const PRICING = {
 
 // Helper to make Stripe REST API calls directly (bypasses SDK connection issues)
 async function stripeAPI(endpoint: string, method: string, params?: Record<string, string>) {
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const stripeKey = safeEnv('STRIPE_SECRET_KEY');
   if (!stripeKey) throw new Error('STRIPE_SECRET_KEY not configured');
 
   const url = `https://api.stripe.com/v1${endpoint}`;
@@ -40,7 +41,7 @@ async function stripeAPI(endpoint: string, method: string, params?: Record<strin
 export async function POST(request: NextRequest) {
   try {
     // Verify Stripe is configured
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    const stripeKey = safeEnv('STRIPE_SECRET_KEY');
     if (!stripeKey) {
       return NextResponse.json(
         { error: 'Stripe is not configured. Please contact support.' },

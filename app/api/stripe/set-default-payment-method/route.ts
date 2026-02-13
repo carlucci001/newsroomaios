@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
+import { safeEnv } from '@/lib/env';
 
 /**
  * POST /api/stripe/set-default-payment-method
@@ -9,7 +10,7 @@ import { getAdminDb } from '@/lib/firebaseAdmin';
  */
 export async function POST(request: NextRequest) {
   try {
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    const stripeKey = safeEnv('STRIPE_SECRET_KEY');
     if (!stripeKey) {
       return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
     }
