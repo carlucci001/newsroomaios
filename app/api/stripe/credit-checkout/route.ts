@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       await db.collection('tenants').doc(tenantId).update({ stripeCustomerId: customerId });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://newsroomaios.com';
+    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://newsroomaios.com').trim();
 
     // Create Checkout Session
     const sessionRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {

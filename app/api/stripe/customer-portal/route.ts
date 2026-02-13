@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Customer Portal session using REST API
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://newsroomaios.com';
+    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://newsroomaios.com').trim();
     const response = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
       method: 'POST',
       headers: {
