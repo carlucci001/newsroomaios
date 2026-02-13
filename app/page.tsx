@@ -133,6 +133,82 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden flex flex-col">
+      {/* FAQ Structured Data for SEO Rich Snippets + GEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: [
+              {
+                "@type": "Question",
+                name: "What is Newsroom AIOS?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Newsroom AIOS is an AI-powered platform that lets anyone launch and manage a professional local newspaper website in minutes. It includes AI-generated content, automated advertising, a local business directory, and newsletter subscriptions — all with built-in monetization from day one. No technical skills required."
+                }
+              },
+              {
+                "@type": "Question",
+                name: "How much does it cost to start a newspaper with Newsroom AIOS?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "There is a one-time $199 setup fee that includes your complete business setup: 36 AI-generated seed articles, 100 business directory listings, custom domain configuration, and all platform features activated. Monthly plans start at $99/month (Starter), $199/month (Growth, most popular), and $299/month (Professional). You keep 100% of all revenue you earn."
+                }
+              },
+              {
+                "@type": "Question",
+                name: "Do I need technical skills to use Newsroom AIOS?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "No. Newsroom AIOS is a turnkey platform designed for entrepreneurs, not developers. We handle all the technology — hosting, domain setup, SSL certificates, CDN, and software updates. You focus on your community and content while the AI handles article generation, advertising, and more."
+                }
+              },
+              {
+                "@type": "Question",
+                name: "How does AI article generation work?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Newsroom AIOS uses Google Gemini AI to generate professionally written local news articles. You configure AI journalist personas with editorial guidelines, select from 40+ content categories, and set a publishing schedule. The AI researches and writes articles tailored to your community, complete with fact-checking via Perplexity and text-to-speech narration via ElevenLabs."
+                }
+              },
+              {
+                "@type": "Question",
+                name: "What revenue streams does the platform provide?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Three built-in revenue streams: (1) AI-Powered Advertising — local businesses sign up and get AI-generated banner ads with flexible pricing (CPC, CPM, or flat rates), earning you $1,500-$3,000/month. (2) Business Directory — free basic listings with a $49/month featured tier, earning $500-$1,500/month. (3) Newsletter Subscriptions — premium content at $9/month or $90/year, earning $500-$1,500/month."
+                }
+              },
+              {
+                "@type": "Question",
+                name: "How long does it take to launch a newspaper?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Under 30 minutes. Choose your domain name, select your content categories, configure your AI journalists, and your newspaper is live. The platform automatically seeds your site with 36 articles and 100 directory listings so you launch with a complete, professional-looking newspaper from day one."
+                }
+              },
+              {
+                "@type": "Question",
+                name: "Do I keep 100% of my advertising and subscription revenue?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Yes. Newsroom AIOS charges zero revenue sharing on any plan. All advertising revenue, directory listing fees, and subscription income goes directly to you. Your only cost is the monthly platform subscription fee."
+                }
+              },
+              {
+                "@type": "Question",
+                name: "What is included in the $199 setup fee?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "The setup fee covers: custom domain configuration with SSL and CDN, 36 AI-generated seed articles across 6 content categories, 100 local business directory listings, AI journalist persona configuration, advertising platform activation, newsletter system setup, and your complete newspaper website ready to publish."
+                }
+              }
+            ]
+          })
+        }}
+      />
       {/* Newsroom Background - VISIBLE at 25% opacity */}
       <div className="fixed inset-0 pointer-events-none">
         {/* Newspaper texture overlay */}
@@ -950,6 +1026,66 @@ export default function Home() {
               <p className="text-4xl font-display font-bold text-purple-600 mb-2">USA</p>
               <p className="text-sm text-muted-foreground">Nationwide Coverage</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section - SEO + GEO Optimized */}
+      <section id="faq" className="relative py-32 observe-animation">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-6">
+              Frequently Asked <span className="text-brand-blue-600">Questions</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Everything you need to know about launching your AI-powered newspaper.
+            </p>
+          </div>
+
+          <div className="space-y-8">
+            {[
+              {
+                q: "What is Newsroom AIOS?",
+                a: "Newsroom AIOS is an AI-powered platform that lets anyone launch and manage a professional local newspaper website in minutes. It includes AI-generated content, automated advertising, a local business directory, and newsletter subscriptions — all with built-in monetization from day one. No technical skills required."
+              },
+              {
+                q: "How much does it cost to start a newspaper with Newsroom AIOS?",
+                a: "There is a one-time $199 setup fee that includes your complete business setup: 36 AI-generated seed articles, 100 business directory listings, custom domain configuration, and all platform features activated. Monthly plans start at $99/month (Starter), $199/month (Growth, most popular), and $299/month (Professional). You keep 100% of all revenue you earn."
+              },
+              {
+                q: "Do I need technical skills to use Newsroom AIOS?",
+                a: "No. Newsroom AIOS is a turnkey platform designed for entrepreneurs, not developers. We handle all the technology — hosting, domain setup, SSL certificates, CDN, and software updates. You focus on your community and content while the AI handles article generation, advertising, and more."
+              },
+              {
+                q: "How does AI article generation work?",
+                a: "Newsroom AIOS uses Google Gemini AI to generate professionally written local news articles. You configure AI journalist personas with editorial guidelines, select from 40+ content categories, and set a publishing schedule. The AI researches and writes articles tailored to your community, complete with fact-checking via Perplexity and text-to-speech narration via ElevenLabs."
+              },
+              {
+                q: "What revenue streams does the platform provide?",
+                a: "Three built-in revenue streams: (1) AI-Powered Advertising — local businesses sign up and get AI-generated banner ads with flexible pricing (CPC, CPM, or flat rates), earning you $1,500-$3,000/month. (2) Business Directory — free basic listings with a $49/month featured tier, earning $500-$1,500/month. (3) Newsletter Subscriptions — premium content at $9/month or $90/year, earning $500-$1,500/month."
+              },
+              {
+                q: "How long does it take to launch a newspaper?",
+                a: "Under 30 minutes. Choose your domain name, select your content categories, configure your AI journalists, and your newspaper is live. The platform automatically seeds your site with 36 articles and 100 directory listings so you launch with a complete, professional-looking newspaper from day one."
+              },
+              {
+                q: "Do I keep 100% of my advertising and subscription revenue?",
+                a: "Yes. Newsroom AIOS charges zero revenue sharing on any plan. All advertising revenue, directory listing fees, and subscription income goes directly to you. Your only cost is the monthly platform subscription fee."
+              },
+              {
+                q: "What is included in the $199 setup fee?",
+                a: "The setup fee covers: custom domain configuration with SSL and CDN, 36 AI-generated seed articles across 6 content categories, 100 local business directory listings, AI journalist persona configuration, advertising platform activation, newsletter system setup, and your complete newspaper website ready to publish."
+              }
+            ].map((item, i) => (
+              <div key={i} className="bg-card border-2 border-border rounded-xl p-8 hover:border-brand-blue-500/30 transition-colors">
+                <h3 className="font-display text-xl font-bold mb-4 text-foreground">
+                  {item.q}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {item.a}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
