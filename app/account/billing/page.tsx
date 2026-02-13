@@ -3,8 +3,6 @@
 import 'antd/dist/reset.css';
 import { useState, useEffect, useCallback } from 'react';
 import { getCurrentUser, getUserTenant } from '@/lib/accountAuth';
-import { getDb } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import {
@@ -199,15 +197,11 @@ export default function BillingPage() {
 
         if (userTenant?.id) {
           try {
-            const db = getDb();
-            const invoicesQuery = query(
-              collection(db, 'invoices'),
-              where('tenantId', '==', userTenant.id),
-              orderBy('paidAt', 'desc'),
-              limit(10)
-            );
-            const snap = await getDocs(invoicesQuery);
-            setInvoices(snap.docs.map(d => ({ id: d.id, ...d.data() } as Invoice)));
+            const invRes = await fetch(`/api/stripe/invoices?tenantId=${encodeURIComponent(userTenant.id)}`);
+            const invData = await invRes.json();
+            if (invData.invoices) {
+              setInvoices(invData.invoices);
+            }
           } catch (err) {
             console.warn('Could not load invoices:', err);
           }
@@ -657,8 +651,7 @@ export default function BillingPage() {
                   dataIndex: 'paidAt',
                   render: (val: any) => {
                     if (!val) return '—';
-                    const d = val?.toDate ? val.toDate() : new Date(val);
-                    return d.toLocaleDateString();
+                    return new Date(val).toLocaleDateString();
                   },
                 },
                 {
