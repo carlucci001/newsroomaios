@@ -16,6 +16,7 @@ import {
   Space,
   Tag,
   Spin,
+  Alert,
 } from 'antd';
 import {
   CreditCardOutlined,
@@ -25,6 +26,10 @@ import {
   MessageOutlined,
   SettingOutlined,
   RiseOutlined,
+  EditOutlined,
+  GlobalOutlined,
+  CopyOutlined,
+  LinkOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -96,16 +101,27 @@ export default function AccountDashboard() {
             </Text>
           </div>
           {tenant.domain && (
-            <Button
-              type="primary"
-              size="large"
-              icon={<ArrowUpOutlined />}
-              href={`https://${tenant.domain}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View Your Newspaper
-            </Button>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <Button
+                type="primary"
+                size="large"
+                icon={<ArrowUpOutlined />}
+                href={`https://${tenant.domain}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View Your Newspaper
+              </Button>
+              <Button
+                size="large"
+                icon={<EditOutlined />}
+                href={`https://${tenant.domain}/admin`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Admin Panel
+              </Button>
+            </div>
           )}
         </div>
 
@@ -163,6 +179,110 @@ export default function AccountDashboard() {
             </Card>
           </Col>
         </Row>
+
+        {/* Your Newspaper */}
+        {tenant.domain && (
+          <Card title={<Title level={4} style={{ margin: 0 }}>Your Newspaper</Title>}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <Row gutter={[16, 12]}>
+                <Col xs={24} sm={8}>
+                  <Text type="secondary" style={{ fontSize: '13px' }}>Newspaper URL</Text>
+                </Col>
+                <Col xs={24} sm={16}>
+                  <Text copyable={{ text: `https://${tenant.domain}` }}>
+                    <a href={`https://${tenant.domain}`} target="_blank" rel="noopener noreferrer">
+                      https://{tenant.domain}
+                    </a>
+                  </Text>
+                </Col>
+              </Row>
+              <Row gutter={[16, 12]}>
+                <Col xs={24} sm={8}>
+                  <Text type="secondary" style={{ fontSize: '13px' }}>Admin Panel</Text>
+                </Col>
+                <Col xs={24} sm={16}>
+                  <Text copyable={{ text: `https://${tenant.domain}/admin` }}>
+                    <a href={`https://${tenant.domain}/admin`} target="_blank" rel="noopener noreferrer">
+                      https://{tenant.domain}/admin
+                    </a>
+                  </Text>
+                </Col>
+              </Row>
+              <Row gutter={[16, 12]}>
+                <Col xs={24} sm={8}>
+                  <Text type="secondary" style={{ fontSize: '13px' }}>Admin Login</Text>
+                </Col>
+                <Col xs={24} sm={16}>
+                  <Text copyable={{ text: `https://${tenant.domain}/admin/login` }}>
+                    <a href={`https://${tenant.domain}/admin/login`} target="_blank" rel="noopener noreferrer">
+                      https://{tenant.domain}/admin/login
+                    </a>
+                  </Text>
+                </Col>
+              </Row>
+              <Row gutter={[16, 12]}>
+                <Col xs={24} sm={8}>
+                  <Text type="secondary" style={{ fontSize: '13px' }}>Tenant ID</Text>
+                </Col>
+                <Col xs={24} sm={16}>
+                  <Text code copyable>{tenant.id}</Text>
+                </Col>
+              </Row>
+              <Row gutter={[16, 12]}>
+                <Col xs={24} sm={8}>
+                  <Text type="secondary" style={{ fontSize: '13px' }}>Status</Text>
+                </Col>
+                <Col xs={24} sm={16}>
+                  <Tag color={isActive ? 'success' : 'warning'}>
+                    {isActive ? 'Active' : tenant.status}
+                  </Tag>
+                </Col>
+              </Row>
+            </div>
+          </Card>
+        )}
+
+        {/* Your Account Credentials */}
+        {tenant.domain && tenant.ownerEmail && (
+          <Card title={<Title level={4} style={{ margin: 0 }}>Your Account Credentials</Title>}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <Row gutter={[16, 12]}>
+                <Col xs={24} sm={8}>
+                  <Text type="secondary" style={{ fontSize: '13px' }}>Login Email</Text>
+                </Col>
+                <Col xs={24} sm={16}>
+                  <Text copyable>{tenant.ownerEmail}</Text>
+                </Col>
+              </Row>
+              <Row gutter={[16, 12]}>
+                <Col xs={24} sm={8}>
+                  <Text type="secondary" style={{ fontSize: '13px' }}>Initial Password</Text>
+                </Col>
+                <Col xs={24} sm={16}>
+                  <Text copyable>Welcome1</Text>
+                </Col>
+              </Row>
+              <Row gutter={[16, 12]}>
+                <Col xs={24} sm={8}>
+                  <Text type="secondary" style={{ fontSize: '13px' }}>Login URL</Text>
+                </Col>
+                <Col xs={24} sm={16}>
+                  <Text copyable={{ text: `https://${tenant.domain}/admin/login` }}>
+                    <a href={`https://${tenant.domain}/admin/login`} target="_blank" rel="noopener noreferrer">
+                      https://{tenant.domain}/admin/login
+                    </a>
+                  </Text>
+                </Col>
+              </Row>
+              <Alert
+                type="info"
+                showIcon
+                message="Use these credentials to log into your newspaper's admin panel. We recommend changing your password after first login."
+                style={{ marginTop: '4px' }}
+              />
+            </div>
+          </Card>
+        )}
 
         {/* Quick Actions */}
         <Card title={<Title level={4} style={{ margin: 0 }}>Quick Actions</Title>}>
@@ -246,6 +366,28 @@ export default function AccountDashboard() {
                 </Card>
               </Link>
             </Col>
+
+            {tenant.domain && (
+              <Col xs={12} sm={6}>
+                <a href={`https://${tenant.domain}/admin`} target="_blank" rel="noopener noreferrer">
+                  <Card hoverable style={{ textAlign: 'center' }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      background: '#fa8c16',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 12px'
+                    }}>
+                      <EditOutlined style={{ fontSize: '24px', color: 'white' }} />
+                    </div>
+                    <Text strong>Newspaper Admin</Text>
+                  </Card>
+                </a>
+              </Col>
+            )}
           </Row>
         </Card>
 

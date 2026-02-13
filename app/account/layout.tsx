@@ -214,17 +214,31 @@ function AccountLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
 
               {tenant?.domain && (
-                <Link
-                  href={`https://${tenant.domain}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-none active:scale-95 ${
-                    isDark ? 'text-gray-300 hover:bg-gray-700 active:bg-gray-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
-                  }`}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>View Your Newspaper</span>
-                </Link>
+                <>
+                  <a
+                    href={`https://${tenant.domain}/admin`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-none active:scale-95 ${
+                      isDark ? 'text-gray-300 hover:bg-gray-700 active:bg-gray-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4" />
+                    <span>Admin Panel</span>
+                    <ExternalLink className="w-3 h-3 ml-auto opacity-50" />
+                  </a>
+                  <Link
+                    href={`https://${tenant.domain}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-none active:scale-95 ${
+                      isDark ? 'text-gray-300 hover:bg-gray-700 active:bg-gray-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                    }`}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>View Your Newspaper</span>
+                  </Link>
+                </>
               )}
 
               <button
@@ -253,15 +267,26 @@ function AccountLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
 
             {tenant?.domain && (
-              <Link
-                href={`https://${tenant.domain}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`hidden sm:flex items-center gap-1 text-sm transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                <span>View Newspaper</span>
-                <ExternalLink className="w-4 h-4" />
-              </Link>
+              <div className="hidden sm:flex items-center gap-4">
+                <a
+                  href={`https://${tenant.domain}/admin`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center gap-1 text-sm transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <span>Admin Panel</span>
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+                <Link
+                  href={`https://${tenant.domain}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center gap-1 text-sm transition-colors ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <span>View Newspaper</span>
+                  <ExternalLink className="w-4 h-4" />
+                </Link>
+              </div>
             )}
 
             {/* Menu button - RIGHT SIDE */}
