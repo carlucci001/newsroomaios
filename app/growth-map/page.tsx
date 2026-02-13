@@ -106,7 +106,9 @@ export default function GrowthMapPage() {
             source: 'direct' as const,
             siteUrl: tenant.customDomain
               ? `https://${tenant.customDomain}`
-              : tenant.siteUrl || '',
+              : tenant.siteUrl
+                || (tenant.subdomain ? `https://${tenant.subdomain}` : '')
+                || (tenant.domain && tenant.domain.includes('.') ? `https://${tenant.domain}` : ''),
             createdAt: tenant.createdAt,
           });
         }
