@@ -4,7 +4,7 @@ import { generateContent, NEWS_SYSTEM_INSTRUCTION } from '@/lib/gemini';
 import { buildArticlePrompt, validateSourceMaterial } from '@/lib/promptBuilder';
 import { parseArticleResponse, generateSlug } from '@/lib/articleParser';
 import { generateArticleImage } from '@/lib/imageGeneration';
-import { searchNews, generateSearchQuery } from '@/lib/webSearch';
+import { searchNewsWithRetry, generateSearchQuery } from '@/lib/webSearch';
 import { getAIConfig } from '@/lib/aiConfigService';
 import { verifyPlatformSecret } from '@/lib/platformAuth';
 import { GenerateArticleRequest, GenerateArticleResponse, PromptContext, SourceContent } from '@/types/generation';
@@ -93,8 +93,10 @@ export async function POST(request: NextRequest) {
         tenant.serviceArea.state,
         tenant.serviceArea.region
       );
-      const searchResult = await searchNews(searchQuery, {
+      const searchResult = await searchNewsWithRetry(searchQuery, {
         focusArea: category.name,
+        city: tenant.serviceArea.city,
+        state: tenant.serviceArea.state,
         config: {
           model: aiConfig.webSearch.model,
           maxTokens: aiConfig.webSearch.maxTokens,

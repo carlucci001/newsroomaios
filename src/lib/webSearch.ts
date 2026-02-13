@@ -335,6 +335,70 @@ function generateFallbackContent(query: string, focusArea?: string): SourceConte
 }
 
 /**
+ * Multi-pass search: progressively broadens search if initial pass finds nothing.
+ *
+ * Pass 1: News domains only, past week (current behavior)
+ * Pass 2: All domains, past month (picks up gov sites, community blogs, calendars)
+ * Pass 3: General community context search (real-world grounding, no time limit)
+ *
+ * Returns SourceContent or null only if Perplexity is completely unavailable.
+ */
+export async function searchNewsWithRetry(
+  query: string,
+  options: {
+    focusArea?: string;
+    config?: WebSearchConfig;
+    city?: string;
+    state?: string;
+  } = {}
+): Promise<SourceContent | null> {
+  const { focusArea, config, city, state } = options;
+
+  // Pass 1: Standard news search (narrow — news domains, past week)
+  console.log(`[WebSearch] Pass 1: News domains, past week`);
+  const pass1 = await searchNews(query, {
+    focusArea,
+    config: { ...config },
+  });
+  if (pass1) return pass1;
+
+  // Pass 2: Broader search (all domains, past month)
+  console.log(`[WebSearch] Pass 2: All domains, past month`);
+  const pass2 = await searchNews(query, {
+    focusArea,
+    config: {
+      ...config,
+      searchDomainFilter: [],
+      searchRecencyFilter: 'month',
+    },
+  });
+  if (pass2) return pass2;
+
+  // Pass 3: Community context (real-world grounding for local interest articles)
+  if (city && state) {
+    const month = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const contextQuery = `What is currently happening in ${city}, ${state} as of ${month}? Include real local events, community developments, government meetings, local businesses, school activities, and any notable happenings.`;
+    console.log(`[WebSearch] Pass 3: Community context for ${city}, ${state}`);
+    const pass3 = await searchNews(contextQuery, {
+      focusArea: focusArea || `local community news in ${city}`,
+      config: {
+        ...config,
+        searchDomainFilter: [],
+        searchRecencyFilter: 'year',
+        maxTokens: 2000,
+      },
+    });
+    if (pass3) {
+      console.log(`[WebSearch] ✓ Pass 3 found community context`);
+      return pass3;
+    }
+  }
+
+  console.warn(`[WebSearch] All 3 passes returned no results`);
+  return null;
+}
+
+/**
  * Generate a search query for a specific beat/category
  */
 export function generateSearchQuery(
