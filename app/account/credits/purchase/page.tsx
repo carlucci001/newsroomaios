@@ -3,8 +3,10 @@
 import 'antd/dist/reset.css';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getCurrentUser, getUserTenant } from '@/lib/accountAuth';
-import { useTheme } from '@/components/providers/AntdProvider';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import {
   Card,
   Typography,
@@ -14,14 +16,18 @@ import {
   Row,
   Col,
   Spin,
+  Modal,
   message,
 } from 'antd';
 import {
   ArrowLeftOutlined,
   CheckOutlined,
+  CreditCardOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const CREDIT_PACKAGES = [
   {
@@ -53,11 +59,72 @@ const CREDIT_PACKAGES = [
   },
 ];
 
+function PaymentForm({
+  onSuccess,
+  onError,
+  packLabel,
+}: {
+  onSuccess: () => void;
+  onError: (msg: string) => void;
+  packLabel: string;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isReady, setIsReady] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!stripe || !elements || !isReady) return;
+    setSubmitting(true);
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: window.location.href,
+      },
+      redirect: 'if_required',
+    });
+    setSubmitting(false);
+    if (error) {
+      onError(error.message || 'Payment failed');
+    } else {
+      onSuccess();
+    }
+  };
+
+  return (
+    <div>
+      <PaymentElement
+        onReady={() => setIsReady(true)}
+        options={{ wallets: { applePay: 'never', googlePay: 'never' } }}
+      />
+      <div style={{ marginTop: 16 }}>
+        <Button
+          type="primary"
+          block
+          size="large"
+          loading={submitting}
+          disabled={!stripe || !isReady}
+          onClick={handleSubmit}
+          icon={<CreditCardOutlined />}
+        >
+          {submitting ? 'Processing...' : isReady ? `Pay for ${packLabel}` : 'Loading...'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function PurchaseCreditsPage() {
-  const { isDark } = useTheme();
+  const router = useRouter();
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
+
+  // Payment modal state
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [selectedPack, setSelectedPack] = useState<typeof CREDIT_PACKAGES[0] | null>(null);
 
   useEffect(() => {
     async function loadTenant() {
@@ -81,20 +148,26 @@ export default function PurchaseCreditsPage() {
       return;
     }
 
+    const pack = CREDIT_PACKAGES.find(p => p.id === packageId);
+    if (!pack) return;
+
     setPurchasing(packageId);
 
     try {
-      const res = await fetch('/api/stripe/credit-checkout', {
+      const res = await fetch('/api/stripe/create-credit-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenantId, packId: packageId }),
       });
 
       const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
+      if (data.clientSecret) {
+        setClientSecret(data.clientSecret);
+        setPaymentIntentId(data.paymentIntentId);
+        setSelectedPack(pack);
+        setPaymentOpen(true);
       } else {
-        message.error(data.error || 'Failed to start checkout');
+        message.error(data.error || 'Failed to start payment');
       }
     } catch (error) {
       console.error('Purchase error:', error);
@@ -102,6 +175,51 @@ export default function PurchaseCreditsPage() {
     } finally {
       setPurchasing(null);
     }
+  };
+
+  const handlePaymentSuccess = async () => {
+    if (!tenantId || !paymentIntentId || !selectedPack) return;
+
+    // Confirm and apply credits
+    try {
+      const res = await fetch('/api/stripe/confirm-credit-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId,
+          paymentIntentId,
+          packId: selectedPack.id,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        message.success(`${data.creditsAdded} credits added to your account!`);
+        setPaymentOpen(false);
+        setClientSecret(null);
+        setPaymentIntentId(null);
+        setSelectedPack(null);
+        // Navigate to credits page to see updated balance
+        router.push('/account/credits');
+      } else {
+        message.error(data.error || 'Failed to apply credits. Please contact support.');
+      }
+    } catch (err) {
+      console.error('Confirm error:', err);
+      message.error('Payment succeeded but credits may take a moment to appear. Please check your credits page.');
+      setPaymentOpen(false);
+    }
+  };
+
+  const handlePaymentError = (msg: string) => {
+    message.error(msg);
+  };
+
+  const handleCloseModal = () => {
+    setPaymentOpen(false);
+    setClientSecret(null);
+    setPaymentIntentId(null);
+    setSelectedPack(null);
   };
 
   if (loading) {
@@ -255,6 +373,36 @@ export default function PurchaseCreditsPage() {
           </Space>
         </Card>
       </Space>
+
+      {/* Payment Modal */}
+      <Modal
+        title={selectedPack ? `Purchase ${selectedPack.credits} Credits — $${selectedPack.price}` : 'Payment'}
+        open={paymentOpen}
+        onCancel={handleCloseModal}
+        footer={null}
+        destroyOnHidden
+        width={480}
+      >
+        {clientSecret ? (
+          <Elements
+            stripe={stripePromise}
+            options={{ clientSecret }}
+          >
+            <PaymentForm
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+              packLabel={selectedPack ? `${selectedPack.credits} Credits` : 'Credits'}
+            />
+          </Elements>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 12 }}>
+              <Text type="secondary">Preparing payment...</Text>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
