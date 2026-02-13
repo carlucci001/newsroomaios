@@ -125,7 +125,10 @@ function PaymentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement onReady={() => setIsReady(true)} />
+      <PaymentElement
+        onReady={() => setIsReady(true)}
+        options={{ wallets: { applePay: 'never', googlePay: 'never' } }}
+      />
       <Button type="submit" disabled={!stripe || !isReady || loading} className="w-full" size="lg">
         <CreditCard className="h-4 w-4 mr-2" />
         {loading ? 'Processing...' : isReady ? 'Pay & Continue' : 'Loading...'}

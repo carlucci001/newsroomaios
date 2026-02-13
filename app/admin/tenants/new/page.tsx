@@ -169,7 +169,10 @@ function AdminPaymentSection({
 
       {/* Stripe card input */}
       <Card title={<Text strong><CreditCardOutlined /> Card Details</Text>} size="small" style={{ marginBottom: 16 }}>
-        <PaymentElement onReady={() => setReady(true)} />
+        <PaymentElement
+          onReady={() => setReady(true)}
+          options={{ wallets: { applePay: 'never', googlePay: 'never' } }}
+        />
       </Card>
 
       {status && processing && (

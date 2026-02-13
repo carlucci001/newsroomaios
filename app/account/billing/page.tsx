@@ -126,7 +126,10 @@ function AddCardForm({ onSuccess, onError }: { onSuccess: () => void; onError: (
 
   return (
     <div>
-      <PaymentElement onReady={() => setIsReady(true)} />
+      <PaymentElement
+        onReady={() => setIsReady(true)}
+        options={{ wallets: { applePay: 'never', googlePay: 'never' } }}
+      />
       <div style={{ marginTop: 16 }}>
         <Button
           type="primary"
