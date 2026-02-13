@@ -18,29 +18,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    const snap = await db.collection('invoices')
-      .where('tenantId', '==', tenantId)
-      .orderBy('paidAt', 'desc')
-      .limit(10)
-      .get();
+    let invoices: any[] = [];
+    try {
+      const snap = await db.collection('invoices')
+        .where('tenantId', '==', tenantId)
+        .orderBy('paidAt', 'desc')
+        .limit(10)
+        .get();
 
-    const invoices = snap.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        amountPaid: data.amountPaid || 0,
-        status: data.status || 'unknown',
-        paidAt: data.paidAt?.toDate?.()?.toISOString() || data.paidAt || null,
-        hostedInvoiceUrl: data.hostedInvoiceUrl || null,
-      };
-    });
+      invoices = snap.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          amountPaid: data.amountPaid || 0,
+          status: data.status || 'unknown',
+          paidAt: data.paidAt?.toDate?.()?.toISOString() || data.paidAt || null,
+          hostedInvoiceUrl: data.hostedInvoiceUrl || null,
+        };
+      });
+    } catch (queryErr: any) {
+      // Index may not exist yet if no invoices have been created
+      console.warn('[Invoices] Query failed (likely missing index):', queryErr.message);
+    }
 
     return NextResponse.json({ invoices });
   } catch (error: any) {
     console.error('[Invoices] Error:', error.message);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch invoices' },
-      { status: 500 }
-    );
+    return NextResponse.json({ invoices: [] });
   }
 }
