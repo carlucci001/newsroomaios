@@ -75,6 +75,44 @@ export function getWebApplicationJsonLd() {
   };
 }
 
+export function getArticleJsonLd(article: {
+  title: string;
+  description: string;
+  url: string;
+  image: string;
+  datePublished: string;
+  dateModified: string;
+  author: string;
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.title,
+    description: article.description,
+    image: article.image,
+    datePublished: article.datePublished,
+    dateModified: article.dateModified,
+    url: article.url,
+    author: {
+      '@type': 'Person',
+      name: article.author,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${SITE_URL}/newsroom-logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': article.url,
+    },
+  };
+}
+
 export function getFaqJsonLd(
   faqs: { question: string; answer: string }[]
 ) {

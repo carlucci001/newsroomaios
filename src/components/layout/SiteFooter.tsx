@@ -29,7 +29,7 @@ export function SiteFooter() {
           <div>
             <h3 className="font-semibold mb-4 text-foreground">Resources</h3>
             <ul className="space-y-3 text-sm text-foreground/70">
-              <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Blog</a></li>
+              <li><Link href="/blog" className="hover:text-brand-blue-600 transition-colors">Blog</Link></li>
               <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Help Center</a></li>
               <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Community</a></li>
               <li><a href="#" className="hover:text-brand-blue-600 transition-colors">API Reference</a></li>

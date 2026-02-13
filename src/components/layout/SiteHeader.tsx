@@ -102,6 +102,19 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
                 <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
               )}
             </Link>
+            <Link
+              href="/blog"
+              className={`text-sm font-medium transition-all active:scale-95 relative group ${
+                pathname === '/blog' || pathname?.startsWith('/blog/')
+                  ? 'text-brand-blue-600 font-semibold'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+            >
+              Blog
+              {(pathname === '/blog' || pathname?.startsWith('/blog/')) && (
+                <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
+              )}
+            </Link>
             <Link href="/account/login">
               <Button variant="ghost" size="sm" className="transition-all active:scale-95">Sign In</Button>
             </Link>
@@ -195,6 +208,20 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
             >
               Success Stories
               {pathname === '/testimonials' && (
+                <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
+              )}
+            </Link>
+            <Link
+              href="/blog"
+              className={`text-2xl font-medium transition-all active:scale-95 relative ${
+                pathname === '/blog' || pathname?.startsWith('/blog/')
+                  ? 'text-brand-blue-600 font-bold scale-105'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Blog
+              {(pathname === '/blog' || pathname?.startsWith('/blog/')) && (
                 <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
               )}
             </Link>
