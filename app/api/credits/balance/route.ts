@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { verifyPlatformSecret } from '@/lib/platformAuth';
 import { Tenant } from '@/types/tenant';
+import { DEFAULT_PLANS } from '@/types/credits';
 
 // CORS headers for tenant domains
 const CORS_HEADERS = {
@@ -50,6 +51,10 @@ export async function GET(request: NextRequest) {
       daysUntilRenewal = Math.max(0, Math.ceil((nextBilling.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
     }
 
+    // Look up plan limits
+    const planId = tenantData.plan || 'starter';
+    const planDef = DEFAULT_PLANS.find(p => p.id === planId) || DEFAULT_PLANS[0];
+
     // Return credits and billing info
     return NextResponse.json(
       {
@@ -59,7 +64,12 @@ export async function GET(request: NextRequest) {
           subscription: tenantData.subscriptionCredits || 0,
           topOff: tenantData.topOffCredits || 0,
         },
-        plan: tenantData.plan || 'starter',
+        plan: planId,
+        planLimits: {
+          maxAIJournalists: planDef.maxAIJournalists,
+          maxArticlesPerDay: planDef.maxArticlesPerDay,
+          monthlyCredits: planDef.monthlyCredits,
+        },
         status: tenantData.licensingStatus || 'active',
         daysUntilRenewal,
         nextBillingDate: tenantData.nextBillingDate,

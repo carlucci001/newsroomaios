@@ -341,8 +341,10 @@ export async function POST(request: NextRequest) {
 
     await db.collection('tenants').doc(tenantId).collection('meta').doc('setupStatus').set(progressData);
 
-    // Create 6 AI journalists (one per category)
-    const journalists = createDefaultJournalists(tenantId, businessName, selectedCategories);
+    // Create AI journalists (capped by plan limit)
+    const allJournalists = createDefaultJournalists(tenantId, businessName, selectedCategories);
+    const maxAgents = selectedPlan.maxAIJournalists > 0 ? selectedPlan.maxAIJournalists : allJournalists.length;
+    const journalists = allJournalists.slice(0, maxAgents);
     const batch = db.batch();
     for (const journalist of journalists) {
       const journalistRef = db.collection('aiJournalists').doc();
