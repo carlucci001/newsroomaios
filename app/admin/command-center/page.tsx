@@ -17,6 +17,8 @@ import {
   Space,
   Spin,
   Progress,
+  Button,
+  Tooltip,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -30,6 +32,7 @@ import {
   GlobalOutlined,
   RiseOutlined,
   CloudServerOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -140,15 +143,18 @@ function normalizeState(state: string): string {
 export default function CommandCenterPage() {
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [tenants, setTenants] = useState<TenantHealth[]>([]);
   const [costMetrics, setCostMetrics] = useState<CostMetrics | null>(null);
   const [systemChecks, setSystemChecks] = useState<SystemCheck[]>([]);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   useEffect(() => {
     fetchAllData();
   }, []);
 
   async function fetchAllData() {
+    setRefreshing(true);
     try {
       const db = getDb();
 
@@ -169,11 +175,18 @@ export default function CommandCenterPage() {
         const issues: string[] = [];
         let health: 'green' | 'amber' | 'red' = 'green';
 
+        // Resolve site URL from all available fields (customDomain > siteUrl > subdomain > domain)
+        const resolvedSiteUrl = t.customDomain
+          ? `https://${t.customDomain}`
+          : t.siteUrl
+            || (t.subdomain ? `https://${t.subdomain}` : undefined)
+            || (t.domain?.includes('.') ? `https://${t.domain}` : undefined);
+
         if (t.status !== 'active') {
           issues.push(`Status: ${t.status}`);
           health = 'red';
         }
-        if (!t.siteUrl) {
+        if (!resolvedSiteUrl && t.status === 'active') {
           issues.push('No site URL');
           health = health === 'red' ? 'red' : 'amber';
         }
@@ -189,9 +202,6 @@ export default function CommandCenterPage() {
             issues.push('Credits exhausted');
             health = 'red';
           }
-        } else {
-          issues.push('No credit record');
-          health = health === 'red' ? 'red' : 'amber';
         }
 
         return {
@@ -201,7 +211,7 @@ export default function CommandCenterPage() {
           city: t.serviceArea?.city || '',
           state: t.serviceArea?.state || '',
           status: t.status,
-          siteUrl: t.siteUrl,
+          siteUrl: resolvedSiteUrl,
           plan: t.plan,
           creditsUsed: creds?.creditsUsed || 0,
           creditsTotal: creds?.monthlyAllocation || 0,
@@ -247,28 +257,9 @@ export default function CommandCenterPage() {
         topConsumers,
       });
 
-      // Build system checks
+      // Build system checks (only dynamic checks that evaluate real data)
+      const activeTenants = healthData.filter(t => t.status === 'active');
       const checks: SystemCheck[] = [
-        {
-          label: 'Stripe Webhook Verification',
-          status: 'ok',
-          detail: 'Signature verification active (constructEvent)',
-        },
-        {
-          label: 'Platform Secret',
-          status: 'ok',
-          detail: 'Rotated — no hardcoded fallbacks in codebase',
-        },
-        {
-          label: 'Environment Files',
-          status: 'ok',
-          detail: '.env* pattern in .gitignore covers all env files',
-        },
-        {
-          label: 'Firebase Storage Rules',
-          status: 'ok',
-          detail: 'Deployed to both platform and WNC Times projects',
-        },
         {
           label: 'Active Tenants',
           status: healthData.filter(t => t.health === 'red').length > 0 ? 'warn' : 'ok',
@@ -280,13 +271,8 @@ export default function CommandCenterPage() {
           detail: `${healthData.filter(t => t.creditsUsed > 0).length} tenants with active usage`,
         },
         {
-          label: 'API Auth (verifyPlatformSecret)',
-          status: 'ok',
-          detail: 'Centralized auth utility — 22 routes protected',
-        },
-        {
           label: 'Tenant Deployments',
-          status: healthData.filter(t => !t.siteUrl && t.status === 'active').length > 0 ? 'warn' : 'ok',
+          status: activeTenants.filter(t => !t.siteUrl).length > 0 ? 'warn' : 'ok',
           detail: `${healthData.filter(t => t.siteUrl).length}/${healthData.length} deployed`,
         },
       ];
@@ -296,6 +282,8 @@ export default function CommandCenterPage() {
       console.error('[Command Center] Error loading data:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
+      setLastRefreshed(new Date());
     }
   }
 
@@ -797,7 +785,7 @@ export default function CommandCenterPage() {
               <Text type="secondary">Platform health, costs, and network overview</Text>
             </div>
           </div>
-          <Space>
+          <Space wrap>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
               <Led color="green" size={6} /> {greenCount} OK
             </span>
@@ -810,6 +798,21 @@ export default function CommandCenterPage() {
               <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#ef4444' }}>
                 <Led color="red" size={6} /> {redCount} CRIT
               </span>
+            )}
+            <Tooltip title="Refresh all data">
+              <Button
+                icon={<ReloadOutlined spin={refreshing} />}
+                onClick={fetchAllData}
+                loading={refreshing}
+                size="small"
+              >
+                Refresh
+              </Button>
+            </Tooltip>
+            {lastRefreshed && (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Updated {lastRefreshed.toLocaleTimeString()}
+              </Text>
             )}
           </Space>
         </div>
