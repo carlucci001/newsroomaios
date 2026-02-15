@@ -6,7 +6,7 @@ import { generateFirstResponse } from '@/lib/supportAI';
 // CORS headers for tenant domains
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, X-Tenant-ID, X-API-Key, X-Platform-Secret',
   'Access-Control-Max-Age': '86400',
 };
@@ -412,6 +412,43 @@ export async function PATCH(request: NextRequest) {
     console.error('[Support] PATCH error:', error);
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Failed to update ticket' },
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+}
+
+/**
+ * DELETE /api/support/tickets?id=ticketId
+ * Delete a ticket and its messages. Platform admin only.
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const auth = await authenticateRequest(request);
+    if (!auth.valid || !auth.isPlatformAdmin) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401, headers: CORS_HEADERS });
+    }
+
+    const ticketId = request.nextUrl.searchParams.get('id');
+    if (!ticketId) {
+      return NextResponse.json({ success: false, error: 'Ticket ID required' }, { status: 400, headers: CORS_HEADERS });
+    }
+
+    const db = getAdminDb()!;
+    const ticketRef = db.collection('supportTickets').doc(ticketId);
+
+    // Delete messages subcollection first
+    const messagesSnap = await ticketRef.collection('messages').get();
+    const batch = db.batch();
+    messagesSnap.docs.forEach(doc => batch.delete(doc.ref));
+    batch.delete(ticketRef);
+    await batch.commit();
+
+    return NextResponse.json({ success: true }, { headers: CORS_HEADERS });
+
+  } catch (error: unknown) {
+    console.error('[Support] DELETE error:', error);
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : 'Failed to delete ticket' },
       { status: 500, headers: CORS_HEADERS }
     );
   }
