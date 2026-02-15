@@ -10,13 +10,23 @@ interface RolloutResult {
   error?: string;
 }
 
+// Beta rollout group — edit this list to add/remove beta testers
+const BETA_TENANTS = [
+  'wnct-times',
+  'hendo',
+  'oceanside-news',
+  'hardhatsports',
+  'atlanta-news-network',
+];
+
 /**
  * POST /api/tenants/rollout
- * Redeploy ALL active tenants with the latest template code.
+ * Redeploy active tenants with the latest template code.
  *
- * This is the "fix applies to everybody" endpoint.
- * When the wnct-template repo gets a fix, call this to roll it out
- * to every active newspaper site.
+ * Supports scoped rollouts:
+ *   scope: 'beta'  → deploy only to BETA_TENANTS (5 tenants)
+ *   scope: 'all'   → deploy to ALL active tenants (default)
+ *   tenantSlugs: ['slug1', 'slug2'] → deploy to specific tenants (ad-hoc override)
  *
  * ⚠️  WNC TIMES CAVEAT (tenant: wnct-times, project: newspaper-wnct-times)
  * WNC Times uses a DIFFERENT Firebase project (gen-lang-client-0242565142) and
@@ -29,7 +39,7 @@ interface RolloutResult {
  * See ARCHITECTURE.md "WNC Times — Special Architecture" for full details.
  *
  * Requires: PLATFORM_SECRET header
- * Optional body: { version?: string, dryRun?: boolean }
+ * Optional body: { version?: string, dryRun?: boolean, scope?: 'beta'|'all', tenantSlugs?: string[] }
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -51,16 +61,34 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const version = body.version || 'unknown';
     const dryRun = body.dryRun === true;
+    const scope = body.scope || 'all'; // 'beta' | 'all'
+    const tenantSlugs = body.tenantSlugs as string[] | undefined;
 
     const db = getAdminDb();
     if (!db) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
 
-    // Get all active tenants
-    const tenantsSnapshot = await db.collection('tenants')
-      .where('status', '==', 'active')
-      .get();
+    // Get tenants based on scope
+    let tenantsSnapshot;
+    if (tenantSlugs && tenantSlugs.length > 0) {
+      // Ad-hoc: deploy to specific tenants by slug
+      tenantsSnapshot = await db.collection('tenants')
+        .where('status', '==', 'active')
+        .where('slug', 'in', tenantSlugs)
+        .get();
+    } else if (scope === 'beta') {
+      // Beta group only
+      tenantsSnapshot = await db.collection('tenants')
+        .where('status', '==', 'active')
+        .where('slug', 'in', BETA_TENANTS)
+        .get();
+    } else {
+      // All active tenants
+      tenantsSnapshot = await db.collection('tenants')
+        .where('status', '==', 'active')
+        .get();
+    }
 
     if (tenantsSnapshot.empty) {
       return NextResponse.json({
@@ -82,13 +110,15 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    console.log(`[Rollout] Starting rollout of v${version} to ${tenants.length} tenants (dryRun: ${dryRun})`);
+    const scopeLabel = tenantSlugs ? `custom(${tenantSlugs.join(',')})` : scope;
+    console.log(`[Rollout] Starting ${scopeLabel} rollout of v${version} to ${tenants.length} tenants (dryRun: ${dryRun})`);
 
     // Create rollout record in Firestore
     const rolloutRef = db.collection('rollouts').doc();
     await rolloutRef.set({
       id: rolloutRef.id,
       version,
+      scope: scopeLabel,
       dryRun,
       totalTenants: tenants.length,
       status: 'in_progress',
@@ -165,7 +195,7 @@ export async function POST(request: NextRequest) {
       results,
     });
 
-    const summary = `Rollout v${version}: ${succeeded}/${tenants.length} succeeded, ${failed} failed (${Math.round(durationMs / 1000)}s)`;
+    const summary = `Rollout v${version} (${scopeLabel}): ${succeeded}/${tenants.length} succeeded, ${failed} failed (${Math.round(durationMs / 1000)}s)`;
     console.log(`[Rollout] ${summary}`);
 
     return NextResponse.json({
@@ -173,6 +203,7 @@ export async function POST(request: NextRequest) {
       summary,
       rolloutId: rolloutRef.id,
       version,
+      scope: scopeLabel,
       dryRun,
       totalTenants: tenants.length,
       succeeded,
@@ -228,6 +259,7 @@ export async function GET(request: NextRequest) {
       return {
         id: doc.id,
         version: data.version,
+        scope: data.scope || 'all',
         status: data.status,
         totalTenants: data.totalTenants,
         succeeded: data.succeeded,
