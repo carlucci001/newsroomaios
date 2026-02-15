@@ -119,14 +119,13 @@ export async function GET(request: NextRequest) {
       }, { headers: CORS_HEADERS });
     }
 
-    // List tickets
+    // List tickets — use simple query + client-side sort to avoid composite index requirements
     let q: FirebaseFirestore.Query = db.collection('supportTickets');
 
     // Tenant scoping — tenants only see their own tickets
     if (!auth.isPlatformAdmin) {
       q = q.where('tenantId', '==', auth.tenantId);
     } else if (params.get('tenantId')) {
-      // Platform admin can filter by tenant
       q = q.where('tenantId', '==', params.get('tenantId'));
     }
 
@@ -137,10 +136,19 @@ export async function GET(request: NextRequest) {
       q = q.where('priority', '==', priority);
     }
 
-    q = q.orderBy('createdAt', 'desc').limit(limit);
     const snapshot = await q.get();
 
     let tickets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Sort client-side (avoids needing composite indexes for every filter combo)
+    tickets.sort((a: any, b: any) => {
+      const aTime = a.createdAt?._seconds || a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?._seconds || b.createdAt?.seconds || 0;
+      return bTime - aTime;
+    });
+
+    // Apply limit after sort
+    tickets = tickets.slice(0, limit);
 
     // Client-side search filter (Firestore doesn't support full-text search)
     if (search) {
