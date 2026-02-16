@@ -39,7 +39,7 @@ const BETA_TENANTS = [
  * See ARCHITECTURE.md "WNC Times — Special Architecture" for full details.
  *
  * Requires: PLATFORM_SECRET header
- * Optional body: { version?: string, dryRun?: boolean, scope?: 'beta'|'all', tenantSlugs?: string[] }
+ * Optional body: { version?: string, commitHash?: string, dryRun?: boolean, scope?: 'beta'|'all', tenantSlugs?: string[] }
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
     const version = body.version || 'unknown';
+    const commitHash = body.commitHash || '';
     const dryRun = body.dryRun === true;
     const scope = body.scope || 'all'; // 'beta' | 'all'
     const tenantSlugs = body.tenantSlugs as string[] | undefined;
@@ -118,6 +119,7 @@ export async function POST(request: NextRequest) {
     await rolloutRef.set({
       id: rolloutRef.id,
       version,
+      commitHash,
       scope: scopeLabel,
       dryRun,
       totalTenants: tenants.length,
@@ -170,11 +172,13 @@ export async function POST(request: NextRequest) {
 
       // Update tenant record with latest deployment info
       if (result.success && result.deploymentId) {
-        await db.collection('tenants').doc(tenant.id).update({
+        const tenantUpdate: Record<string, any> = {
           lastRolloutVersion: version,
           lastRolloutDeploymentId: result.deploymentId,
           lastRolloutAt: new Date(),
-        });
+        };
+        if (commitHash) tenantUpdate.lastRolloutCommit = commitHash;
+        await db.collection('tenants').doc(tenant.id).update(tenantUpdate);
       }
 
       // Small delay between deployments to be kind to Vercel API
@@ -185,6 +189,24 @@ export async function POST(request: NextRequest) {
     const failed = results.filter(r => !r.success).length;
     const durationMs = Date.now() - startTime;
 
+    // Post-rollout verification: check which tenants are still on an older commit
+    let staleCount = 0;
+    const staleTenants: string[] = [];
+    if (commitHash && !dryRun) {
+      const allActiveSnapshot = await db.collection('tenants')
+        .where('status', '==', 'active')
+        .get();
+      for (const doc of allActiveSnapshot.docs) {
+        const data = doc.data();
+        if (data.lastRolloutCommit !== commitHash) {
+          staleCount++;
+          staleTenants.push(data.slug || doc.id);
+        }
+      }
+    }
+
+    const allCurrent = commitHash ? staleCount === 0 : null;
+
     // Update rollout record
     await rolloutRef.update({
       status: failed === 0 ? 'completed' : 'completed_with_errors',
@@ -193,16 +215,23 @@ export async function POST(request: NextRequest) {
       durationMs,
       completedAt: new Date(),
       results,
+      staleCount,
+      staleTenants,
+      allTenantsCurrentAfterRollout: allCurrent,
     });
 
     const summary = `Rollout v${version} (${scopeLabel}): ${succeeded}/${tenants.length} succeeded, ${failed} failed (${Math.round(durationMs / 1000)}s)`;
     console.log(`[Rollout] ${summary}`);
+    if (commitHash) {
+      console.log(`[Rollout] Commit: ${commitHash.substring(0, 8)} | Stale tenants: ${staleCount}${staleTenants.length > 0 ? ` (${staleTenants.join(', ')})` : ''}`);
+    }
 
     return NextResponse.json({
       success: failed === 0,
       summary,
       rolloutId: rolloutRef.id,
       version,
+      commitHash: commitHash || undefined,
       scope: scopeLabel,
       dryRun,
       totalTenants: tenants.length,
@@ -210,6 +239,9 @@ export async function POST(request: NextRequest) {
       failed,
       durationMs,
       results,
+      staleCount,
+      staleTenants,
+      allTenantsCurrentAfterRollout: allCurrent,
     });
 
   } catch (error: unknown) {
@@ -259,11 +291,14 @@ export async function GET(request: NextRequest) {
       return {
         id: doc.id,
         version: data.version,
+        commitHash: data.commitHash || null,
         scope: data.scope || 'all',
         status: data.status,
         totalTenants: data.totalTenants,
         succeeded: data.succeeded,
         failed: data.failed,
+        staleCount: data.staleCount ?? null,
+        allTenantsCurrentAfterRollout: data.allTenantsCurrentAfterRollout ?? null,
         durationMs: data.durationMs,
         startedAt: data.startedAt,
         dryRun: data.dryRun,

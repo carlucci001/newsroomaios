@@ -52,17 +52,31 @@ jobs:
             echo "version=v${VERSION}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Get wnct-template HEAD commit
+        id: template_commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMIT_SHA=$(gh api repos/carlucci001/wnct-template/commits/master --jq .sha 2>/dev/null || echo "")
+          echo "commit_hash=${COMMIT_SHA}" >> $GITHUB_OUTPUT
+          if [ -n "$COMMIT_SHA" ]; then
+            echo "Template commit: ${COMMIT_SHA:0:8}"
+          else
+            echo "Warning: Could not fetch wnct-template HEAD commit"
+          fi
+
       - name: Trigger tenant rollout
         id: rollout
         run: |
           DRY_RUN="${{ inputs.dry_run || 'false' }}"
           SCOPE="${{ inputs.scope || 'all' }}"
 
+          COMMIT_HASH="${{ steps.template_commit.outputs.commit_hash }}"
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             "${{ secrets.PLATFORM_URL }}/api/tenants/rollout" \
             -H "Content-Type: application/json" \
             -H "X-Platform-Secret: ${{ secrets.PLATFORM_SECRET }}" \
-            -d "{\"version\": \"${{ steps.version.outputs.version }}\", \"scope\": \"${SCOPE}\", \"dryRun\": ${DRY_RUN}}")
+            -d "{\"version\": \"${{ steps.version.outputs.version }}\", \"commitHash\": \"${COMMIT_HASH}\", \"scope\": \"${SCOPE}\", \"dryRun\": ${DRY_RUN}}")
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | head -n -1)
@@ -84,13 +98,25 @@ jobs:
           FAILED=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('failed',0))" 2>/dev/null || echo "?")
           TOTAL=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('totalTenants',0))" 2>/dev/null || echo "?")
           SUMMARY=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('summary',''))" 2>/dev/null || echo "")
+          STALE_COUNT=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('staleCount',0))" 2>/dev/null || echo "?")
+          ALL_CURRENT=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('allTenantsCurrentAfterRollout','unknown'))" 2>/dev/null || echo "?")
+          STALE_LIST=$(echo "$BODY" | python3 -c "import sys,json; t=json.load(sys.stdin).get('staleTenants',[]); print(', '.join(t) if t else 'none')" 2>/dev/null || echo "?")
 
           echo "## Rollout Complete" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$COMMIT_HASH" ]; then
+            echo "**Commit:** \`${COMMIT_HASH:0:8}\` ([full](https://github.com/carlucci001/wnct-template/commit/${COMMIT_HASH}))" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "**Scope:** ${SCOPE}" >> $GITHUB_STEP_SUMMARY
           echo "**Tenants:** ${SUCCEEDED}/${TOTAL} succeeded, ${FAILED} failed" >> $GITHUB_STEP_SUMMARY
           if [ "$DRY_RUN" = "true" ]; then
             echo "**Mode:** DRY RUN (no actual deployments)" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "$ALL_CURRENT" = "True" ]; then
+            echo "**All sites current** — every active tenant is on this commit" >> $GITHUB_STEP_SUMMARY
+          elif [ "$STALE_COUNT" != "0" ] && [ "$STALE_COUNT" != "?" ]; then
+            echo "**${STALE_COUNT} tenant(s) still on older code:** ${STALE_LIST}" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
