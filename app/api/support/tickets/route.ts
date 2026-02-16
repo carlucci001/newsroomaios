@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { subject, description, category, priority, type, reporterUid, reporterName,
-            reporterEmail, reporterPhoto, reporterRole, diagnostics } = body;
+            reporterEmail, reporterPhoto, reporterRole, diagnostics, platformVersion } = body;
 
     if (!subject || !description) {
       return NextResponse.json(
@@ -213,6 +213,7 @@ export async function POST(request: NextRequest) {
       reporterRole: reporterRole || '',
       assignedTo: '',
       assignedName: '',
+      platformVersion: platformVersion || '',
       messageCount: 1, // Initial description counts as first message
       lastMessageAt: now,
       createdAt: now,

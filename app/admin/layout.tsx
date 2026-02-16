@@ -23,6 +23,7 @@ import {
   Bot,
   Radar,
   Headset,
+  Megaphone,
 } from 'lucide-react';
 
 interface NavItem {
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
   { label: 'Tenants', href: '/admin/tenants', icon: Building2 },
   { label: 'Credits', href: '/admin/credits', icon: Coins },
   { label: 'Updates', href: '/admin/updates', icon: Upload },
+  { label: 'Releases', href: '/admin/releases', icon: Megaphone },
   { label: 'AI Config', href: '/admin/ai-settings', icon: Bot },
   { label: 'Support', href: '/admin/support', icon: Headset },
   { label: 'Command Center', href: '/admin/command-center', icon: Radar },

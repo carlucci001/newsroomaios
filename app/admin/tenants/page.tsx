@@ -56,6 +56,7 @@ interface TableDataType {
   ownerEmail: string;
   creditsRemaining: number;
   monthlyAllocation: number;
+  lastRolloutVersion?: string;
   lastLogin?: any;
 }
 
@@ -266,6 +267,18 @@ export default function TenantsPage() {
       ),
     },
     {
+      title: <Text strong>Version</Text>,
+      dataIndex: 'lastRolloutVersion',
+      key: 'lastRolloutVersion',
+      width: 100,
+      sorter: (a, b) => (a.lastRolloutVersion || '').localeCompare(b.lastRolloutVersion || ''),
+      render: (version: string) => version ? (
+        <Tag color="blue" style={{ fontFamily: 'monospace', fontSize: '11px' }}>{version}</Tag>
+      ) : (
+        <Text type="secondary" style={{ fontSize: '12px' }}>—</Text>
+      ),
+    },
+    {
       title: <Text strong>Actions</Text>,
       key: 'actions',
       align: 'center',
@@ -291,6 +304,7 @@ export default function TenantsPage() {
     ownerEmail: tenant.ownerEmail,
     creditsRemaining: tenant.credits?.creditsRemaining || 0,
     monthlyAllocation: tenant.credits?.monthlyAllocation || 0,
+    lastRolloutVersion: (tenant as any).lastRolloutVersion,
     lastLogin: (tenant as any).lastLogin,
   }));
 

@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
         apiKey: tenant.apiKey,
         businessName: tenant.businessName,
         serviceArea: tenant.serviceArea,
-      });
+      }, version);
 
       const entry: RolloutResult = {
         tenantId: tenant.id,

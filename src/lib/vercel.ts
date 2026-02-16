@@ -418,8 +418,53 @@ class VercelService {
   }
 
   /**
+   * Upsert a single environment variable on a Vercel project.
+   * Updates the value if the key exists, creates it if not.
+   */
+  async upsertEnvVar(projectId: string, key: string, value: string): Promise<boolean> {
+    try {
+      // Get existing env vars to check if key exists
+      const envResponse = await this.fetch(`/v9/projects/${projectId}/env`);
+      if (!envResponse.ok) return false;
+      const envData = await envResponse.json();
+      const existing = (envData.envs || []).find((e: { key: string; id: string }) => e.key === key);
+
+      if (existing) {
+        // Update existing env var
+        const patchRes = await this.fetch(`/v9/projects/${projectId}/env/${existing.id}`, 'PATCH', {
+          value: value.trim(),
+          target: ['production', 'preview'],
+        } as unknown as Record<string, unknown>);
+        if (!patchRes.ok) {
+          console.error(`[Vercel] Failed to update env var ${key}:`, await patchRes.text());
+          return false;
+        }
+      } else {
+        // Create new env var
+        const postRes = await this.fetch(`/v10/projects/${projectId}/env`, 'POST', [{
+          key,
+          value: value.trim(),
+          type: 'plain',
+          target: ['production', 'preview'],
+        }] as unknown as Record<string, unknown>);
+        if (!postRes.ok) {
+          console.error(`[Vercel] Failed to create env var ${key}:`, await postRes.text());
+          return false;
+        }
+      }
+
+      console.log(`[Vercel] Upserted env var ${key}=${value} on project ${projectId}`);
+      return true;
+    } catch (error) {
+      console.error(`[Vercel] Error upserting env var ${key}:`, error);
+      return false;
+    }
+  }
+
+  /**
    * Redeploy an existing tenant project with latest template code.
    * If tenantConfig is provided, audits and backfills missing env vars first.
+   * If version is provided, upserts NEXT_PUBLIC_PLATFORM_VERSION env var.
    *
    * ⚠️  WNC TIMES: This backfills env vars from the PLATFORM's Firebase config.
    * WNC Times (wnct-times) uses a DIFFERENT Firebase project and named database (gwnct).
@@ -429,7 +474,8 @@ class VercelService {
    */
   async redeployTenant(
     slug: string,
-    tenantConfig?: { tenantId: string; apiKey: string; businessName: string; serviceArea?: { city: string; state: string } }
+    tenantConfig?: { tenantId: string; apiKey: string; businessName: string; serviceArea?: { city: string; state: string } },
+    version?: string
   ): Promise<{ success: boolean; deploymentId?: string; error?: string; backfilledEnvVars?: string[] }> {
     const projectName = `newspaper-${slug}`;
 
@@ -470,6 +516,11 @@ class VercelService {
         requiredVars.NEXT_PUBLIC_SERVICE_AREA_STATE = tenantConfig.serviceArea.state;
       }
       backfilledEnvVars = await this.ensureEnvVars(project.id, requiredVars);
+    }
+
+    // Stamp platform version on the project (upsert — always updates to latest)
+    if (version) {
+      await this.upsertEnvVar(project.id, 'NEXT_PUBLIC_PLATFORM_VERSION', version);
     }
 
     const repoId = project.link?.repoId || WNCT_TEMPLATE_REPO_ID;
