@@ -31,8 +31,8 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
     <>
       <nav className="relative z-50 border-b border-border/40 bg-white sticky top-0">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center">
-            <img src="/newsroom-logo.png" alt="Newsroom AIOS" width="300" height="93" />
+          <Link href="/" className="flex items-center shrink-0" style={{ width: 300, height: 100 }}>
+            <img src="/newsroom-logo.png" alt="Newsroom AIOS" width={300} height={100} className="w-[300px] h-auto max-h-[100px] object-contain" />
           </Link>
 
           {/* Desktop Navigation */}

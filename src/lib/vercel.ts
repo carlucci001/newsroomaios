@@ -129,6 +129,12 @@ class VercelService {
       if (response.ok) {
         const project = await response.json();
         console.log(`[Vercel] Created project ${projectName}: ${project.id}`);
+
+        // Disable git-push auto-deploy — deployments are triggered via rollout API only
+        await this.fetch(`/v9/projects/${project.id}`, 'PATCH', {
+          gitProviderOptions: { createDeployments: 'disabled' },
+        });
+
         return project;
       }
 

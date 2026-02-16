@@ -17,6 +17,7 @@ const BETA_TENANTS = [
   'oceanside-news',
   'hardhatsports',
   'atlanta-news-network',
+  'the42',
 ];
 
 /**
