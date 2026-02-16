@@ -83,6 +83,73 @@ export const NEWS_SYSTEM_INSTRUCTION =
   "You follow AP style guidelines strictly.";
 
 /**
+ * System instruction for the editing pass — a senior editor, not a writer
+ */
+export const EDITOR_SYSTEM_INSTRUCTION =
+  "You are a senior newspaper editor with 20 years of experience at major metro dailies. " +
+  "You polish drafts written by junior reporters. You tighten prose, strengthen leads, " +
+  "fix awkward transitions, vary sentence structure, and enforce AP style. " +
+  "You NEVER add new facts, quotes, names, or statistics — you only improve " +
+  "the writing quality of what's already there. You preserve the article's meaning exactly.";
+
+/**
+ * Editing pass — takes a raw AI draft and polishes it.
+ * Uses higher temperature (0.4) for more natural, varied prose.
+ * Returns the edited draft in the same TITLE/CONTENT/TAGS format.
+ */
+export async function editArticleDraft(
+  rawDraft: string,
+  config: GenerationConfig = {}
+): Promise<string> {
+  const editPrompt = `You are editing a news article draft. Polish it and return the improved version.
+
+EDITING RULES — follow ALL of these:
+
+1. LEAD PARAGRAPH: The first paragraph must hook the reader. If it starts with a generic setup ("In a move that..."), rewrite it to lead with the most compelling fact.
+
+2. TRANSITIONS: Every paragraph should flow naturally from the previous one. Replace mechanical transitions ("Additionally...", "Furthermore...", "In a related development...") with smoother connectors or implied logical flow.
+
+3. SENTENCE VARIETY: Mix short punchy sentences with longer complex ones. If you see 3+ sentences in a row with the same structure, rewrite for variety.
+
+4. AP STYLE: Spell out numbers one through nine, use numerals for 10+. Use "percent" not "%". Titles before names are capitalized, titles after names are lowercase. Use Oxford comma only in complex series.
+
+5. TIGHTEN: Cut filler words (very, really, quite, somewhat, rather, basically, actually, generally). Remove redundant phrases ("in order to" → "to", "at this point in time" → "now", "due to the fact that" → "because").
+
+6. ACTIVE VOICE: Convert passive constructions to active where possible. "The decision was made by the council" → "The council decided".
+
+7. HEADLINE: If the headline is generic or starts with the city name, make it more specific and compelling. Focus on the SUBJECT, not the location.
+
+HARD CONSTRAINTS — do NOT violate:
+- Do NOT add any facts, names, quotes, statistics, or details not in the original
+- Do NOT remove any factual content — keep all information
+- Do NOT change the meaning of any statement
+- Do NOT change the TITLE/CONTENT/TAGS format structure
+- Keep approximately the same word count (±10%)
+
+DRAFT TO EDIT:
+
+${rawDraft}
+
+Return the polished article in EXACTLY the same format:
+TITLE: [improved headline]
+
+CONTENT:
+[polished article body]
+
+TAGS: [same tags]`;
+
+  return generateContent(
+    editPrompt,
+    {
+      ...config,
+      temperature: 0.4,
+      maxTokens: config.maxTokens || 4096,
+    },
+    EDITOR_SYSTEM_INSTRUCTION
+  );
+}
+
+/**
  * Rate an article for quality using Gemini
  * Returns a score from 1-10
  */

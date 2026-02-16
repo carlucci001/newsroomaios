@@ -33,6 +33,10 @@ export interface AIConfig {
     adequateSourceWords: string;
     limitedSourceWords: string;
   };
+  editingPass: {
+    enabled: boolean;
+    temperature: number;
+  };
   seeding: {
     articlesPerCategory: number;
     webSearchArticles: number;
@@ -63,6 +67,10 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
     moderateSourceWords: '600-900',
     adequateSourceWords: '500-750',
     limitedSourceWords: '400-600',
+  },
+  editingPass: {
+    enabled: true,
+    temperature: 0.4,
   },
   seeding: {
     articlesPerCategory: 6,
@@ -100,6 +108,7 @@ export async function getAIConfig(): Promise<AIConfig> {
       webSearch: { ...DEFAULT_AI_CONFIG.webSearch, ...data.webSearch },
       tone: { ...DEFAULT_AI_CONFIG.tone, ...data.tone },
       articleLength: { ...DEFAULT_AI_CONFIG.articleLength, ...data.articleLength },
+      editingPass: { ...DEFAULT_AI_CONFIG.editingPass, ...data.editingPass },
       seeding: { ...DEFAULT_AI_CONFIG.seeding, ...data.seeding },
     };
     cacheTimestamp = now;

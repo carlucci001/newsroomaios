@@ -38,6 +38,9 @@ export interface GenerateArticleRequest {
   // Platform-only: skip credit check/deduct during initial seeding
   skipCredits?: boolean;
 
+  // Skip the editing pass (e.g. during bulk seeding for speed)
+  skipEditingPass?: boolean;
+
   // Existing titles to avoid duplicating (passed during seeding)
   existingTitles?: string[];
 }

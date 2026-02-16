@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
-import { generateContent, NEWS_SYSTEM_INSTRUCTION } from '@/lib/gemini';
+import { generateContent, editArticleDraft, NEWS_SYSTEM_INSTRUCTION } from '@/lib/gemini';
 import { buildArticlePrompt, validateSourceMaterial } from '@/lib/promptBuilder';
 import { parseArticleResponse, generateSlug } from '@/lib/articleParser';
 import { generateArticleImage } from '@/lib/imageGeneration';
@@ -182,17 +182,39 @@ export async function POST(request: NextRequest) {
     const prompt = buildArticlePrompt(promptContext);
 
     // Generate article with Gemini (tenant overrides > platform config > code defaults)
-    const aiResponse = await generateContent(
+    const modelConfig = {
+      model: tenant.aiSettings?.defaultModel || aiConfig.gemini.model,
+      temperature: tenant.aiSettings?.defaultTemperature ?? aiConfig.gemini.temperature,
+      maxTokens: aiConfig.gemini.maxTokens,
+      topP: aiConfig.gemini.topP,
+      topK: aiConfig.gemini.topK,
+    };
+
+    const rawDraft = await generateContent(
       prompt,
-      {
-        model: tenant.aiSettings?.defaultModel || aiConfig.gemini.model,
-        temperature: tenant.aiSettings?.defaultTemperature ?? aiConfig.gemini.temperature,
-        maxTokens: aiConfig.gemini.maxTokens,
-        topP: aiConfig.gemini.topP,
-        topK: aiConfig.gemini.topK,
-      },
+      modelConfig,
       aiConfig.tone.customSystemInstruction || NEWS_SYSTEM_INSTRUCTION
     );
+
+    // Editing pass — polish the draft (skip if disabled or caller opts out)
+    const runEditingPass = aiConfig.editingPass.enabled && body.skipEditingPass !== true;
+    let aiResponse = rawDraft;
+
+    if (runEditingPass) {
+      try {
+        console.log(`[Generate] Running editing pass...`);
+        aiResponse = await editArticleDraft(rawDraft, {
+          model: modelConfig.model,
+          temperature: aiConfig.editingPass.temperature,
+          maxTokens: modelConfig.maxTokens,
+        });
+        console.log(`[Generate] ✓ Editing pass complete`);
+      } catch (editError) {
+        // Editing pass is non-critical — use raw draft if it fails
+        console.warn(`[Generate] Editing pass failed, using raw draft:`, editError);
+        aiResponse = rawDraft;
+      }
+    }
 
     // Parse the response
     const parsedArticle = parseArticleResponse(aiResponse, body.sourceContent);
