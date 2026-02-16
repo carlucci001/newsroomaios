@@ -194,9 +194,9 @@ export default function SupportDashboard() {
     });
   }, []);
 
-  // Auto-poll messages when viewing a chat ticket
+  // Auto-poll messages when viewing any ticket
   useEffect(() => {
-    if (modalOpen && selectedTicket?.type === 'chat') {
+    if (modalOpen && selectedTicket) {
       chatPollRef.current = setInterval(async () => {
         const data = await apiCall(`?id=${selectedTicket.id}`);
         if (data.success) {
@@ -212,7 +212,7 @@ export default function SupportDashboard() {
     return () => {
       if (chatPollRef.current) clearInterval(chatPollRef.current);
     };
-  }, [modalOpen, selectedTicket?.id, selectedTicket?.type]);
+  }, [modalOpen, selectedTicket?.id]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
