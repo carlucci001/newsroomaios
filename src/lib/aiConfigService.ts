@@ -45,7 +45,7 @@ export interface AIConfig {
 
 export const DEFAULT_AI_CONFIG: AIConfig = {
   gemini: {
-    model: 'gemini-2.5-flash-preview-05-20',
+    model: 'gemini-2.0-flash',
     temperature: 0.1,
     maxTokens: 4096,
     topP: 0.8,
