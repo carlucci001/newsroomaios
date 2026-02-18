@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { verifyPlatformSecret } from '@/lib/platformAuth';
-import { generateFirstResponse } from '@/lib/supportAI';
+import { generateFirstResponse, generateAutopilotResponse } from '@/lib/supportAI';
 
 // CORS headers for tenant domains
 const CORS_HEADERS = {
@@ -354,6 +354,52 @@ export async function PATCH(request: NextRequest) {
         // Platform admin reply auto-sets status to 'in-progress' if it was 'open'
         if (auth.isPlatformAdmin && ticketData.status === 'open') {
           updates.status = 'in-progress';
+        }
+
+        // Autopilot: when a TENANT sends a message and mode is 'autopilot', AI responds
+        if (!auth.isPlatformAdmin && resolvedSenderType === 'user') {
+          try {
+            const statusDoc = await db.collection('platformConfig').doc('supportStatus').get();
+            const statusData = statusDoc.exists ? statusDoc.data()! : {};
+            const mode = statusData.mode || (statusData.online ? 'online' : 'offline');
+
+            if (mode === 'autopilot') {
+              // Check if admin is busy with a different ticket
+              const adminBusy = !!(statusData.activeTicketId && statusData.activeTicketId !== ticketId);
+
+              // Get recent conversation for context
+              const recentMsgs = await ticketRef.collection('messages')
+                .orderBy('createdAt', 'asc').limitToLast(8).get();
+              const history = recentMsgs.docs.map(d => {
+                const m = d.data();
+                return { role: m.senderType as string, content: m.content as string };
+              });
+
+              const aiReply = await generateAutopilotResponse(
+                ticketData.tenantName || '',
+                ticketData.subject || '',
+                content.trim(),
+                history,
+                adminBusy
+              );
+
+              if (aiReply) {
+                await ticketRef.collection('messages').add({
+                  content: aiReply,
+                  senderType: 'ai',
+                  senderName: 'Support Assistant',
+                  senderEmail: '',
+                  senderPhoto: '',
+                  attachments: [],
+                  createdAt: new Date(),
+                });
+                updates.messageCount = (updates.messageCount || 0) + 1;
+                updates.lastMessageAt = new Date();
+              }
+            }
+          } catch (aiErr) {
+            console.error('[Support] Autopilot AI response failed (non-blocking):', aiErr);
+          }
         }
         break;
       }

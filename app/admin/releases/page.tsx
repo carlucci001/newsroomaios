@@ -211,7 +211,12 @@ export default function ReleasesPage() {
       title: 'Type',
       dataIndex: 'type',
       key: 'type',
-      width: 100,
+      width: 130,
+      filters: [
+        { text: 'Release', value: 'release' },
+        { text: 'Roadmap', value: 'roadmap' },
+      ],
+      onFilter: (value: any, record: PlatformRelease) => record.type === value,
       render: (type: string) => (
         <Tag color={type === 'release' ? 'blue' : 'purple'}>
           {type === 'release' ? 'Release' : 'Roadmap'}
@@ -233,21 +238,38 @@ export default function ReleasesPage() {
       title: 'Category',
       dataIndex: 'category',
       key: 'category',
-      width: 120,
+      width: 150,
+      filters: [
+        { text: 'Feature', value: 'feature' },
+        { text: 'Improvement', value: 'improvement' },
+        { text: 'Bug Fix', value: 'bugfix' },
+        { text: 'Security', value: 'security' },
+      ],
+      onFilter: (value: any, record: PlatformRelease) => record.category === value,
       render: (cat: string) => <Tag color={CATEGORY_COLORS[cat] || 'default'}>{cat}</Tag>,
     },
     {
       title: 'Audience',
       dataIndex: 'audience',
       key: 'audience',
-      width: 100,
+      width: 130,
+      filters: [
+        { text: 'All', value: 'all' },
+        { text: 'Beta Only', value: 'beta' },
+      ],
+      onFilter: (value: any, record: PlatformRelease) => record.audience === value,
       render: (aud: string) => <Tag>{aud === 'beta' ? 'Beta Only' : 'All'}</Tag>,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 110,
+      width: 130,
+      filters: [
+        { text: 'Published', value: 'published' },
+        { text: 'Draft', value: 'draft' },
+      ],
+      onFilter: (value: any, record: PlatformRelease) => record.status === value,
       render: (status: string) => (
         <Tag color={status === 'published' ? 'success' : 'default'}>
           {status === 'published' ? 'Published' : 'Draft'}
@@ -257,7 +279,17 @@ export default function ReleasesPage() {
     {
       title: 'Date',
       key: 'date',
-      width: 140,
+      width: 160,
+      sorter: (a: PlatformRelease, b: PlatformRelease) => {
+        const aDate = a.publishedAt || a.createdAt;
+        const bDate = b.publishedAt || b.createdAt;
+        if (!aDate) return -1;
+        if (!bDate) return 1;
+        const aTs = aDate.toDate ? aDate.toDate().getTime() : aDate.seconds * 1000;
+        const bTs = bDate.toDate ? bDate.toDate().getTime() : bDate.seconds * 1000;
+        return aTs - bTs;
+      },
+      defaultSortOrder: 'descend' as const,
       render: (_: any, record: PlatformRelease) => {
         const date = record.publishedAt || record.createdAt;
         if (!date) return <Text type="secondary">—</Text>;
@@ -268,7 +300,7 @@ export default function ReleasesPage() {
     {
       title: 'Actions',
       key: 'actions',
-      width: 200,
+      width: 220,
       render: (_: any, record: PlatformRelease) => (
         <Space>
           <Button size="small" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
@@ -289,7 +321,7 @@ export default function ReleasesPage() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto', minHeight: '100vh' }}>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="large" style={{ width: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <Title level={2} style={{ margin: 0 }}>Release Notes & Roadmap</Title>
@@ -345,7 +377,7 @@ export default function ReleasesPage() {
             columns={columns}
             rowKey="id"
             pagination={{ pageSize: 20 }}
-            scroll={{ x: 900 }}
+            scroll={{ x: 1100 }}
           />
         </Card>
       </Space>
@@ -359,7 +391,7 @@ export default function ReleasesPage() {
         okText={editingId ? 'Save Changes' : 'Create'}
         width={640}
       >
-        <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 16 }}>
+        <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 16 }}>
           <div>
             <Text strong>Type</Text>
             <Select

@@ -14,7 +14,6 @@ import {
   Button,
   Modal,
   Spin,
-  Switch,
   message as antMessage,
   Row,
   Col,
@@ -157,12 +156,20 @@ export default function SupportDashboard() {
   const [replyText, setReplyText] = useState('');
   const [replying, setReplying] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [isOnline, setIsOnline] = useState(false);
+  const [supportMode, setSupportMode] = useState<'online' | 'autopilot' | 'offline'>('offline');
   const [togglingStatus, setTogglingStatus] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [deleting, setDeleting] = useState(false);
   const chatPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Announcements
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [announcementTitle, setAnnouncementTitle] = useState('');
+  const [announcementMessage, setAnnouncementMessage] = useState('');
+  const [announcementPriority, setAnnouncementPriority] = useState<'normal' | 'urgent'>('normal');
+  const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
+  const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
@@ -187,12 +194,71 @@ export default function SupportDashboard() {
     fetchTickets();
   }, [fetchTickets]);
 
-  // Fetch online status on mount
+  // Fetch support mode on mount
   useEffect(() => {
     statusApiCall('GET').then(data => {
-      if (data.success) setIsOnline(data.online);
+      if (data.success) setSupportMode(data.mode || (data.online ? 'online' : 'offline'));
     });
   }, []);
+
+  // Fetch announcements
+  const fetchAnnouncements = useCallback(async () => {
+    try {
+      const res = await fetch('/api/announcements', {
+        headers: { 'X-Platform-Secret': PLATFORM_SECRET },
+      });
+      const data = await res.json();
+      if (data.success) setAnnouncements(data.announcements || []);
+    } catch (err) {
+      console.error('Failed to fetch announcements:', err);
+    }
+  }, []);
+
+  useEffect(() => { fetchAnnouncements(); }, [fetchAnnouncements]);
+
+  const sendAnnouncement = async () => {
+    if (!announcementTitle.trim() || !announcementMessage.trim()) return;
+    setSendingAnnouncement(true);
+    try {
+      const res = await fetch('/api/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Platform-Secret': PLATFORM_SECRET },
+        body: JSON.stringify({ title: announcementTitle, message: announcementMessage, priority: announcementPriority }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        antMessage.success('Announcement sent to all paper partners');
+        setAnnouncementTitle('');
+        setAnnouncementMessage('');
+        setAnnouncementPriority('normal');
+        setShowAnnouncementForm(false);
+        fetchAnnouncements();
+      }
+    } catch (err) {
+      antMessage.error('Failed to send announcement');
+    } finally {
+      setSendingAnnouncement(false);
+    }
+  };
+
+  const deactivateAnnouncement = async (id: string) => {
+    try {
+      const ann = announcements.find(a => a.id === id);
+      if (!ann) return;
+      const res = await fetch('/api/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Platform-Secret': PLATFORM_SECRET },
+        body: JSON.stringify({ id, title: ann.title, message: ann.message, active: false }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        antMessage.success('Announcement deactivated');
+        fetchAnnouncements();
+      }
+    } catch (err) {
+      antMessage.error('Failed to deactivate announcement');
+    }
+  };
 
   // Auto-poll messages when viewing any ticket
   useEffect(() => {
@@ -249,13 +315,13 @@ export default function SupportDashboard() {
     });
   };
 
-  const toggleOnlineStatus = async () => {
+  const setSupportModeApi = async (newMode: 'online' | 'autopilot' | 'offline') => {
     setTogglingStatus(true);
-    const newStatus = !isOnline;
-    const data = await statusApiCall('POST', { online: newStatus, adminName: 'Platform Support' });
+    const data = await statusApiCall('POST', { mode: newMode, adminName: 'Platform Support' });
     if (data.success) {
-      setIsOnline(newStatus);
-      antMessage.success(newStatus ? 'You are now online — tenants can chat' : 'You are now offline');
+      setSupportMode(newMode);
+      const labels = { online: 'You are now online — tenants can chat', autopilot: 'AI Autopilot active — AI handles chats until you jump in', offline: 'You are now offline' };
+      antMessage.success(labels[newMode]);
     }
     setTogglingStatus(false);
   };
@@ -264,6 +330,8 @@ export default function SupportDashboard() {
     setSelectedTicket(ticket);
     setModalOpen(true);
     setLoadingMessages(true);
+    // Tell status API which ticket admin is viewing (so autopilot knows admin is busy)
+    statusApiCall('POST', { activeTicketId: ticket.id }).catch(() => {});
     try {
       const data = await apiCall(`?id=${ticket.id}`);
       if (data.success) {
@@ -353,7 +421,14 @@ export default function SupportDashboard() {
       title: 'Type',
       dataIndex: 'type',
       key: 'type',
-      width: 50,
+      width: 100,
+      filters: [
+        { text: 'Support', value: 'support' },
+        { text: 'Bug Report', value: 'bug' },
+        { text: 'Feature Request', value: 'feature' },
+        { text: 'Live Chat', value: 'chat' },
+      ],
+      onFilter: (value: any, record: Ticket) => record.type === value,
       render: (type: string) => (
         type === 'bug'
           ? <Tooltip title="Bug Report"><BugOutlined style={{ color: '#ff4d4f', fontSize: 16 }} /></Tooltip>
@@ -368,7 +443,18 @@ export default function SupportDashboard() {
       title: 'Priority',
       dataIndex: 'priority',
       key: 'priority',
-      width: 80,
+      width: 130,
+      filters: [
+        { text: 'Urgent', value: 'urgent' },
+        { text: 'High', value: 'high' },
+        { text: 'Medium', value: 'medium' },
+        { text: 'Low', value: 'low' },
+      ],
+      onFilter: (value: any, record: Ticket) => record.priority === value,
+      sorter: (a: Ticket, b: Ticket) => {
+        const order = { urgent: 4, high: 3, medium: 2, low: 1 };
+        return (order[a.priority] || 0) - (order[b.priority] || 0);
+      },
       render: (p: string) => <Tag color={priorityColors[p]}>{p}</Tag>,
     },
     {
@@ -401,14 +487,22 @@ export default function SupportDashboard() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 110,
+      width: 140,
+      filters: [
+        { text: 'Open', value: 'open' },
+        { text: 'In Progress', value: 'in-progress' },
+        { text: 'Waiting', value: 'waiting' },
+        { text: 'Resolved', value: 'resolved' },
+        { text: 'Closed', value: 'closed' },
+      ],
+      onFilter: (value: any, record: Ticket) => record.status === value,
       render: (s: string) => <Tag color={statusColors[s]}>{s}</Tag>,
     },
     {
       title: 'Messages',
       dataIndex: 'messageCount',
       key: 'messageCount',
-      width: 80,
+      width: 110,
       responsive: ['lg'],
       render: (count: number) => <Badge count={count} style={{ backgroundColor: '#1890ff' }} />,
     },
@@ -416,8 +510,14 @@ export default function SupportDashboard() {
       title: 'Created',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 100,
+      width: 130,
       responsive: ['lg'],
+      sorter: (a: Ticket, b: Ticket) => {
+        const aTime = a.createdAt?._seconds || 0;
+        const bTime = b.createdAt?._seconds || 0;
+        return aTime - bTime;
+      },
+      defaultSortOrder: 'descend' as const,
       render: (date: any) => <Text style={{ fontSize: 12 }}>{timeAgo(date)}</Text>,
     },
     {
@@ -432,7 +532,7 @@ export default function SupportDashboard() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto' }}>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="large" style={{ width: '100%' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
           <div>
@@ -440,25 +540,17 @@ export default function SupportDashboard() {
             <Text type="secondary">Manage support requests and bug reports from all tenants</Text>
           </div>
           <Space>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '6px 16px', borderRadius: 8,
-              background: isOnline ? (isDark ? '#0a2e12' : '#f6ffed') : (isDark ? '#2a1215' : '#fff1f0'),
-              border: `1px solid ${isOnline ? '#52c41a' : '#ff4d4f'}`,
-            }}>
-              <div style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: isOnline ? '#52c41a' : '#ff4d4f',
-                boxShadow: isOnline ? '0 0 6px #52c41a' : 'none',
-              }} />
-              <Text strong style={{ fontSize: 13 }}>{isOnline ? 'Online' : 'Offline'}</Text>
-              <Switch
-                checked={isOnline}
-                onChange={toggleOnlineStatus}
-                loading={togglingStatus}
-                size="small"
-              />
-            </div>
+            <Select
+              value={supportMode}
+              onChange={(val: 'online' | 'autopilot' | 'offline') => setSupportModeApi(val)}
+              loading={togglingStatus}
+              style={{ width: 200 }}
+              options={[
+                { value: 'online', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#52c41a', display: 'inline-block' }} /> Online</span> },
+                { value: 'autopilot', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#722ed1', display: 'inline-block' }} /> AI Autopilot</span> },
+                { value: 'offline', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff4d4f', display: 'inline-block' }} /> Offline</span> },
+              ]}
+            />
             <Button icon={<ReloadOutlined />} onClick={fetchTickets} loading={loading}>Refresh</Button>
           </Space>
         </div>
@@ -486,6 +578,106 @@ export default function SupportDashboard() {
             </Card>
           </Col>
         </Row>
+
+        {/* Announcements */}
+        <Card
+          size="small"
+          title={
+            <Space>
+              <BulbOutlined style={{ color: '#fa8c16' }} />
+              <span>Announcements to Paper Partners</span>
+              <Badge count={announcements.length} style={{ backgroundColor: '#1890ff' }} />
+            </Space>
+          }
+          extra={
+            <Button
+              type={showAnnouncementForm ? 'default' : 'primary'}
+              size="small"
+              onClick={() => setShowAnnouncementForm(!showAnnouncementForm)}
+            >
+              {showAnnouncementForm ? 'Cancel' : 'New Announcement'}
+            </Button>
+          }
+        >
+          {showAnnouncementForm && (
+            <div style={{ marginBottom: 16, padding: 16, background: isDark ? '#1a1a2e' : '#fafafa', borderRadius: 8 }}>
+              <Space direction="vertical" style={{ width: '100%' }} size="small">
+                <Input
+                  placeholder="Announcement title"
+                  value={announcementTitle}
+                  onChange={e => setAnnouncementTitle(e.target.value)}
+                  maxLength={100}
+                />
+                <TextArea
+                  placeholder="Write your message to all paper partners..."
+                  value={announcementMessage}
+                  onChange={e => setAnnouncementMessage(e.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  showCount
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Select
+                    value={announcementPriority}
+                    onChange={(val: 'normal' | 'urgent') => setAnnouncementPriority(val)}
+                    style={{ width: 140 }}
+                    options={[
+                      { value: 'normal', label: 'Normal' },
+                      { value: 'urgent', label: <span style={{ color: '#ff4d4f' }}>Urgent</span> },
+                    ]}
+                  />
+                  <Button
+                    type="primary"
+                    icon={<SendOutlined />}
+                    onClick={sendAnnouncement}
+                    loading={sendingAnnouncement}
+                    disabled={!announcementTitle.trim() || !announcementMessage.trim()}
+                  >
+                    Send to All Partners
+                  </Button>
+                </div>
+              </Space>
+            </div>
+          )}
+          {announcements.length === 0 ? (
+            <Empty description="No active announcements" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {announcements.map(ann => (
+                <div
+                  key={ann.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    padding: '8px 12px',
+                    background: isDark ? '#1a1a2e' : '#fafafa',
+                    borderRadius: 6,
+                    borderLeft: ann.priority === 'urgent' ? '3px solid #ff4d4f' : '3px solid #1890ff',
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Text strong>{ann.title}</Text>
+                      {ann.priority === 'urgent' && <Tag color="red">Urgent</Tag>}
+                    </div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{ann.message}</Text>
+                    <div style={{ marginTop: 4 }}>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
+                        {ann.createdAt?._seconds
+                          ? new Date(ann.createdAt._seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+                          : ''}
+                      </Text>
+                    </div>
+                  </div>
+                  <Button size="small" danger onClick={() => deactivateAnnouncement(ann.id)}>
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
 
         {/* Filters */}
         <Card size="small">
@@ -563,7 +755,7 @@ export default function SupportDashboard() {
       {/* Ticket Detail Modal */}
       <Modal
         open={modalOpen}
-        onCancel={() => { setModalOpen(false); setSelectedTicket(null); setTicketMessages([]); setReplyText(''); }}
+        onCancel={() => { setModalOpen(false); setSelectedTicket(null); setTicketMessages([]); setReplyText(''); statusApiCall('POST', { activeTicketId: null }).catch(() => {}); }}
         footer={null}
         width={720}
         title={

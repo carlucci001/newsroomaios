@@ -14,9 +14,8 @@ export async function OPTIONS() {
 }
 
 /**
- * GET /api/support/status
- * Returns whether platform support is currently online.
- * Accessible by any authenticated tenant.
+ * GET /api/announcements
+ * Returns active announcements. Accessible by authenticated tenants.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +23,6 @@ export async function GET(request: NextRequest) {
     const apiKey = request.headers.get('x-api-key');
     const platformSecret = request.headers.get('x-platform-secret');
 
-    // Allow either tenant auth or platform auth
     const db = getAdminDb();
     if (!db) {
       return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 500, headers: CORS_HEADERS });
@@ -45,33 +43,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401, headers: CORS_HEADERS });
     }
 
-    const statusDoc = await db.collection('platformConfig').doc('supportStatus').get();
-    const data = statusDoc.exists ? statusDoc.data()! : {};
+    const snapshot = await db.collection('announcements')
+      .where('active', '==', true)
+      .orderBy('createdAt', 'desc')
+      .limit(10)
+      .get();
 
-    // mode: 'online' | 'autopilot' | 'offline' — backwards compatible with old 'online' boolean
-    const mode = data.mode || (data.online ? 'online' : 'offline');
+    const announcements = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
 
-    return NextResponse.json({
-      success: true,
-      online: mode !== 'offline', // backwards compatible — autopilot counts as "online" for tenants
-      mode,
-      adminName: data.adminName || 'Platform Support',
-      activeTicketId: data.activeTicketId || null,
-      lastSeen: data.lastSeen || null,
-    }, { headers: CORS_HEADERS });
+    return NextResponse.json({ success: true, announcements }, { headers: CORS_HEADERS });
 
   } catch (error: unknown) {
-    console.error('[Support Status] GET error:', error);
+    console.error('[Announcements] GET error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch status' },
+      { success: false, error: 'Failed to fetch announcements' },
       { status: 500, headers: CORS_HEADERS }
     );
   }
 }
 
 /**
- * POST /api/support/status
- * Set support online/offline status. Platform admin only.
+ * POST /api/announcements
+ * Create or update an announcement. Platform admin only.
+ * Body: { title, message, priority?, id? (for updates), active? }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -85,35 +82,40 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { online, mode, adminName, activeTicketId } = body;
+    const { id, title, message, priority, active } = body;
 
-    const updateData: Record<string, any> = {
-      adminName: adminName || 'Platform Support',
-      lastSeen: new Date(),
-    };
-
-    // Support new 'mode' field or fall back to 'online' boolean
-    if (mode) {
-      updateData.mode = mode;
-      updateData.online = mode !== 'offline';
-    } else {
-      updateData.online = !!online;
-      updateData.mode = online ? 'online' : 'offline';
+    if (!title || !message) {
+      return NextResponse.json({ success: false, error: 'Title and message are required' }, { status: 400, headers: CORS_HEADERS });
     }
 
-    // Track which ticket the admin is actively viewing
-    if (activeTicketId !== undefined) {
-      updateData.activeTicketId = activeTicketId;
+    if (id) {
+      // Update existing announcement
+      await db.collection('announcements').doc(id).update({
+        title,
+        message,
+        priority: priority || 'normal',
+        active: active !== undefined ? active : true,
+        updatedAt: new Date(),
+      });
+      return NextResponse.json({ success: true, id }, { headers: CORS_HEADERS });
     }
 
-    await db.collection('platformConfig').doc('supportStatus').set(updateData, { merge: true });
+    // Create new announcement
+    const docRef = await db.collection('announcements').add({
+      title,
+      message,
+      priority: priority || 'normal',
+      active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
-    return NextResponse.json({ success: true, mode: updateData.mode, online: updateData.online }, { headers: CORS_HEADERS });
+    return NextResponse.json({ success: true, id: docRef.id }, { headers: CORS_HEADERS });
 
   } catch (error: unknown) {
-    console.error('[Support Status] POST error:', error);
+    console.error('[Announcements] POST error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update status' },
+      { success: false, error: 'Failed to save announcement' },
       { status: 500, headers: CORS_HEADERS }
     );
   }
