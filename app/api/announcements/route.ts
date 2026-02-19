@@ -45,14 +45,16 @@ export async function GET(request: NextRequest) {
 
     const snapshot = await db.collection('announcements')
       .where('active', '==', true)
-      .orderBy('createdAt', 'desc')
       .limit(10)
       .get();
 
-    const announcements = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const announcements = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a: any, b: any) => {
+        const aTime = a.createdAt?.toDate?.() || a.createdAt || 0;
+        const bTime = b.createdAt?.toDate?.() || b.createdAt || 0;
+        return new Date(bTime).getTime() - new Date(aTime).getTime();
+      });
 
     return NextResponse.json({ success: true, announcements }, { headers: CORS_HEADERS });
 
