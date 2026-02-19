@@ -86,6 +86,7 @@ export default function TenantDetailPage() {
     ownerEmail: '',
     status: '',
     licensingStatus: '',
+    plan: 'starter',
     softLimit: 0,
     hardLimit: 0,
   });
@@ -113,6 +114,7 @@ export default function TenantDetailPage() {
         ownerEmail: tenantData.ownerEmail,
         status: tenantData.status,
         licensingStatus: tenantData.licensingStatus,
+        plan: (tenantData as any).plan || 'starter',
         softLimit: 0,
         hardLimit: 0,
       });
@@ -174,6 +176,7 @@ export default function TenantDetailPage() {
         ownerEmail: editForm.ownerEmail,
         status: editForm.status,
         licensingStatus: editForm.licensingStatus,
+        plan: editForm.plan,
       };
       if (editForm.customDomain) {
         tenantUpdate.customDomain = editForm.customDomain;
@@ -181,7 +184,20 @@ export default function TenantDetailPage() {
       }
       await updateDoc(doc(db, 'tenants', tenantId), tenantUpdate);
 
-      if (credits) {
+      // Update credit allocation when plan changes
+      const oldPlan = (tenant as any).plan || 'starter';
+      const newPlanDef = DEFAULT_PLANS.find((p) => p.id === editForm.plan);
+      if (credits && newPlanDef && editForm.plan !== oldPlan) {
+        const creditsDelta = newPlanDef.monthlyCredits - (credits.monthlyAllocation || 0);
+        await updateDoc(doc(db, 'tenantCredits', credits.id), {
+          planId: editForm.plan,
+          monthlyAllocation: newPlanDef.monthlyCredits,
+          creditsRemaining: Math.max(0, (credits.creditsRemaining || 0) + creditsDelta),
+          softLimit: editForm.softLimit || Math.floor(newPlanDef.monthlyCredits * 0.8),
+          hardLimit: editForm.hardLimit,
+        });
+        message.info(`Plan changed to ${newPlanDef.name} — ${newPlanDef.monthlyCredits} credits/month. Stripe will update at next billing cycle.`);
+      } else if (credits) {
         await updateDoc(doc(db, 'tenantCredits', credits.id), {
           softLimit: editForm.softLimit,
           hardLimit: editForm.hardLimit,
@@ -745,6 +761,18 @@ export default function TenantDetailPage() {
                       { label: 'Past Due', value: 'past_due' },
                       { label: 'Canceled', value: 'canceled' },
                     ]}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label="Plan" help="Changes credit allocation immediately. Stripe billing updates at next cycle.">
+                  <Select
+                    value={editForm.plan}
+                    onChange={(val) => setEditForm({ ...editForm, plan: val })}
+                    options={DEFAULT_PLANS.map((p) => ({
+                      label: `${p.name} — ${p.monthlyCredits} credits ($${p.pricePerMonth}/mo)`,
+                      value: p.id,
+                    }))}
                   />
                 </Form.Item>
               </Col>
