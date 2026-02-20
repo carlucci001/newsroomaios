@@ -59,14 +59,29 @@ function AdminLayoutContent({
 
   useEffect(() => {
     const auth = getAuthInstance();
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        setUser(null);
+        setLoading(false);
+        if (pathname !== '/admin/login') {
+          router.push('/admin/login');
+        }
+        return;
+      }
+
+      // Check platformAdmin custom claim
+      const tokenResult = await currentUser.getIdTokenResult(true);
+      if (!tokenResult.claims.platformAdmin) {
+        // Not a platform admin — sign them out and redirect
+        await signOut(auth);
+        router.push('/admin/login');
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       setUser(currentUser);
       setLoading(false);
-
-      // Redirect to login if not authenticated (and not already on login page)
-      if (!currentUser && pathname !== '/admin/login') {
-        router.push('/admin/login');
-      }
     });
 
     return () => unsubscribe();
