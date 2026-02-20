@@ -20,6 +20,7 @@ import {
   X,
   Newspaper,
   ExternalLink,
+  Rocket,
 } from 'lucide-react';
 
 interface NavItem {
@@ -33,6 +34,7 @@ const navigation: NavItem[] = [
   { label: 'Billing', href: '/account/billing', icon: CreditCard },
   { label: 'Credits', href: '/account/credits', icon: Coins },
   { label: 'Messages', href: '/account/messages', icon: MessageSquare },
+  { label: 'Updates', href: '/account/updates', icon: Rocket },
   { label: 'Settings', href: '/account/settings', icon: Settings },
 ];
 

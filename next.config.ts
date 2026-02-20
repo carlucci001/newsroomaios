@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
+import { readFileSync } from "fs";
+
+const pkg = JSON.parse(readFileSync("./package.json", "utf8"));
 
 const nextConfig: NextConfig = {
-  // Removed 'output: export' to enable API routes and server-side features
+  env: {
+    NEXT_PUBLIC_PLATFORM_VERSION: pkg.version,
+  },
   images: {
     remotePatterns: [
       {

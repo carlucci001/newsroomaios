@@ -2,7 +2,7 @@
 
 import 'antd/dist/reset.css';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
 import { useTheme } from '@/components/providers/AntdProvider';
@@ -10,7 +10,6 @@ import {
   Card,
   Typography,
   Button,
-  Input,
   Space,
   Tag,
   Spin,
@@ -20,60 +19,49 @@ import {
   Table,
   Modal,
   Select,
-  Checkbox,
   Alert,
   Empty,
+  message,
 } from 'antd';
 import {
   UploadOutlined,
-  GithubOutlined,
-  FilterOutlined,
   CloudServerOutlined,
   DashboardOutlined,
   WarningOutlined,
-  LinkOutlined,
-  CalendarOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  ClockCircleOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
 
-interface UpdateLog {
+interface Rollout {
   id: string;
   version: string;
-  description: string;
-  targetTenants: string[]; // 'all' or specific tenant IDs
-  status: 'pending' | 'in_progress' | 'completed' | 'failed';
-  initiatedBy: string;
-  initiatedAt: Date;
-  completedAt?: Date;
-  results?: {
-    tenantId: string;
-    success: boolean;
-    message?: string;
-  }[];
-}
-
-interface GitHubRelease {
-  tag_name: string;
-  name: string;
-  published_at: string;
-  body: string;
-  html_url: string;
+  commitHash?: string;
+  scope: string;
+  dryRun?: boolean;
+  totalTenants: number;
+  succeeded?: number;
+  failed?: number;
+  status: string;
+  startedAt: any;
+  completedAt?: any;
+  durationMs?: number;
+  staleCount?: number;
+  staleTenants?: string[];
 }
 
 export default function UpdatesPage() {
   const { isDark } = useTheme();
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [updateLogs, setUpdateLogs] = useState<UpdateLog[]>([]);
-  const [releases, setReleases] = useState<GitHubRelease[]>([]);
+  const [rollouts, setRollouts] = useState<Rollout[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeployModal, setShowDeployModal] = useState(false);
-  const [selectedVersion, setSelectedVersion] = useState('');
-  const [selectedTenants, setSelectedTenants] = useState<string[]>([]);
-  const [deployAllTenants, setDeployAllTenants] = useState(true);
-  const [deployNotes, setDeployNotes] = useState('');
+  const [deployScope, setDeployScope] = useState<'beta' | 'all'>('beta');
   const [deploying, setDeploying] = useState(false);
+
+  const platformVersion = process.env.NEXT_PUBLIC_PLATFORM_VERSION || '—';
 
   useEffect(() => {
     fetchData();
@@ -91,43 +79,22 @@ export default function UpdatesPage() {
       })) as Tenant[];
       setTenants(tenantsData.filter((t) => t.status === 'active'));
 
-      // Fetch update logs
+      // Fetch rollout history
       try {
-        const logsQuery = query(collection(db, 'updateLogs'), orderBy('initiatedAt', 'desc'), limit(20));
-        const logsSnap = await getDocs(logsQuery);
-        const logsData = logsSnap.docs.map((doc) => ({
+        const rolloutsQuery = query(
+          collection(db, 'rollouts'),
+          orderBy('startedAt', 'desc'),
+          limit(20)
+        );
+        const rolloutsSnap = await getDocs(rolloutsQuery);
+        const rolloutsData = rolloutsSnap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
-        })) as UpdateLog[];
-        setUpdateLogs(logsData);
+        })) as Rollout[];
+        setRollouts(rolloutsData);
       } catch (e) {
         // Collection might not exist yet
       }
-
-      // Fetch GitHub releases (mock data for now - would need API integration)
-      setReleases([
-        {
-          tag_name: 'v1.2.0',
-          name: 'Version 1.2.0 - Performance Improvements',
-          published_at: new Date().toISOString(),
-          body: '- Improved article generation speed\n- Fixed image loading issues\n- Added new category templates',
-          html_url: 'https://github.com/carlucci001/wnct-next/releases/tag/v1.2.0',
-        },
-        {
-          tag_name: 'v1.1.0',
-          name: 'Version 1.1.0 - AI Enhancements',
-          published_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          body: '- Enhanced AI journalist capabilities\n- Better SEO optimization\n- Improved fact-checking accuracy',
-          html_url: 'https://github.com/carlucci001/wnct-next/releases/tag/v1.1.0',
-        },
-        {
-          tag_name: 'v1.0.0',
-          name: 'Version 1.0.0 - Initial Release',
-          published_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          body: '- Core newspaper functionality\n- AI article generation\n- Admin dashboard',
-          html_url: 'https://github.com/carlucci001/wnct-next/releases/tag/v1.0.0',
-        },
-      ]);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
@@ -136,41 +103,64 @@ export default function UpdatesPage() {
   }
 
   async function initiateDeployment() {
-    if (!selectedVersion) return;
-
     setDeploying(true);
     try {
-      const db = getDb();
-      const targetTenants = deployAllTenants ? ['all'] : selectedTenants;
-
-      // Create update log entry
-      await addDoc(collection(db, 'updateLogs'), {
-        version: selectedVersion,
-        description: deployNotes || `Deploying ${selectedVersion}`,
-        targetTenants,
-        status: 'pending',
-        initiatedBy: 'admin', // Would use actual user ID
-        initiatedAt: new Date(),
+      const res = await fetch('/api/tenants/rollout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Platform-Secret': process.env.NEXT_PUBLIC_PLATFORM_SECRET || '',
+        },
+        body: JSON.stringify({
+          scope: deployScope,
+          version: platformVersion,
+        }),
       });
 
-      // In a real implementation, this would trigger a GitHub Actions workflow
-      // or a Cloud Function to deploy updates to each tenant's Vercel project
+      const data = await res.json();
 
-      await fetchData();
-      setShowDeployModal(false);
-      setSelectedVersion('');
-      setSelectedTenants([]);
-      setDeployNotes('');
+      if (res.ok) {
+        message.success(
+          `Rollout complete: ${data.succeeded || 0} succeeded, ${data.failed || 0} failed`
+        );
+        await fetchData();
+        setShowDeployModal(false);
+      } else {
+        message.error(`Rollout failed: ${data.error || 'Unknown error'}`);
+      }
     } catch (error) {
       console.error('Failed to initiate deployment:', error);
+      message.error('Failed to connect to rollout API');
     } finally {
       setDeploying(false);
     }
   }
 
+  const formatDuration = (ms?: number) => {
+    if (!ms) return '—';
+    if (ms < 1000) return `${ms}ms`;
+    const seconds = Math.round(ms / 1000);
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remaining = seconds % 60;
+    return `${minutes}m ${remaining}s`;
+  };
+
+  const formatDate = (date: any) => {
+    if (!date) return '—';
+    const ts = date instanceof Date ? date : new Date((date.seconds || date._seconds || 0) * 1000);
+    if (ts.getTime() === 0) return '—';
+    return ts.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
   const stats = {
-    totalDeployments: updateLogs.length,
-    pendingDeployments: updateLogs.filter((l) => l.status === 'pending').length,
+    totalDeployments: rollouts.length,
+    lastVersion: rollouts[0]?.version || '—',
     activeTenants: tenants.length,
   };
 
@@ -184,49 +174,100 @@ export default function UpdatesPage() {
 
   const columns = [
     {
-      title: 'Version',
+      title: <Text strong>Version</Text>,
       dataIndex: 'version',
       key: 'version',
-      render: (version: string) => <Tag color="blue">{version}</Tag>,
+      width: 100,
+      render: (version: string) => (
+        <Tag color="blue" style={{ fontFamily: 'monospace' }}>
+          {version?.startsWith('v') ? version : `v${version}`}
+        </Tag>
+      ),
     },
     {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
+      title: <Text strong>Scope</Text>,
+      dataIndex: 'scope',
+      key: 'scope',
+      width: 100,
+      render: (scope: string) => {
+        const color = scope === 'all' ? 'green' : scope === 'beta' ? 'orange' : 'default';
+        return <Tag color={color}>{scope}</Tag>;
+      },
     },
     {
-      title: 'Targets',
-      dataIndex: 'targetTenants',
-      key: 'targetTenants',
-      render: (targetTenants: string[]) => (
-        <Text type="secondary">
-          {targetTenants.includes('all') ? 'All tenants' : `${targetTenants.length} tenant(s)`}
+      title: <Text strong>Result</Text>,
+      key: 'result',
+      width: 140,
+      render: (_: any, record: Rollout) => (
+        <Space size="small">
+          {record.succeeded != null && (
+            <Tag icon={<CheckCircleOutlined />} color="success">
+              {record.succeeded}
+            </Tag>
+          )}
+          {(record.failed ?? 0) > 0 && (
+            <Tag icon={<CloseCircleOutlined />} color="error">
+              {record.failed}
+            </Tag>
+          )}
+          {record.status === 'in_progress' && (
+            <Tag icon={<ClockCircleOutlined />} color="processing">
+              Running
+            </Tag>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: <Text strong>Duration</Text>,
+      dataIndex: 'durationMs',
+      key: 'durationMs',
+      width: 90,
+      render: (ms: number) => (
+        <Text type="secondary" style={{ fontSize: '12px' }}>
+          {formatDuration(ms)}
         </Text>
       ),
     },
     {
-      title: 'Status',
+      title: <Text strong>Status</Text>,
       dataIndex: 'status',
       key: 'status',
+      width: 120,
       render: (status: string) => {
         const colorMap: Record<string, string> = {
-          pending: 'warning',
           in_progress: 'processing',
           completed: 'success',
+          completed_with_errors: 'warning',
           failed: 'error',
         };
-        return <Tag color={colorMap[status] || 'default'}>{status}</Tag>;
+        return <Tag color={colorMap[status] || 'default'}>{status.replace(/_/g, ' ')}</Tag>;
       },
     },
     {
-      title: 'Date',
-      dataIndex: 'initiatedAt',
-      key: 'initiatedAt',
-      render: (date: any) => {
-        const timestamp = date instanceof Date ? date : new Date(date?.seconds * 1000 || Date.now());
-        return <Text type="secondary">{timestamp.toLocaleString()}</Text>;
-      },
+      title: <Text strong>Date</Text>,
+      dataIndex: 'startedAt',
+      key: 'startedAt',
+      width: 140,
+      render: (date: any) => (
+        <Text type="secondary" style={{ fontSize: '12px' }}>
+          {formatDate(date)}
+        </Text>
+      ),
+    },
+    {
+      title: <Text strong>Commit</Text>,
+      dataIndex: 'commitHash',
+      key: 'commitHash',
+      width: 90,
+      render: (hash: string) =>
+        hash ? (
+          <Text code style={{ fontSize: '11px' }}>
+            {hash.substring(0, 7)}
+          </Text>
+        ) : (
+          <Text type="secondary" style={{ fontSize: '12px' }}>—</Text>
+        ),
     },
   ];
 
@@ -235,11 +276,18 @@ export default function UpdatesPage() {
       <Space vertical size="large" style={{ width: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <Title level={2} style={{ margin: 0 }}>Update Deployment</Title>
-            <Text type="secondary">Deploy platform updates to newspapers via GitHub</Text>
+            <Title level={2} style={{ margin: 0 }}>Deployment Center</Title>
+            <Text type="secondary">
+              Platform v{platformVersion} — Deploy updates to tenant newspapers
+            </Text>
           </div>
-          <Button type="primary" size="large" icon={<UploadOutlined />} onClick={() => setShowDeployModal(true)}>
-            Deploy Update
+          <Button
+            type="primary"
+            size="large"
+            icon={<UploadOutlined />}
+            onClick={() => setShowDeployModal(true)}
+          >
+            Deploy Rollout
           </Button>
         </div>
 
@@ -247,7 +295,7 @@ export default function UpdatesPage() {
           <Col xs={24} sm={8}>
             <Card>
               <Statistic
-                title={<Text strong style={{ fontSize: '14px' }}>Total Deployments</Text>}
+                title={<Text strong style={{ fontSize: '14px' }}>Total Rollouts</Text>}
                 value={stats.totalDeployments}
                 prefix={<DashboardOutlined style={{ color: '#3b82f6' }} />}
                 styles={{ content: { fontSize: '28px' } }}
@@ -257,9 +305,9 @@ export default function UpdatesPage() {
           <Col xs={24} sm={8}>
             <Card>
               <Statistic
-                title={<Text strong style={{ fontSize: '14px' }}>Pending</Text>}
-                value={stats.pendingDeployments}
-                prefix={<WarningOutlined style={{ color: '#faad14' }} />}
+                title={<Text strong style={{ fontSize: '14px' }}>Latest Version</Text>}
+                value={stats.lastVersion}
+                prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
                 styles={{ content: { fontSize: '28px' } }}
               />
             </Card>
@@ -276,187 +324,69 @@ export default function UpdatesPage() {
           </Col>
         </Row>
 
-        <Card title={<Title level={4} style={{ margin: 0 }}>Deployment Pipeline</Title>}>
-          <Text type="secondary" style={{ display: 'block', marginBottom: '16px' }}>Automated deployment workflow</Text>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', flexWrap: 'wrap', gap: '16px' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#1890ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
-                <GithubOutlined style={{ fontSize: '24px', color: 'white' }} />
-              </div>
-              <Text strong style={{ display: 'block' }}>Source Repository</Text>
-              <Text type="secondary" style={{ fontSize: '12px' }}>carlucci001/wnct-next</Text>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#faad14', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
-                <FilterOutlined style={{ fontSize: '24px', color: 'white' }} />
-              </div>
-              <Text strong style={{ display: 'block' }}>Build & Test</Text>
-              <Text type="secondary" style={{ fontSize: '12px' }}>GitHub Actions</Text>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#52c41a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
-                <CloudServerOutlined style={{ fontSize: '24px', color: 'white' }} />
-              </div>
-              <Text strong style={{ display: 'block' }}>Deploy</Text>
-              <Text type="secondary" style={{ fontSize: '12px' }}>Vercel Projects</Text>
-            </div>
-          </div>
-        </Card>
-
-        <Card title={<Title level={4} style={{ margin: 0 }}>Available Releases</Title>}>
-          <Text type="secondary" style={{ display: 'block', marginBottom: '16px' }}>Ready to deploy versions</Text>
-          <Space vertical size="middle" style={{ width: '100%' }}>
-            {releases.map((release) => (
-              <Card key={release.tag_name} size="small">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <Tag color="blue">{release.tag_name}</Tag>
-                      <Text strong>{release.name}</Text>
-                    </div>
-                    <Text style={{ whiteSpace: 'pre-line', display: 'block', marginBottom: '8px' }}>
-                      {release.body}
-                    </Text>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <CalendarOutlined style={{ fontSize: '12px' }} />
-                      <Text type="secondary" style={{ fontSize: '12px' }}>
-                        Released {new Date(release.published_at).toLocaleDateString()}
-                      </Text>
-                    </div>
-                  </div>
-                  <Space>
-                    <Button
-                      icon={<LinkOutlined />}
-                      href={release.html_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    />
-                    <Button
-                      type="primary"
-                      onClick={() => {
-                        setSelectedVersion(release.tag_name);
-                        setShowDeployModal(true);
-                      }}
-                    >
-                      Deploy
-                    </Button>
-                  </Space>
-                </div>
-              </Card>
-            ))}
-          </Space>
-        </Card>
-
-        <Card title={<Title level={4} style={{ margin: 0 }}>Deployment History</Title>}>
-          <Text type="secondary" style={{ display: 'block', marginBottom: '16px' }}>Recent deployment activity</Text>
+        <Card title={<Title level={4} style={{ margin: 0 }}>Rollout History</Title>}>
           <Table
-            dataSource={updateLogs}
+            dataSource={rollouts}
             columns={columns}
             rowKey="id"
             locale={{
-              emptyText: <Empty description="No deployments yet. Deploy your first update to get started." />,
+              emptyText: (
+                <Empty description="No rollouts yet. Use the Deploy Rollout button to start." />
+              ),
             }}
             pagination={{ pageSize: 10 }}
+            scroll={{ x: 800 }}
           />
         </Card>
       </Space>
 
       <Modal
-        title={<Title level={4} style={{ margin: 0 }}>Deploy Update</Title>}
+        title={<Title level={4} style={{ margin: 0 }}>Deploy Rollout</Title>}
         open={showDeployModal}
-        onCancel={() => {
-          setShowDeployModal(false);
-          setSelectedVersion('');
-          setSelectedTenants([]);
-          setDeployNotes('');
-        }}
+        onCancel={() => setShowDeployModal(false)}
         footer={[
-          <Button
-            key="cancel"
-            onClick={() => {
-              setShowDeployModal(false);
-              setSelectedVersion('');
-              setSelectedTenants([]);
-              setDeployNotes('');
-            }}
-          >
+          <Button key="cancel" onClick={() => setShowDeployModal(false)}>
             Cancel
           </Button>,
           <Button
             key="deploy"
             type="primary"
-            disabled={!selectedVersion || (!deployAllTenants && selectedTenants.length === 0)}
             loading={deploying}
             onClick={initiateDeployment}
           >
-            Start Deployment
+            {deployScope === 'beta' ? 'Deploy to Beta (6 tenants)' : `Deploy to All (${tenants.length} tenants)`}
           </Button>,
         ]}
       >
         <Space vertical size="middle" style={{ width: '100%' }}>
           <div>
-            <Text strong style={{ display: 'block', marginBottom: '8px' }}>Version</Text>
+            <Text strong style={{ display: 'block', marginBottom: '8px' }}>
+              Version: v{platformVersion}
+            </Text>
+          </div>
+
+          <div>
+            <Text strong style={{ display: 'block', marginBottom: '8px' }}>Deployment Scope</Text>
             <Select
-              value={selectedVersion}
-              onChange={setSelectedVersion}
-              placeholder="Select a version..."
+              value={deployScope}
+              onChange={setDeployScope}
               style={{ width: '100%' }}
               size="large"
-            >
-              {releases.map((release) => (
-                <Select.Option key={release.tag_name} value={release.tag_name}>
-                  {release.tag_name} - {release.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </div>
-
-          <div>
-            <Checkbox
-              checked={deployAllTenants}
-              onChange={(e) => setDeployAllTenants(e.target.checked)}
-              style={{ marginBottom: '12px' }}
-            >
-              <Text strong>Deploy to all active tenants</Text>
-            </Checkbox>
-
-            {!deployAllTenants && (
-              <Card size="small" style={{ maxHeight: '200px', overflow: 'auto' }}>
-                <Space vertical size="small">
-                  {tenants.map((tenant) => (
-                    <Checkbox
-                      key={tenant.id}
-                      checked={selectedTenants.includes(tenant.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedTenants([...selectedTenants, tenant.id]);
-                        } else {
-                          setSelectedTenants(selectedTenants.filter((id) => id !== tenant.id));
-                        }
-                      }}
-                    >
-                      {tenant.businessName}
-                    </Checkbox>
-                  ))}
-                </Space>
-              </Card>
-            )}
-          </div>
-
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: '8px' }}>Deployment Notes (Optional)</Text>
-            <Input
-              placeholder="Add any notes about this deployment..."
-              value={deployNotes}
-              onChange={(e) => setDeployNotes(e.target.value)}
-              size="large"
+              options={[
+                { label: 'Beta — 6 tenants (wnct, hendo, oceanside, hardhat, atlanta, the42)', value: 'beta' },
+                { label: `All — ${tenants.length} active tenants`, value: 'all' },
+              ]}
             />
           </div>
 
           <Alert
-            message="Deployment Notice"
-            description="This will trigger a rebuild and redeploy of all selected tenant sites. The process typically completes within 5-10 minutes."
-            type="warning"
+            message={deployScope === 'all' ? 'Production Deployment' : 'Beta Deployment'}
+            description={
+              deployScope === 'all'
+                ? 'This will redeploy ALL active tenant sites. Ensure beta testing is complete first.'
+                : 'This will redeploy the 6 beta tenant sites for testing before full release.'
+            }
+            type={deployScope === 'all' ? 'error' : 'warning'}
             showIcon
             icon={<WarningOutlined />}
           />

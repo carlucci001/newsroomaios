@@ -238,6 +238,26 @@ export default function AccountDashboard() {
                   </Tag>
                 </Col>
               </Row>
+              {tenant.lastRolloutVersion && (
+                <Row gutter={[16, 12]}>
+                  <Col xs={24} sm={8}>
+                    <Text type="secondary" style={{ fontSize: '13px' }}>Software Version</Text>
+                  </Col>
+                  <Col xs={24} sm={16}>
+                    <Tag color="blue" style={{ fontFamily: 'monospace' }}>{tenant.lastRolloutVersion}</Tag>
+                    {tenant.lastRolloutAt && (
+                      <Text type="secondary" style={{ fontSize: '12px', marginLeft: '8px' }}>
+                        Updated {new Date((tenant.lastRolloutAt.seconds || 0) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </Text>
+                    )}
+                    <div style={{ marginTop: '4px' }}>
+                      <Link href="/account/updates">
+                        <Text style={{ fontSize: '13px', color: '#1890ff' }}>See what&apos;s new →</Text>
+                      </Link>
+                    </div>
+                  </Col>
+                </Row>
+              )}
             </div>
           </Card>
         )}

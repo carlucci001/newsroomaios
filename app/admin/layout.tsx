@@ -166,8 +166,11 @@ function AdminLayoutContent({
           })}
         </nav>
 
-        {/* User Menu */}
+        {/* Version + User Menu */}
         <div className={`absolute bottom-0 left-0 right-0 p-3 border-t ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+          <div className={`px-3 pb-2 text-[11px] font-mono ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+            Platform v{process.env.NEXT_PUBLIC_PLATFORM_VERSION || '—'}
+          </div>
           <div className="px-3 py-2">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-sm font-medium text-white">

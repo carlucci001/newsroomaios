@@ -23,6 +23,7 @@ import {
   Dropdown,
   Modal,
   Progress,
+  Alert,
 } from 'antd';
 import type { MenuProps, TableColumnsType } from 'antd';
 import {
@@ -39,6 +40,7 @@ import {
   MessageOutlined,
   DollarOutlined,
   GlobalOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -57,6 +59,7 @@ interface TableDataType {
   creditsRemaining: number;
   monthlyAllocation: number;
   lastRolloutVersion?: string;
+  lastRolloutAt?: any;
   lastLogin?: any;
 }
 
@@ -109,6 +112,11 @@ export default function TenantsPage() {
       tenant.ownerEmail.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
+
+  const platformVersion = process.env.NEXT_PUBLIC_PLATFORM_VERSION || '';
+  const staleTenants = tenants.filter(
+    (t) => t.status === 'active' && (t as any).lastRolloutVersion && platformVersion && (t as any).lastRolloutVersion !== `v${platformVersion}` && (t as any).lastRolloutVersion !== platformVersion
+  );
 
   const stats = {
     total: tenants.length,
@@ -270,13 +278,26 @@ export default function TenantsPage() {
       title: <Text strong>Version</Text>,
       dataIndex: 'lastRolloutVersion',
       key: 'lastRolloutVersion',
-      width: 100,
+      width: 120,
       sorter: (a, b) => (a.lastRolloutVersion || '').localeCompare(b.lastRolloutVersion || ''),
-      render: (version: string) => version ? (
-        <Tag color="blue" style={{ fontFamily: 'monospace', fontSize: '11px' }}>{version}</Tag>
-      ) : (
-        <Text type="secondary" style={{ fontSize: '12px' }}>—</Text>
-      ),
+      render: (version: string, record) => {
+        if (!version) return <Text type="secondary" style={{ fontSize: '12px' }}>—</Text>;
+        const rolloutDate = record.lastRolloutAt
+          ? new Date((record.lastRolloutAt.seconds || record.lastRolloutAt._seconds || 0) * 1000)
+          : null;
+        return (
+          <div>
+            <Tag color="blue" style={{ fontFamily: 'monospace', fontSize: '11px' }}>{version}</Tag>
+            {rolloutDate && rolloutDate.getTime() > 0 && (
+              <div style={{ marginTop: '2px' }}>
+                <Text type="secondary" style={{ fontSize: '11px' }}>
+                  {rolloutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </Text>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: <Text strong>Actions</Text>,
@@ -305,6 +326,7 @@ export default function TenantsPage() {
     creditsRemaining: tenant.credits?.creditsRemaining || 0,
     monthlyAllocation: tenant.credits?.monthlyAllocation || 0,
     lastRolloutVersion: (tenant as any).lastRolloutVersion,
+    lastRolloutAt: (tenant as any).lastRolloutAt,
     lastLogin: (tenant as any).lastLogin,
   }));
 
@@ -365,6 +387,17 @@ export default function TenantsPage() {
             </Card>
           </Col>
         </Row>
+
+        {staleTenants.length > 0 && (
+          <Alert
+            type="warning"
+            showIcon
+            icon={<WarningOutlined />}
+            message={`${staleTenants.length} tenant${staleTenants.length > 1 ? 's' : ''} behind latest version (v${platformVersion})`}
+            description={staleTenants.map(t => t.businessName).join(', ')}
+            style={{ marginBottom: 0 }}
+          />
+        )}
 
         <Card
           title={<Title level={4} style={{ margin: 0 }}>All Newspapers</Title>}
