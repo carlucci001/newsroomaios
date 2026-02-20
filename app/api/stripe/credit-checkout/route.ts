@@ -76,7 +76,9 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
+          name: tenant.businessName || tenant.siteName || tenantId,
           email: tenant.ownerEmail || '',
+          description: `NewsroomAIOS subscriber — ${tenant.plan || 'starter'} plan`,
           'metadata[tenantId]': tenantId,
           'metadata[businessName]': tenant.businessName || '',
         }).toString(),
@@ -99,6 +101,11 @@ export async function POST(request: NextRequest) {
     const finalSuccessUrl = successUrl || `${baseUrl}/account/credits?purchase=success&session_id={CHECKOUT_SESSION_ID}`;
     const finalCancelUrl = cancelUrl || `${baseUrl}/account/credits/purchase`;
 
+    // Build descriptive product name so the customer knows exactly what they're paying for
+    const newspaperName = tenant.businessName || tenant.siteName || tenantId;
+    const productName = `NewsroomAIOS ${pack.name} — ${pack.credits} AI Credits`;
+    const productDescription = `${pack.credits} AI credits for ${newspaperName}. Credits never expire. Service provided by Farrington Development LLC via NewsroomAIOS. All sales are final — no refunds.`;
+
     // Create Checkout Session
     const sessionRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
@@ -110,8 +117,8 @@ export async function POST(request: NextRequest) {
         mode: 'payment',
         customer: customerId,
         'line_items[0][price_data][currency]': 'usd',
-        'line_items[0][price_data][product_data][name]': `${pack.name} — Credit Top-Off`,
-        'line_items[0][price_data][product_data][description]': `${pack.credits} AI credits — never expire`,
+        'line_items[0][price_data][product_data][name]': productName,
+        'line_items[0][price_data][product_data][description]': productDescription,
         'line_items[0][price_data][unit_amount]': pack.amount.toString(),
         'line_items[0][quantity]': '1',
         success_url: finalSuccessUrl,
@@ -120,6 +127,8 @@ export async function POST(request: NextRequest) {
         'metadata[packId]': packId,
         'metadata[credits]': pack.credits.toString(),
         'metadata[type]': 'credit_topoff',
+        'metadata[newspaperName]': newspaperName,
+        'payment_intent_data[statement_descriptor_suffix]': 'CREDITS',
       }).toString(),
     });
 
