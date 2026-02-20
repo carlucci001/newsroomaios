@@ -59,6 +59,65 @@ export async function POST(request: NextRequest) {
 
     // Handle different event types
     switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const metadata = session.metadata || {};
+
+        // Only handle credit top-off purchases
+        if (metadata.type === 'credit_topoff' && metadata.tenantId && metadata.credits) {
+          const tenantId = metadata.tenantId;
+          const creditsToAdd = parseInt(metadata.credits, 10);
+          const sessionId = session.id;
+
+          console.log(`[Webhook] Checkout completed: ${creditsToAdd} credits for tenant ${tenantId}`);
+
+          // Idempotency: check if already processed
+          const existingTx = await db
+            .collection('creditTransactions')
+            .where('stripeSessionId', '==', sessionId)
+            .limit(1)
+            .get();
+
+          if (!existingTx.empty) {
+            console.log(`[Webhook] Already processed session ${sessionId}, skipping`);
+            break;
+          }
+
+          const tenantDoc = await db.collection('tenants').doc(tenantId).get();
+          if (!tenantDoc.exists) {
+            console.error(`[Webhook] Tenant ${tenantId} not found`);
+            break;
+          }
+
+          const tenantData = tenantDoc.data()!;
+          const currentTopOff = tenantData.topOffCredits || 0;
+          const newTopOff = currentTopOff + creditsToAdd;
+
+          // Add credits to tenant
+          await db.collection('tenants').doc(tenantId).update({
+            topOffCredits: newTopOff,
+            updatedAt: new Date(),
+          });
+
+          // Log transaction
+          await db.collection('creditTransactions').add({
+            tenantId,
+            type: 'topoff',
+            creditPool: 'topoff',
+            amount: creditsToAdd,
+            subscriptionBalance: tenantData.subscriptionCredits || 0,
+            topOffBalance: newTopOff,
+            description: `Purchased ${creditsToAdd} top-off credits`,
+            createdAt: new Date(),
+            stripeSessionId: sessionId,
+            stripePaymentId: session.payment_intent as string,
+          });
+
+          console.log(`[Webhook] Added ${creditsToAdd} top-off credits to tenant ${tenantId} (new balance: ${newTopOff})`);
+        }
+        break;
+      }
+
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object;
         console.log(`[Webhook] Payment succeeded: ${invoice.id}`);

@@ -2,51 +2,66 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { safeEnv } from '@/lib/env';
 
-const CREDIT_PACKS: Record<string, { credits: number; amount: number; name: string }> = {
-  credits_100: { credits: 100, amount: 1900, name: '100 Credits' },
-  credits_250: { credits: 250, amount: 4500, name: '250 Credits' },
-  credits_500: { credits: 500, amount: 8500, name: '500 Credits' },
-  credits_1000: { credits: 1000, amount: 15000, name: '1,000 Credits' },
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Tenant-ID, X-API-Key',
+  'Access-Control-Max-Age': '86400',
 };
+
+// Credit packs — authoritative pricing (matches tenant creditPricing.ts)
+const CREDIT_PACKS: Record<string, { credits: number; amount: number; name: string }> = {
+  small:  { credits: 50,  amount: 500,  name: 'Small Pack' },
+  medium: { credits: 100, amount: 1000, name: 'Medium Pack' },
+  large:  { credits: 250, amount: 2000, name: 'Large Pack' },
+  bulk:   { credits: 500, amount: 3500, name: 'Bulk Pack' },
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
 
 /**
  * POST /api/stripe/credit-checkout
  *
  * Creates a Stripe Checkout Session for purchasing credit top-offs.
- * Returns a URL that the client redirects to.
+ * Called by tenant sites (proxied through their /api/stripe/checkout).
+ * All payments go to Farrington Development's Stripe account.
  */
 export async function POST(request: NextRequest) {
   try {
     const stripeKey = safeEnv('STRIPE_SECRET_KEY');
     if (!stripeKey) {
-      return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500, headers: CORS_HEADERS });
     }
 
-    const { tenantId, packId } = await request.json();
+    const body = await request.json();
+    const { tenantId, packId, successUrl, cancelUrl } = body;
 
     if (!tenantId || !packId) {
       return NextResponse.json(
         { error: 'Missing required fields: tenantId, packId' },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
     const pack = CREDIT_PACKS[packId];
     if (!pack) {
       return NextResponse.json(
-        { error: `Invalid pack: ${packId}` },
-        { status: 400 }
+        { error: `Invalid pack: ${packId}. Valid packs: ${Object.keys(CREDIT_PACKS).join(', ')}` },
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
     const db = getAdminDb();
     if (!db) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500, headers: CORS_HEADERS });
     }
 
+    // Verify tenant exists
     const tenantDoc = await db.collection('tenants').doc(tenantId).get();
     if (!tenantDoc.exists) {
-      return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 404, headers: CORS_HEADERS });
     }
 
     const tenant = tenantDoc.data()!;
@@ -71,7 +86,7 @@ export async function POST(request: NextRequest) {
       if (!customerRes.ok) {
         return NextResponse.json(
           { error: customerData.error?.message || 'Failed to create customer' },
-          { status: 500 }
+          { status: 500, headers: CORS_HEADERS }
         );
       }
 
@@ -79,7 +94,10 @@ export async function POST(request: NextRequest) {
       await db.collection('tenants').doc(tenantId).update({ stripeCustomerId: customerId });
     }
 
+    // Use tenant-provided URLs if available, otherwise default to platform
     const baseUrl = safeEnv('NEXT_PUBLIC_BASE_URL', 'https://newsroomaios.com');
+    const finalSuccessUrl = successUrl || `${baseUrl}/account/credits?purchase=success&session_id={CHECKOUT_SESSION_ID}`;
+    const finalCancelUrl = cancelUrl || `${baseUrl}/account/credits/purchase`;
 
     // Create Checkout Session
     const sessionRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -92,12 +110,12 @@ export async function POST(request: NextRequest) {
         mode: 'payment',
         customer: customerId,
         'line_items[0][price_data][currency]': 'usd',
-        'line_items[0][price_data][product_data][name]': `${pack.name} Top-Off`,
+        'line_items[0][price_data][product_data][name]': `${pack.name} — Credit Top-Off`,
         'line_items[0][price_data][product_data][description]': `${pack.credits} AI credits — never expire`,
         'line_items[0][price_data][unit_amount]': pack.amount.toString(),
         'line_items[0][quantity]': '1',
-        success_url: `${baseUrl}/account/credits?purchase=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/account/credits/purchase`,
+        success_url: finalSuccessUrl,
+        cancel_url: finalCancelUrl,
         'metadata[tenantId]': tenantId,
         'metadata[packId]': packId,
         'metadata[credits]': pack.credits.toString(),
@@ -108,21 +126,21 @@ export async function POST(request: NextRequest) {
     const sessionData = await sessionRes.json();
 
     if (!sessionRes.ok) {
-      console.error('Stripe Checkout Session error:', sessionData);
+      console.error('[Credit Checkout] Stripe session error:', sessionData);
       return NextResponse.json(
         { error: sessionData.error?.message || 'Failed to create checkout session' },
-        { status: 500 }
+        { status: 500, headers: CORS_HEADERS }
       );
     }
 
-    console.log(`[Credit Checkout] Session ${sessionData.id} for tenant ${tenantId} (${pack.name})`);
+    console.log(`[Credit Checkout] Session ${sessionData.id} for tenant ${tenantId} (${pack.name}, ${pack.credits} credits)`);
 
-    return NextResponse.json({ url: sessionData.url });
+    return NextResponse.json({ url: sessionData.url }, { headers: CORS_HEADERS });
   } catch (error: any) {
     console.error('[Credit Checkout] Error:', error.message);
     return NextResponse.json(
       { error: error.message || 'Failed to create checkout session' },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }
