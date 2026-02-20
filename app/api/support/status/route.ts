@@ -88,15 +88,19 @@ export async function POST(request: NextRequest) {
     const { online, mode, adminName, activeTicketId } = body;
 
     const updateData: Record<string, any> = {
-      adminName: adminName || 'Platform Support',
       lastSeen: new Date(),
     };
 
-    // Support new 'mode' field or fall back to 'online' boolean
+    if (adminName) {
+      updateData.adminName = adminName;
+    }
+
+    // Only update mode/online when explicitly provided — avoid resetting
+    // when the caller is just updating activeTicketId
     if (mode) {
       updateData.mode = mode;
       updateData.online = mode !== 'offline';
-    } else {
+    } else if (online !== undefined) {
       updateData.online = !!online;
       updateData.mode = online ? 'online' : 'offline';
     }
