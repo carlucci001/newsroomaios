@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
-import { TenantCredits } from '@/types/credits';
+import { TenantCredits, DEFAULT_PLANS } from '@/types/credits';
 import { useTheme } from '@/components/providers/AntdProvider';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -58,6 +58,7 @@ interface TableDataType {
   ownerEmail: string;
   creditsRemaining: number;
   monthlyAllocation: number;
+  plan?: string;
   lastRolloutVersion?: string;
   lastRolloutAt?: any;
   lastLogin?: any;
@@ -242,6 +243,26 @@ export default function TenantsPage() {
       ),
     },
     {
+      title: <Text strong>Plan</Text>,
+      dataIndex: 'plan',
+      key: 'plan',
+      width: 130,
+      filters: DEFAULT_PLANS.map((p) => ({ text: p.name, value: p.id })),
+      onFilter: (value, record) => (record.plan || 'starter') === value,
+      render: (plan: string) => {
+        const planDef = DEFAULT_PLANS.find((p) => p.id === (plan || 'starter')) || DEFAULT_PLANS[0];
+        const colors: Record<string, string> = { starter: 'default', growth: 'blue', professional: 'purple' };
+        return (
+          <div>
+            <Tag color={colors[planDef.id] || 'default'}>{planDef.name}</Tag>
+            <div style={{ marginTop: '2px' }}>
+              <Text type="secondary" style={{ fontSize: '11px' }}>${planDef.pricePerMonth}/mo</Text>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       title: <Text strong>Credits</Text>,
       key: 'credits',
       sorter: (a, b) => a.creditsRemaining - b.creditsRemaining,
@@ -323,6 +344,7 @@ export default function TenantsPage() {
     status: tenant.status,
     licensingStatus: tenant.licensingStatus,
     ownerEmail: tenant.ownerEmail,
+    plan: (tenant as any).plan || tenant.credits?.planId || 'starter',
     creditsRemaining: tenant.credits?.creditsRemaining || 0,
     monthlyAllocation: tenant.credits?.monthlyAllocation || 0,
     lastRolloutVersion: (tenant as any).lastRolloutVersion,
