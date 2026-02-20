@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const version = body.version || 'unknown';
+    const version = body.version || process.env.NEXT_PUBLIC_PLATFORM_VERSION || 'unknown';
     const commitHash = body.commitHash || '';
     const dryRun = body.dryRun === true;
     const scope = body.scope || 'all'; // 'beta' | 'all'
