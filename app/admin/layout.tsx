@@ -58,6 +58,11 @@ function AdminLayoutContent({
   const { isDark, toggleTheme } = useTheme();
 
   useEffect(() => {
+    const ALLOWED_ADMIN_EMAILS = [
+      'carlfarring@gmail.com',
+      'margefarrington@gmail.com',
+    ];
+
     const auth = getAuthInstance();
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
@@ -69,15 +74,27 @@ function AdminLayoutContent({
         return;
       }
 
-      // Check platformAdmin custom claim
-      const tokenResult = await currentUser.getIdTokenResult(true);
-      if (!tokenResult.claims.platformAdmin) {
-        // Not a platform admin — sign them out and redirect
+      // Immediate email check — no network call needed
+      if (!ALLOWED_ADMIN_EMAILS.includes(currentUser.email || '')) {
         await signOut(auth);
         router.push('/admin/login');
         setUser(null);
         setLoading(false);
         return;
+      }
+
+      // Also verify platformAdmin custom claim as defense-in-depth
+      try {
+        const tokenResult = await currentUser.getIdTokenResult(true);
+        if (!tokenResult.claims.platformAdmin) {
+          await signOut(auth);
+          router.push('/admin/login');
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // If claim check fails, email allowlist already passed — allow through
       }
 
       setUser(currentUser);
