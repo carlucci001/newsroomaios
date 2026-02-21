@@ -3,9 +3,9 @@ import { getAdminDb } from '@/lib/firebaseAdmin';
 import { safeEnv } from '@/lib/env';
 
 const PLAN_PRICES = {
-  starter: { priceId: 'price_starter', amount: 9900, credits: 250 },
-  growth: { priceId: 'price_growth', amount: 19900, credits: 575 },
-  professional: { priceId: 'price_professional', amount: 29900, credits: 1000 },
+  starter: { priceId: safeEnv('STRIPE_PRICE_STARTER', 'price_starter'), amount: 9900, credits: 250 },
+  growth: { priceId: safeEnv('STRIPE_PRICE_GROWTH', 'price_growth'), amount: 19900, credits: 575 },
+  professional: { priceId: safeEnv('STRIPE_PRICE_PROFESSIONAL', 'price_professional'), amount: 29900, credits: 1000 },
 };
 
 /**
