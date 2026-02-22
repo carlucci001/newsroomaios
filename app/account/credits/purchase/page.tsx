@@ -31,31 +31,30 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 const CREDIT_PACKAGES = [
   {
+    id: 'credits_50',
+    credits: 50,
+    price: 5,
+    popular: false,
+  },
+  {
     id: 'credits_100',
     credits: 100,
-    price: 19,
+    price: 10,
     popular: false,
   },
   {
     id: 'credits_250',
     credits: 250,
-    price: 45,
+    price: 20,
     popular: true,
-    savings: '5%',
+    savings: '20%',
   },
   {
     id: 'credits_500',
     credits: 500,
-    price: 85,
+    price: 35,
     popular: false,
-    savings: '10%',
-  },
-  {
-    id: 'credits_1000',
-    credits: 1000,
-    price: 150,
-    popular: false,
-    savings: '21%',
+    savings: '30%',
   },
 ];
 

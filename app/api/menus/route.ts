@@ -170,9 +170,9 @@ async function buildDefaultMenus(tenantId: string, db: any): Promise<any[]> {
         { id: 'advertise', label: 'Advertise', path: '/advertise', type: 'internal' as const, enabled: true, order: 1 },
         { id: 'directory-top', label: 'Directory', path: '/directory', type: 'internal' as const, enabled: true, order: 2 },
         { id: 'events-top', label: 'Events', path: '/events', type: 'internal' as const, enabled: true, order: 3 },
-        { id: 'community-top', label: 'Community', path: '/community', type: 'internal' as const, enabled: true, order: 4 },
-        { id: 'contact-top', label: 'Contact', path: '/contact', type: 'internal' as const, enabled: true, order: 5 },
-        { id: 'blog-top', label: 'Blog', path: '/blog', type: 'internal' as const, enabled: true, order: 6 },
+        { id: 'blog-top', label: 'Blog', path: '/blog', type: 'internal' as const, enabled: true, order: 4 },
+        { id: 'community-top', label: 'Community', path: '/community', type: 'internal' as const, enabled: true, order: 5 },
+        { id: 'contact-top', label: 'Contact', path: '/contact', type: 'internal' as const, enabled: true, order: 6 },
       ],
     },
     {

@@ -21,6 +21,7 @@ import {
   Newspaper,
   ExternalLink,
   Rocket,
+  Users,
 } from 'lucide-react';
 
 interface NavItem {
@@ -31,6 +32,7 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { label: 'Dashboard', href: '/account', icon: HomeIcon },
+  { label: 'Team', href: '/account/team', icon: Users },
   { label: 'Billing', href: '/account/billing', icon: CreditCard },
   { label: 'Credits', href: '/account/credits', icon: Coins },
   { label: 'Messages', href: '/account/messages', icon: MessageSquare },
@@ -48,8 +50,8 @@ function AccountLayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // Skip auth check for login page
-    if (pathname === '/account/login') {
+    // Skip auth check for login and forgot-password pages
+    if (pathname === '/account/login' || pathname === '/account/forgot-password') {
       setLoading(false);
       return;
     }
@@ -85,8 +87,8 @@ function AccountLayoutContent({ children }: { children: React.ReactNode }) {
     router.push('/account/login');
   };
 
-  // For login page, just render children without layout
-  if (pathname === '/account/login') {
+  // For login/forgot-password pages, just render children without layout
+  if (pathname === '/account/login' || pathname === '/account/forgot-password') {
     return <>{children}</>;
   }
 

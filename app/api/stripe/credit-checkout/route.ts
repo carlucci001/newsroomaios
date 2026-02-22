@@ -10,11 +10,16 @@ const CORS_HEADERS = {
 };
 
 // Credit packs — authoritative pricing (matches tenant creditPricing.ts)
+// Accepts both "small" and "credits_small" formats for backward compatibility
 const CREDIT_PACKS: Record<string, { credits: number; amount: number; name: string }> = {
-  small:  { credits: 50,  amount: 500,  name: 'Small Pack' },
-  medium: { credits: 100, amount: 1000, name: 'Medium Pack' },
-  large:  { credits: 250, amount: 2000, name: 'Large Pack' },
-  bulk:   { credits: 500, amount: 3500, name: 'Bulk Pack' },
+  small:          { credits: 50,  amount: 500,  name: 'Small Pack' },
+  credits_small:  { credits: 50,  amount: 500,  name: 'Small Pack' },
+  medium:         { credits: 100, amount: 1000, name: 'Medium Pack' },
+  credits_medium: { credits: 100, amount: 1000, name: 'Medium Pack' },
+  large:          { credits: 250, amount: 2000, name: 'Large Pack' },
+  credits_large:  { credits: 250, amount: 2000, name: 'Large Pack' },
+  bulk:           { credits: 500, amount: 3500, name: 'Bulk Pack' },
+  credits_bulk:   { credits: 500, amount: 3500, name: 'Bulk Pack' },
 };
 
 export async function OPTIONS() {
@@ -35,12 +40,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500, headers: CORS_HEADERS });
     }
 
-    const body = await request.json();
-    const { tenantId, packId, successUrl, cancelUrl } = body;
+    // Authenticate tenant via headers
+    const tenantId = request.headers.get('X-Tenant-ID');
+    const apiKey = request.headers.get('X-API-Key');
 
-    if (!tenantId || !packId) {
+    if (!tenantId || !apiKey) {
       return NextResponse.json(
-        { error: 'Missing required fields: tenantId, packId' },
+        { error: 'Missing authentication headers: X-Tenant-ID, X-API-Key' },
+        { status: 401, headers: CORS_HEADERS }
+      );
+    }
+
+    const db = getAdminDb();
+    if (!db) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500, headers: CORS_HEADERS });
+    }
+
+    // Verify tenant exists, is active, and API key matches
+    const tenantDoc = await db.collection('tenants').doc(tenantId).get();
+    if (!tenantDoc.exists) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 404, headers: CORS_HEADERS });
+    }
+
+    const tenant = tenantDoc.data()!;
+
+    if (tenant.apiKey !== apiKey) {
+      return NextResponse.json({ error: 'Invalid API key' }, { status: 401, headers: CORS_HEADERS });
+    }
+
+    if (tenant.status === 'suspended') {
+      return NextResponse.json({ error: 'Tenant account suspended' }, { status: 403, headers: CORS_HEADERS });
+    }
+
+    const body = await request.json();
+    const { packId, successUrl, cancelUrl } = body;
+
+    if (!packId) {
+      return NextResponse.json(
+        { error: 'Missing required field: packId' },
         { status: 400, headers: CORS_HEADERS }
       );
     }
@@ -52,19 +89,6 @@ export async function POST(request: NextRequest) {
         { status: 400, headers: CORS_HEADERS }
       );
     }
-
-    const db = getAdminDb();
-    if (!db) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500, headers: CORS_HEADERS });
-    }
-
-    // Verify tenant exists
-    const tenantDoc = await db.collection('tenants').doc(tenantId).get();
-    if (!tenantDoc.exists) {
-      return NextResponse.json({ error: 'Tenant not found' }, { status: 404, headers: CORS_HEADERS });
-    }
-
-    const tenant = tenantDoc.data()!;
     let customerId = tenant.stripeCustomerId;
 
     // Create Stripe customer if missing

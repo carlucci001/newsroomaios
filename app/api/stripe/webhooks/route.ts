@@ -3,6 +3,7 @@ import { getAdminDb } from '@/lib/firebaseAdmin';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import { safeEnv } from '@/lib/env';
+import { FieldValue } from 'firebase-admin/firestore';
 
 const PLAN_CREDITS = {
   starter: 250,
@@ -83,37 +84,24 @@ export async function POST(request: NextRequest) {
             break;
           }
 
-          const tenantDoc = await db.collection('tenants').doc(tenantId).get();
-          if (!tenantDoc.exists) {
-            console.error(`[Webhook] Tenant ${tenantId} not found`);
-            break;
-          }
-
-          const tenantData = tenantDoc.data()!;
-          const currentTopOff = tenantData.topOffCredits || 0;
-          const newTopOff = currentTopOff + creditsToAdd;
-
-          // Add credits to tenant
+          // Add credits atomically using FieldValue.increment
           await db.collection('tenants').doc(tenantId).update({
-            topOffCredits: newTopOff,
-            updatedAt: new Date(),
+            topOffCredits: FieldValue.increment(creditsToAdd),
+            updatedAt: FieldValue.serverTimestamp(),
           });
 
           // Log transaction
           await db.collection('creditTransactions').add({
             tenantId,
             type: 'topoff',
-            creditPool: 'topoff',
-            amount: creditsToAdd,
-            subscriptionBalance: tenantData.subscriptionCredits || 0,
-            topOffBalance: newTopOff,
-            description: `Purchased ${creditsToAdd} top-off credits`,
-            createdAt: new Date(),
+            credits: creditsToAdd,
+            packId: metadata.packId || null,
             stripeSessionId: sessionId,
-            stripePaymentId: session.payment_intent as string,
+            amount: session.amount_total,
+            createdAt: FieldValue.serverTimestamp(),
           });
 
-          console.log(`[Webhook] Added ${creditsToAdd} top-off credits to tenant ${tenantId} (new balance: ${newTopOff})`);
+          console.log(`[Webhook] Added ${creditsToAdd} top-off credits to tenant ${tenantId}`);
         }
         break;
       }
