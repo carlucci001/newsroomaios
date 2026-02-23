@@ -5,7 +5,7 @@ import { verifyPlatformSecret } from '@/lib/platformAuth';
 // CORS headers for tenant domains
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Tenant-ID, X-API-Key, X-Platform-Secret',
   'Access-Control-Max-Age': '86400',
 };
@@ -110,12 +110,20 @@ export async function GET(request: NextRequest) {
 
     const members = usersSnap.docs.map(doc => {
       const data = doc.data();
+      const isPrimary = data.email === ownerEmail;
+      const role = isPrimary ? 'owner' : (data.role || 'admin');
+
+      // Auto-fix: if primary owner's doc says 'admin', correct it to 'owner'
+      if (isPrimary && data.role !== 'owner') {
+        db.collection('users').doc(doc.id).update({ role: 'owner' }).catch(() => {});
+      }
+
       return {
         uid: doc.id,
         email: data.email,
         displayName: data.displayName || null,
-        role: data.role || 'admin',
-        isPrimaryOwner: data.email === ownerEmail,
+        role,
+        isPrimaryOwner: isPrimary,
         status: data.status || 'active',
         createdAt: data.createdAt?.toDate?.() || data.createdAt || null,
       };
@@ -241,6 +249,81 @@ export async function POST(request: NextRequest) {
     console.error('[Account Team] POST error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to add team member' },
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+}
+
+/**
+ * PATCH /api/account/team
+ * Update a team member's role or display name
+ *
+ * Body: { uid, role?, displayName? }
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const authResult = await authenticateRequest(request);
+    if (!authResult.valid) {
+      return NextResponse.json(
+        { success: false, error: authResult.error },
+        { status: 401, headers: CORS_HEADERS }
+      );
+    }
+
+    const db = getAdminDb()!;
+    const tenantId = authResult.tenantId!;
+    const { uid, role, displayName } = await request.json();
+
+    if (!uid) {
+      return NextResponse.json(
+        { success: false, error: 'uid is required' },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    // Verify user belongs to this tenant
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (!userDoc.exists || userDoc.data()?.tenantId !== tenantId) {
+      return NextResponse.json(
+        { success: false, error: 'User not found in this tenant' },
+        { status: 404, headers: CORS_HEADERS }
+      );
+    }
+
+    // Protect primary owner's role — cannot be changed
+    const tenantDoc = await db.collection('tenants').doc(tenantId).get();
+    const ownerEmail = tenantDoc.data()?.ownerEmail;
+    if (userDoc.data()?.email === ownerEmail && role && role !== 'owner') {
+      return NextResponse.json(
+        { success: false, error: 'Cannot change the primary owner\'s role' },
+        { status: 403, headers: CORS_HEADERS }
+      );
+    }
+
+    // Validate role if provided
+    if (role && !['owner', 'admin'].includes(role)) {
+      return NextResponse.json(
+        { success: false, error: 'Role must be owner or admin' },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    const updates: Record<string, any> = { updatedAt: new Date() };
+    if (role) updates.role = role;
+    if (displayName !== undefined) updates.displayName = displayName || null;
+
+    await db.collection('users').doc(uid).update(updates);
+
+    console.log(`[Account Team] Updated ${uid}: ${JSON.stringify(updates)}`);
+
+    return NextResponse.json(
+      { success: true, message: 'Team member updated' },
+      { headers: CORS_HEADERS }
+    );
+  } catch (error: any) {
+    console.error('[Account Team] PATCH error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to update team member' },
       { status: 500, headers: CORS_HEADERS }
     );
   }

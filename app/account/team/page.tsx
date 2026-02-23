@@ -24,6 +24,7 @@ import {
   TeamOutlined,
   UserAddOutlined,
   DeleteOutlined,
+  EditOutlined,
   CrownOutlined,
   MailOutlined,
   ExclamationCircleOutlined,
@@ -60,8 +61,12 @@ export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [form] = Form.useForm();
+  const [editForm] = Form.useForm();
 
   useEffect(() => {
     loadData();
@@ -204,6 +209,59 @@ export default function TeamPage() {
     });
   }
 
+  function handleEditMember(member: TeamMember) {
+    setEditingMember(member);
+    editForm.setFieldsValue({
+      displayName: member.displayName || '',
+      role: member.role,
+    });
+    setShowEditModal(true);
+  }
+
+  async function handleSaveEdit() {
+    if (!editingMember) return;
+    try {
+      const values = await editForm.validateFields();
+      setEditing(true);
+
+      const idToken = await getIdToken();
+      if (!idToken) {
+        message.error('Not authenticated');
+        return;
+      }
+
+      const res = await fetch('/api/account/team', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          uid: editingMember.uid,
+          role: values.role,
+          displayName: values.displayName,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        message.error(data.error || 'Failed to update team member');
+        return;
+      }
+
+      message.success(`${editingMember.email} updated`);
+      setShowEditModal(false);
+      setEditingMember(null);
+      await fetchMembers();
+    } catch (error: any) {
+      if (error?.errorFields) return;
+      message.error('Failed to update team member');
+    } finally {
+      setEditing(false);
+    }
+  }
+
   const columns = [
     {
       title: 'Member',
@@ -245,18 +303,27 @@ export default function TeamPage() {
     {
       title: '',
       key: 'actions',
-      width: 80,
+      width: 120,
       render: (_: any, record: TeamMember) => {
         if (record.isPrimaryOwner) return null;
         return (
-          <Tooltip title="Remove platform access">
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleRemoveMember(record)}
-            />
-          </Tooltip>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <Tooltip title="Edit member">
+              <Button
+                type="text"
+                icon={<EditOutlined />}
+                onClick={() => handleEditMember(record)}
+              />
+            </Tooltip>
+            <Tooltip title="Remove platform access">
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleRemoveMember(record)}
+              />
+            </Tooltip>
+          </div>
         );
       },
     },
@@ -407,6 +474,57 @@ export default function TeamPage() {
             <strong>Note:</strong> If this person doesn&apos;t have a newsroomaios.com account yet, one will be created automatically. They&apos;ll use the same email to log in.
           </div>
         </Form>
+      </Modal>
+      {/* Edit Member Modal */}
+      <Modal
+        title={
+          <span>
+            <EditOutlined style={{ marginRight: 8 }} />
+            Edit Team Member
+          </span>
+        }
+        open={showEditModal}
+        onOk={handleSaveEdit}
+        onCancel={() => {
+          setShowEditModal(false);
+          setEditingMember(null);
+          editForm.resetFields();
+        }}
+        confirmLoading={editing}
+        okText="Save Changes"
+      >
+        {editingMember && (
+          <Form form={editForm} layout="vertical" style={{ marginTop: 16 }}>
+            <div style={{
+              background: '#f6f6f6',
+              borderRadius: 8,
+              padding: '12px 16px',
+              marginBottom: 16,
+              fontSize: 14,
+            }}>
+              <strong>{editingMember.email}</strong>
+            </div>
+
+            <Form.Item
+              name="displayName"
+              label="Display Name"
+            >
+              <Input placeholder="John Smith" />
+            </Form.Item>
+
+            <Form.Item
+              name="role"
+              label="Account Role"
+            >
+              <Select
+                options={[
+                  { value: 'admin', label: 'Admin — Can view billing, credits, and settings' },
+                  { value: 'owner', label: 'Owner — Full account access' },
+                ]}
+              />
+            </Form.Item>
+          </Form>
+        )}
       </Modal>
     </div>
   );
