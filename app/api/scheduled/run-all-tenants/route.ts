@@ -329,8 +329,9 @@ export async function GET(request: NextRequest) {
 function isJournalistDue(journalist: AIJournalist, nowISO: string): boolean {
   const schedule = journalist.schedule;
 
-  // Check isEnabled (the actual field name in Firestore)
-  if (!schedule?.isEnabled) return false;
+  // Check isEnabled (preferred) or legacy enabled field
+  const isEnabled = schedule?.isEnabled ?? (schedule as any)?.enabled;
+  if (!isEnabled) return false;
 
   // Must have a nextRunAt to be due
   if (!journalist.nextRunAt) return false;

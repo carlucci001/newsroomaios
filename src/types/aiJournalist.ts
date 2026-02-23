@@ -59,6 +59,55 @@ export interface AIJournalist {
   updatedAt?: Date;
 }
 
+/**
+ * Calculate the initial nextRunAt for a newly created journalist.
+ * Finds the next occurrence of the given time in the given timezone.
+ */
+function calculateInitialNextRunAt(time: string, timezone: string): string {
+  const [hour, minute] = time.split(':').map(Number);
+  const now = new Date();
+
+  // Get today's date parts in the target timezone
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(now);
+  const getPart = (type: string) => parts.find(p => p.type === type)?.value || '0';
+
+  const currentHour = parseInt(getPart('hour'), 10);
+  const currentMinute = parseInt(getPart('minute'), 10);
+
+  // If the scheduled time is still ahead today, use today; otherwise tomorrow
+  const isToday = currentHour < hour || (currentHour === hour && currentMinute < minute);
+
+  // Build a date string in the target timezone
+  const year = getPart('year');
+  const month = getPart('month');
+  const day = getPart('day');
+  const targetDay = isToday
+    ? parseInt(day, 10)
+    : parseInt(day, 10) + 1;
+
+  // Create a date object — use a simple approach: set today/tomorrow at the target time
+  const dateStr = `${year}-${month}-${String(targetDay).padStart(2, '0')}T${time}:00`;
+
+  // Parse in the target timezone by using a known offset technique
+  const target = new Date(dateStr + 'Z'); // Treat as UTC first
+  // Calculate the timezone offset
+  const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const tzDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+  const offsetMs = utcDate.getTime() - tzDate.getTime();
+  target.setTime(target.getTime() + offsetMs);
+
+  return target.toISOString();
+}
+
 // Default schedules staggered throughout the day
 export function createDefaultJournalists(
   tenantId: string,
@@ -67,26 +116,37 @@ export function createDefaultJournalists(
 ): Omit<AIJournalist, 'id'>[] {
   const baseHour = 6; // Start at 6 AM
 
-  return categories.map((category, idx) => ({
-    tenantId,
-    name: `${category.name} Reporter`,
-    slug: `${category.slug}-reporter`,
-    categoryId: category.id,
-    categoryName: category.name,
-    persona: `Experienced local journalist covering ${category.name.toLowerCase()} for ${businessName}. ${category.directive}`,
-    writingStyle: 'formal' as const,
-    targetWordCount: 500,
-    schedule: {
-      enabled: true,
-      frequency: 'daily' as const,
-      time: `${String(baseHour + idx).padStart(2, '0')}:00`, // Stagger: 06:00, 07:00, etc.
-      daysOfWeek: [1, 2, 3, 4, 5], // Mon-Fri
-    },
-    articlesPerRun: 1,
-    status: 'active' as const,
-    articlesGenerated: 0,
-    createdAt: new Date(),
-  }));
+  const timezone = 'America/New_York';
+
+  return categories.map((category, idx) => {
+    const time = `${String(baseHour + idx).padStart(2, '0')}:00`;
+    // Calculate initial nextRunAt so the cron can match on first run
+    const nextRunAt = calculateInitialNextRunAt(time, timezone);
+
+    return {
+      tenantId,
+      name: `${category.name} Reporter`,
+      slug: `${category.slug}-reporter`,
+      categoryId: category.id,
+      categoryName: category.name,
+      persona: `Experienced local journalist covering ${category.name.toLowerCase()} for ${businessName}. ${category.directive}`,
+      writingStyle: 'formal' as const,
+      targetWordCount: 500,
+      schedule: {
+        isEnabled: true,
+        frequency: 'daily' as const,
+        time,
+        daysOfWeek: [1, 2, 3, 4, 5], // Mon-Fri
+        timezone,
+      },
+      articlesPerRun: 1,
+      status: 'active' as const,
+      isActive: true,
+      articlesGenerated: 0,
+      nextRunAt,
+      createdAt: new Date(),
+    };
+  });
 }
 
 // Default content sources based on location
