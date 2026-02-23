@@ -202,10 +202,8 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
-        // Check each journalist's schedule
-        const now = new Date();
-        const currentHour = now.getHours();
-        const currentDay = now.getDay(); // 0 = Sunday
+        // Check each journalist's schedule using nextRunAt
+        const nowISO = new Date().toISOString();
 
         for (const journalistDoc of journalistsSnap.docs) {
           const journalist = {
@@ -213,8 +211,8 @@ export async function GET(request: NextRequest) {
             ...journalistDoc.data(),
           } as AIJournalist;
 
-          // Check if journalist is due to run
-          if (!isJournalistDue(journalist, currentHour, currentDay)) {
+          // Check if journalist is due to run using nextRunAt
+          if (!isJournalistDue(journalist, nowISO)) {
             continue;
           }
 
@@ -269,11 +267,22 @@ export async function GET(request: NextRequest) {
                 timestamp: new Date(),
               });
 
-              // Update journalist's last run
-              await db.collection('aiJournalists').doc(journalist.id).update({
-                lastRunAt: new Date(),
+              // Update journalist's last run and calculate next run time
+              const nowStr = new Date().toISOString();
+              const nextRun = calculateNextRunFromSchedule(journalist.schedule, journalist.schedule?.timezone);
+              const updateData: Record<string, unknown> = {
+                lastRunAt: nowStr,
+                'schedule.lastRunAt': nowStr,
                 articlesGenerated: (journalist.articlesGenerated || 0) + 1,
-              });
+                'metrics.totalArticlesGenerated': (journalist.metrics?.totalArticlesGenerated || 0) + 1,
+                'metrics.successfulRuns': (journalist.metrics?.successfulRuns || 0) + 1,
+                'metrics.lastSuccessfulRun': nowStr,
+              };
+              if (nextRun) {
+                updateData.nextRunAt = nextRun;
+                updateData['schedule.nextRunAt'] = nextRun;
+              }
+              await db.collection('aiJournalists').doc(journalist.id).update(updateData);
             }
           } catch (journalistError: any) {
             tenantResult.errors.push(
@@ -314,47 +323,116 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Check if a journalist is due to run based on their schedule
+ * Check if a journalist is due to run based on nextRunAt.
+ * Uses the pre-calculated nextRunAt field which accounts for timezone.
  */
-function isJournalistDue(
-  journalist: AIJournalist,
-  currentHour: number,
-  currentDay: number
-): boolean {
+function isJournalistDue(journalist: AIJournalist, nowISO: string): boolean {
   const schedule = journalist.schedule;
-  if (!schedule?.enabled) return false;
 
-  // Check day of week (if specified)
-  if (schedule.daysOfWeek && schedule.daysOfWeek.length > 0) {
-    if (!schedule.daysOfWeek.includes(currentDay)) {
-      return false;
+  // Check isEnabled (the actual field name in Firestore)
+  if (!schedule?.isEnabled) return false;
+
+  // Must have a nextRunAt to be due
+  if (!journalist.nextRunAt) return false;
+
+  // Compare ISO strings — nextRunAt must be in the past
+  return journalist.nextRunAt <= nowISO;
+}
+
+/**
+ * Calculate the next run time for an agent based on their schedule.
+ * Uses Intl.DateTimeFormat for proper timezone handling.
+ */
+function calculateNextRunFromSchedule(
+  schedule: AIJournalist['schedule'],
+  timezone?: string
+): string | null {
+  if (!schedule?.time || !schedule?.frequency) return null;
+
+  const tz = timezone || schedule.timezone || 'America/New_York';
+  const [hour, minute] = schedule.time.split(':').map(Number);
+  const now = new Date();
+
+  // Get current date parts in the agent's timezone
+  const parts = getDatePartsInTZ(now, tz);
+
+  // Build the next occurrence
+  let nextDate: Date;
+
+  if (schedule.frequency === 'hourly') {
+    // Next hour from now
+    nextDate = new Date(now.getTime() + 60 * 60 * 1000);
+  } else if (schedule.frequency === 'daily') {
+    // Today at the scheduled time, or tomorrow if already past
+    nextDate = buildDateInTZ(parts.year, parts.month, parts.day, hour, minute, tz);
+    if (nextDate.getTime() <= now.getTime()) {
+      // Move to tomorrow
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const tParts = getDatePartsInTZ(tomorrow, tz);
+      nextDate = buildDateInTZ(tParts.year, tParts.month, tParts.day, hour, minute, tz);
+    }
+  } else if (schedule.frequency === 'weekly') {
+    // Find the next matching day of week
+    const targetDays = schedule.daysOfWeek || [1]; // Default Monday
+    nextDate = buildDateInTZ(parts.year, parts.month, parts.day, hour, minute, tz);
+    for (let offset = 0; offset <= 7; offset++) {
+      const checkDate = new Date(now.getTime() + offset * 24 * 60 * 60 * 1000);
+      const checkParts = getDatePartsInTZ(checkDate, tz);
+      const candidate = buildDateInTZ(checkParts.year, checkParts.month, checkParts.day, hour, minute, tz);
+      if (targetDays.includes(candidate.getUTCDay() >= 0 ? checkDate.getDay() : checkDate.getDay()) && candidate.getTime() > now.getTime()) {
+        nextDate = candidate;
+        break;
+      }
+    }
+  } else {
+    // Monthly — same day next month
+    nextDate = buildDateInTZ(parts.year, parts.month, parts.day, hour, minute, tz);
+    if (nextDate.getTime() <= now.getTime()) {
+      const nextMonth = parts.month === 12 ? 1 : parts.month + 1;
+      const nextYear = parts.month === 12 ? parts.year + 1 : parts.year;
+      nextDate = buildDateInTZ(nextYear, nextMonth, parts.day, hour, minute, tz);
     }
   }
 
-  // Check time (for daily/weekly schedules)
-  if (schedule.time) {
-    const scheduledHour = parseInt(schedule.time.split(':')[0], 10);
-    if (currentHour !== scheduledHour) {
-      return false;
-    }
-  }
+  return nextDate.toISOString();
+}
 
-  // Check if already ran this hour (prevent duplicate runs)
-  if (journalist.lastRunAt) {
-    const lastRun = journalist.lastRunAt instanceof Date
-      ? journalist.lastRunAt
-      : new Date((journalist.lastRunAt as any).seconds * 1000);
-    const hoursSinceLastRun = (Date.now() - lastRun.getTime()) / (1000 * 60 * 60);
+/**
+ * Get date components in a specific timezone using Intl.DateTimeFormat
+ */
+function getDatePartsInTZ(date: Date, timeZone: string): { year: number; month: number; day: number; hour: number; minute: number; weekday: number } {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: 'numeric', minute: 'numeric', hour12: false,
+    weekday: 'short',
+  });
+  const parts = formatter.formatToParts(date);
+  const get = (type: string) => {
+    const part = parts.find(p => p.type === type);
+    return part ? parseInt(part.value, 10) : 0;
+  };
+  const weekdayStr = parts.find(p => p.type === 'weekday')?.value || 'Mon';
+  const weekdayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  return {
+    year: get('year'), month: get('month'), day: get('day'),
+    hour: get('hour'), minute: get('minute'),
+    weekday: weekdayMap[weekdayStr] ?? 1,
+  };
+}
 
-    if (schedule.frequency === 'daily' && hoursSinceLastRun < 23) {
-      return false;
-    }
-    if (schedule.frequency === 'hourly' && hoursSinceLastRun < 0.9) {
-      return false;
-    }
-  }
-
-  return true;
+/**
+ * Build a UTC Date that represents a specific local time in a given timezone.
+ */
+function buildDateInTZ(year: number, month: number, day: number, hour: number, minute: number, timeZone: string): Date {
+  // Start with a rough UTC guess
+  const rough = new Date(Date.UTC(year, month - 1, day, hour, minute, 0, 0));
+  // Get what that UTC time looks like in the target timezone
+  const localParts = getDatePartsInTZ(rough, timeZone);
+  // Calculate the offset (difference between what we wanted and what we got)
+  const offsetMs = (localParts.hour - hour) * 3600000 + (localParts.minute - minute) * 60000;
+  // Adjust by the offset
+  return new Date(rough.getTime() - offsetMs);
 }
 
 /**

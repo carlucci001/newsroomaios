@@ -6,10 +6,14 @@
  */
 
 export interface JournalistSchedule {
-  enabled: boolean;
-  frequency: 'hourly' | 'daily' | 'weekly';
-  time?: string; // "09:00" for daily, unused for hourly
-  daysOfWeek?: number[]; // 0=Sun, 1=Mon, etc. for weekly
+  enabled?: boolean;       // Legacy field — use isEnabled
+  isEnabled?: boolean;     // Current field name in Firestore
+  frequency: 'hourly' | 'daily' | 'weekly' | 'monthly';
+  time?: string;           // "09:00" for daily, unused for hourly
+  daysOfWeek?: number[];   // 0=Sun, 1=Mon, etc. for weekly
+  timezone?: string;       // IANA timezone (e.g., "America/New_York")
+  lastRunAt?: string;      // ISO string of last run
+  nextRunAt?: string;      // ISO string of next scheduled run
 }
 
 export interface AIJournalist {
@@ -35,9 +39,20 @@ export interface AIJournalist {
 
   // Status
   status: 'active' | 'paused' | 'disabled';
-  lastRunAt?: Date;
-  nextRunAt?: Date;
+  isActive?: boolean;
+  lastRunAt?: Date | string;
+  nextRunAt?: Date | string;
   articlesGenerated: number; // Total articles generated
+
+  // Metrics (populated by updateAgentAfterRun)
+  metrics?: {
+    totalArticlesGenerated: number;
+    totalPostsCreated: number;
+    successfulRuns: number;
+    failedRuns: number;
+    averageGenerationTime?: number;
+    lastSuccessfulRun?: string;
+  };
 
   // Metadata
   createdAt: Date;
