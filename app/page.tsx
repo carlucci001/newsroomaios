@@ -20,7 +20,6 @@ import {
   Star,
   Award,
   ChevronRight,
-  Quote,
   MapPin,
 } from "lucide-react";
 import Link from "next/link";
@@ -44,6 +43,7 @@ export default function Home() {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
   const [initialPlan, setInitialPlan] = useState<string | null>(null);
+  const [heroParallaxY, setHeroParallaxY] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
   const pricingRef = useRef<HTMLDivElement>(null);
@@ -112,6 +112,14 @@ export default function Home() {
       window.history.replaceState({}, '', window.location.pathname);
     }
 
+    const handleScroll = () => {
+      if (heroRef.current) {
+        const rect = heroRef.current.getBoundingClientRect();
+        setHeroParallaxY(rect.top * 0.35);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
     const observerOptions = {
       threshold: 0.1,
       rootMargin: '0px 0px -100px 0px'
@@ -128,7 +136,10 @@ export default function Home() {
     const elements = document.querySelectorAll('.observe-animation');
     elements.forEach(el => observer.observe(el));
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   return (
@@ -272,51 +283,58 @@ export default function Home() {
       {/* Hero Section with Background Image */}
       <section ref={heroRef} className="relative pt-24 pb-32 md:pt-32 md:pb-48 overflow-hidden">
         {/* Hero Background Image */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 overflow-hidden">
           <img
-            src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1920&h=1080&fit=crop&q=80"
-            alt="Modern newsroom"
-            className="w-full h-full object-cover"
+            src="/hero1.jpg"
+            alt="NewsroomAIOS newspapers displayed on phone, laptop, and desktop"
+            className="w-full object-cover"
+            style={{
+              height: '120%',
+              top: '-10%',
+              position: 'absolute',
+              transform: `translateY(${heroParallaxY}px)`,
+              willChange: 'transform',
+            }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/80" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/30 via-transparent to-background/30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/60 to-black/85" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
         </div>
 
         <div className={`relative max-w-7xl mx-auto px-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="text-center max-w-5xl mx-auto">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-brand-blue-200/60 bg-gradient-to-r from-brand-blue-50/80 to-brand-blue-100/60 backdrop-blur-sm mb-8 shadow-lg shadow-brand-blue-500/10 animate-fade-in">
-              <Sparkles className="h-4 w-4 text-brand-blue-600 animate-pulse" />
-              <span className="text-sm font-semibold bg-gradient-to-r from-brand-blue-700 to-brand-blue-600 bg-clip-text text-transparent">
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-brand-blue-400/40 bg-white/10 backdrop-blur-md mb-8 shadow-lg shadow-brand-blue-500/20 animate-fade-in">
+              <Sparkles className="h-4 w-4 text-brand-blue-400 animate-pulse" />
+              <span className="text-sm font-semibold text-white">
                 Building the future of local journalism
               </span>
-              <Award className="h-4 w-4 text-brand-blue-600" />
+              <Award className="h-4 w-4 text-brand-blue-400" />
             </div>
 
             {/* Main Headline */}
             <h1 className="font-display text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8 leading-[1.1]">
-              <span className="bg-gradient-to-br from-foreground via-foreground to-brand-gray-700 bg-clip-text text-transparent">
+              <span className="text-white">
                 Launch Your Own
               </span>
               <br />
-              <span className="bg-gradient-to-br from-foreground via-foreground to-brand-gray-700 bg-clip-text text-transparent">
+              <span className="text-white">
                 Local Newspaper
               </span>
               <br />
-              <span className="bg-gradient-to-r from-brand-blue-600 via-brand-blue-500 to-brand-blue-600 bg-clip-text text-transparent animate-gradient">
+              <span className="bg-gradient-to-r from-brand-blue-400 via-brand-blue-300 to-brand-blue-400 bg-clip-text text-transparent animate-gradient">
                 in Minutes
               </span>
             </h1>
 
             {/* Subheadline */}
-            <p className="text-xl md:text-2xl lg:text-3xl text-muted-foreground mb-4 max-w-4xl mx-auto leading-relaxed font-light">
+            <p className="text-xl md:text-2xl lg:text-3xl text-white/90 mb-4 max-w-4xl mx-auto leading-relaxed font-light">
               AI-powered platform for community journalism.
             </p>
-            <p className="text-lg md:text-xl text-muted-foreground/80 mb-12 max-w-3xl mx-auto">
+            <p className="text-lg md:text-xl text-white/70 mb-12 max-w-3xl mx-auto">
               Everything you need to create, publish, and monetize your local newspaper—from
-              <span className="text-brand-blue-600 font-semibold"> AI-generated content</span> to
-              <span className="text-brand-blue-600 font-semibold"> automated advertising</span> to
-              <span className="text-brand-blue-600 font-semibold"> premium subscriptions</span>.
+              <span className="text-brand-blue-400 font-semibold"> AI-generated content</span> to
+              <span className="text-brand-blue-400 font-semibold"> automated advertising</span> to
+              <span className="text-brand-blue-400 font-semibold"> premium subscriptions</span>.
             </p>
 
             {/* CTA Buttons */}
@@ -333,7 +351,7 @@ export default function Home() {
                 size="lg"
                 variant="outline"
                 onClick={() => setIsVideoModalOpen(true)}
-                className="text-lg px-10 h-16 gap-3 border-2 hover:border-brand-blue-500/50 hover:bg-brand-blue-50/50 transition-all group"
+                className="text-lg px-10 h-16 gap-3 border-2 border-white/40 text-white bg-white/10 backdrop-blur-sm hover:border-brand-blue-400 hover:bg-white/20 transition-all group"
               >
                 <Play className="h-5 w-5 group-hover:scale-110 transition-transform" />
                 Watch Demo
@@ -341,31 +359,31 @@ export default function Home() {
             </div>
 
             {/* Stats */}
-            <div className="pt-12 border-t border-border/40 backdrop-blur-sm">
+            <div className="pt-12 border-t border-white/20 backdrop-blur-sm">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
                 <div className="group cursor-default">
-                  <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                  <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-400 to-brand-blue-300 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
                     50+
                   </div>
-                  <div className="text-sm md:text-base text-muted-foreground font-medium">Year One Goal</div>
+                  <div className="text-sm md:text-base text-white/70 font-medium">Year One Goal</div>
                 </div>
                 <div className="group cursor-default">
-                  <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                  <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-400 to-brand-blue-300 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
                     Local
                   </div>
-                  <div className="text-sm md:text-base text-muted-foreground font-medium">Community Focus</div>
+                  <div className="text-sm md:text-base text-white/70 font-medium">Community Focus</div>
                 </div>
                 <div className="group cursor-default">
-                  <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                  <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-400 to-brand-blue-300 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
                     $40-60K
                   </div>
-                  <div className="text-sm md:text-base text-muted-foreground font-medium">Revenue Potential/Year</div>
+                  <div className="text-sm md:text-base text-white/70 font-medium">Revenue Potential/Year</div>
                 </div>
                 <div className="group cursor-default">
-                  <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-600 to-brand-blue-500 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                  <div className="text-5xl md:text-6xl font-display font-bold bg-gradient-to-br from-brand-blue-400 to-brand-blue-300 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
                     100%
                   </div>
-                  <div className="text-sm md:text-base text-muted-foreground font-medium">Publisher-First</div>
+                  <div className="text-sm md:text-base text-white/70 font-medium">Publisher-First</div>
                 </div>
               </div>
             </div>
@@ -373,21 +391,56 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Platform Preview */}
+      {/* Flagship Paper Showcase — WNC Times */}
       <section className="relative py-20 -mt-32">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="relative max-w-6xl mx-auto">
-            <div className="absolute -inset-4 bg-gradient-to-r from-brand-blue-500/20 to-brand-blue-600/20 rounded-3xl blur-3xl" />
-            <div className="relative rounded-2xl overflow-hidden border-4 border-border shadow-2xl bg-background">
+          <div className="relative max-w-5xl mx-auto">
+            {/* Glow */}
+            <div className="absolute -inset-4 bg-gradient-to-r from-green-500/25 to-yellow-500/20 rounded-3xl blur-3xl" />
+
+            <div className="relative">
+              {/* Flagship Image */}
               <img
-                src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=675&fit=crop&q=80"
-                alt="Newsroom AIOS Platform Dashboard"
-                className="w-full h-auto"
+                src="/wnct-flagship.jpg"
+                alt="WNC Times — Western North Carolina's flagship local newspaper on laptop"
+                className="w-full h-auto rounded-2xl shadow-2xl"
               />
+
+              {/* Anniversary Badge */}
+              <div className="text-center mt-10">
+                <div className="inline-flex items-center gap-3 px-7 py-3.5 rounded-full bg-gradient-to-r from-green-700 via-green-600 to-green-700 text-white shadow-2xl shadow-green-600/30 border border-green-400/30 mb-6">
+                  <Award className="h-5 w-5 text-yellow-300 shrink-0" />
+                  <span className="text-base font-bold tracking-wide">Serving Western NC Since 2000 &mdash; 26 Years Strong</span>
+                  <Award className="h-5 w-5 text-yellow-300 shrink-0" />
+                </div>
+
+                <h3 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+                  Our Flagship Paper: <span className="text-green-600">WNC Times</span>
+                </h3>
+
+                <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                  Since 2000, WNC Times has been the trusted voice of Western North Carolina — covering Asheville,
+                  Hendersonville, and every mountain community in between. What began as a passion for hyper-local
+                  journalism has grown into one of the region's most-read digital papers. Today it runs entirely
+                  on the Newsroom AIOS platform — the same one we're putting in your hands.
+                </p>
+
+                <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+                    <span>Online without interruption since 2000</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+                    <span>Western NC's original digital newspaper</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+                    <span>Proof the platform works in the real world</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-center text-sm text-muted-foreground mt-6 italic">
-              Complete dashboard showing revenue analytics, content management, and subscriber growth
-            </p>
           </div>
         </div>
       </section>
@@ -827,7 +880,7 @@ export default function Home() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" onClick={openOnboarding} className="w-full mb-6 hover:bg-brand-blue-50">
+                <Button variant="outline" onClick={openOnboarding} className="w-full mb-6 hover:bg-slate-50">
                   Get Started
                 </Button>
                 <ul className="space-y-4">
@@ -871,7 +924,7 @@ export default function Home() {
                       Looking to launch multiple newspapers across the country? Our Enterprise plan offers custom solutions for newspaper networks.
                     </p>
                   </div>
-                  <Button variant="outline" className="shrink-0 hover:bg-brand-blue-50">
+                  <Button variant="outline" className="shrink-0 hover:bg-slate-50">
                     Contact Sales
                   </Button>
                 </div>
@@ -1107,7 +1160,7 @@ export default function Home() {
                   size="lg"
                   variant="secondary"
                   onClick={openOnboarding}
-                  className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
+                  className="text-lg px-10 h-16 gap-3 bg-white !text-brand-blue-600 hover:bg-slate-50 shadow-xl"
                 >
                   Launch Your Paper <ArrowRight className="h-5 w-5" />
                 </Button>
