@@ -228,12 +228,3 @@
   border-color: #ffffff !important;
 }
 
-/* Catch-all: any button or link-styled-as-button with an explicit blue/brand background */
-button[class*="bg-brand-blue-"],
-button[class*="bg-blue-"],
-a[class*="bg-brand-blue-"],
-a[class*="bg-blue-"],
-[role="button"][class*="bg-brand-blue-"],
-[role="button"][class*="bg-blue-"] {
-  color: #ffffff !important;
-}
