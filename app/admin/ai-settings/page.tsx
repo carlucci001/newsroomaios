@@ -162,6 +162,7 @@ export default function AISettingsPage() {
     { name: 'pexels', field: 'pexelsApiKey', envVar: 'PEXELS_API_KEY', label: 'Pexels', description: 'Free stock photo search for article images' },
     { name: 'elevenlabs', field: 'elevenLabsApiKey', envVar: 'ELEVENLABS_API_KEY', label: 'ElevenLabs', description: 'Text-to-speech audio for articles' },
     { name: 'perplexity', field: 'perplexityApiKey', envVar: 'PERPLEXITY_API_KEY', label: 'Perplexity', description: 'Web search and real-time research' },
+    { name: 'nvidia', field: 'nvidiaApiKey', envVar: 'NVIDIA_API_KEY', label: 'NVIDIA NIM', description: 'Kimi K2 fallback model via NVIDIA NIM API' },
   ];
 
   useEffect(() => {
@@ -273,13 +274,21 @@ export default function AISettingsPage() {
       } else if (name === 'elevenlabs') {
         testUrl = 'https://api.elevenlabs.io/v1/voices';
         testOpts = { headers: { 'xi-api-key': keyToTest } };
-      } else if (name === 'perplexity') {
-        testUrl = 'https://api.perplexity.ai/chat/completions';
-        testOpts = {
+      } else if (name === 'perplexity' || name === 'nvidia') {
+        // Route through server-side proxy to avoid CORS issues
+        const proxyResponse = await fetch('/api/admin/test-api-key', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${keyToTest}` },
-          body: JSON.stringify({ model: 'sonar', messages: [{ role: 'user', content: 'Test' }], max_tokens: 5 }),
-        };
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider: name, apiKey: keyToTest }),
+        });
+        const proxyData = await proxyResponse.json();
+        if (proxyData.success) {
+          message.success(`${name} API key is valid!`);
+        } else {
+          message.error(`${name} test failed: ${proxyData.error || 'Unknown error'}`);
+        }
+        setTestingKey(null);
+        return;
       }
       const response = await fetch(testUrl, testOpts);
       if (response.ok) {

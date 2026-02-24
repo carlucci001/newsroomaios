@@ -315,6 +315,7 @@ class VercelService {
       PERPLEXITY_API_KEY: envTrimmed('PERPLEXITY_API_KEY'),
       PEXELS_API_KEY: envTrimmed('PEXELS_API_KEY'),
       ELEVENLABS_API_KEY: envTrimmed('ELEVENLABS_API_KEY'),
+      NVIDIA_API_KEY: envTrimmed('NVIDIA_API_KEY'),
       GOOGLE_PLACES_API_KEY: envTrimmed('GOOGLE_PLACES_API_KEY'),
       NEXT_PUBLIC_SITE_NAME: businessName,
       NEXT_PUBLIC_SERVICE_AREA_CITY: serviceArea.city,
