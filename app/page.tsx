@@ -349,9 +349,9 @@ export default function Home() {
               </Button>
               <Button
                 size="lg"
-                variant="outline-dark"
+                variant="outline"
                 onClick={() => setIsVideoModalOpen(true)}
-                className="text-lg px-10 h-16 gap-3 border-white/40 bg-white/10 backdrop-blur-sm hover:border-brand-blue-400 hover:bg-white/20 transition-all group"
+                className="text-lg px-10 h-16 gap-3 border-2 border-white/40 text-white bg-white/10 backdrop-blur-sm hover:border-brand-blue-400 hover:bg-white/20 transition-all group"
               >
                 <Play className="h-5 w-5 group-hover:scale-110 transition-transform" />
                 Watch Demo
@@ -1166,9 +1166,9 @@ export default function Home() {
                 </Button>
                 <Button
                   size="lg"
-                  variant="outline-dark"
+                  variant="outline"
                   onClick={() => setIsVideoModalOpen(true)}
-                  className="text-lg px-10 h-16 gap-3"
+                  className="text-lg px-10 h-16 gap-3 border-2 border-white text-white bg-transparent hover:bg-white/10"
                 >
                   <Play className="h-5 w-5" /> Watch Demo
                 </Button>
