@@ -13,7 +13,7 @@ const buttonVariants = cva(
         primary: "bg-brand-600 text-white hover:bg-brand-700 shadow-sm hover:shadow-md focus-visible:ring-brand-500",
         destructive: "bg-danger-500 text-white hover:bg-danger-600 shadow-sm hover:shadow-md focus-visible:ring-danger-500",
         danger: "bg-danger-500 text-white hover:bg-danger-600 shadow-sm hover:shadow-md focus-visible:ring-danger-500",
-        outline: "border-2 border-gray-200 bg-white text-gray-900 shadow-sm hover:bg-gray-50 hover:border-gray-300 focus-visible:ring-brand-500",
+        outline: "border-2 border-gray-200 bg-transparent text-gray-900 shadow-sm hover:bg-black/5 hover:border-gray-300 focus-visible:ring-brand-500",
         secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200 shadow-sm focus-visible:ring-gray-400",
         ghost: "hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-gray-400",
         link: "text-brand-600 underline-offset-4 hover:underline hover:text-brand-700",
