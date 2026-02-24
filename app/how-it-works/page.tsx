@@ -543,8 +543,8 @@ export default function HowItWorksPage() {
                 <Link href="/pricing">
                   <Button
                     size="lg"
-                    variant="outline"
-                    className="text-lg px-10 h-16 border-2 border-white text-white bg-transparent hover:bg-white/10"
+                    variant="outline-dark"
+                    className="text-lg px-10 h-16"
                   >
                     View Pricing
                   </Button>
