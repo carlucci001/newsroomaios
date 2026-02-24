@@ -221,6 +221,13 @@
   color: #ffffff !important;
 }
 
+/* outline-dark variant — guaranteed transparent bg + white text on dark sections */
+[data-slot="button"][data-variant="outline-dark"] {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
 /* Catch-all: any button or link-styled-as-button with an explicit blue/brand background */
 button[class*="bg-brand-blue-"],
 button[class*="bg-blue-"],
