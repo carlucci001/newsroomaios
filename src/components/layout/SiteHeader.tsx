@@ -19,23 +19,13 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
 
   const handleGetStartedClick = () => {
     if (onGetStarted) {
+      // Use the provided callback (e.g., from home page)
       onGetStarted();
     } else {
+      // Default behavior for other pages
       setIsChoiceDialogOpen(true);
     }
   };
-
-  const navLinks = [
-    { href: '/features', label: 'Features' },
-    { href: '/how-it-works', label: 'How It Works' },
-    { href: '/pricing', label: 'Pricing' },
-    { href: '/growth-map', label: 'Growth Map' },
-    { href: '/testimonials', label: 'Success Stories' },
-    { href: '/blog', label: 'Blog' },
-  ];
-
-  const isActive = (href: string) =>
-    pathname === href || (href === '/blog' && pathname?.startsWith('/blog/'));
 
   return (
     <>
@@ -46,28 +36,92 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`relative text-sm font-medium px-4 py-2 rounded-full transition-all duration-200 ease-out ${
-                  isActive(href)
-                    ? 'text-white bg-brand-blue-600 font-semibold shadow-md shadow-brand-blue-500/30'
-                    : '!text-gray-600 hover:!text-brand-blue-600 hover:bg-gray-100 hover:scale-[1.04] active:scale-95'
-                }`}
-              >
-                {label}
-              </Link>
-            ))}
-            <div className="w-px h-6 bg-gray-200 mx-2" />
+          <div className="hidden md:flex items-center gap-8">
+            <Link
+              href="/features"
+              className={`text-sm font-medium transition-all active:scale-95 relative group ${
+                pathname === '/features'
+                  ? 'text-brand-blue-600 font-semibold'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+            >
+              Features
+              {pathname === '/features' && (
+                <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
+              )}
+            </Link>
+            <Link
+              href="/how-it-works"
+              className={`text-sm font-medium transition-all active:scale-95 relative group ${
+                pathname === '/how-it-works'
+                  ? 'text-brand-blue-600 font-semibold'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+            >
+              How It Works
+              {pathname === '/how-it-works' && (
+                <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
+              )}
+            </Link>
+            <Link
+              href="/pricing"
+              className={`text-sm font-medium transition-all active:scale-95 relative group ${
+                pathname === '/pricing'
+                  ? 'text-brand-blue-600 font-semibold'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+            >
+              Pricing
+              {pathname === '/pricing' && (
+                <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
+              )}
+            </Link>
+            <Link
+              href="/growth-map"
+              className={`text-sm font-medium transition-all active:scale-95 relative group ${
+                pathname === '/growth-map'
+                  ? 'text-brand-blue-600 font-semibold'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+            >
+              Growth Map
+              {pathname === '/growth-map' && (
+                <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
+              )}
+            </Link>
+            <Link
+              href="/testimonials"
+              className={`text-sm font-medium transition-all active:scale-95 relative group ${
+                pathname === '/testimonials'
+                  ? 'text-brand-blue-600 font-semibold'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+            >
+              Success Stories
+              {pathname === '/testimonials' && (
+                <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
+              )}
+            </Link>
+            <Link
+              href="/blog"
+              className={`text-sm font-medium transition-all active:scale-95 relative group ${
+                pathname === '/blog' || pathname?.startsWith('/blog/')
+                  ? 'text-brand-blue-600 font-semibold'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+            >
+              Blog
+              {(pathname === '/blog' || pathname?.startsWith('/blog/')) && (
+                <span className="absolute -bottom-[21px] left-0 right-0 h-1 bg-brand-blue-600 rounded-t-full animate-in slide-in-from-bottom-2" />
+              )}
+            </Link>
             <Link href="/account/login">
-              <Button variant="outline" size="sm" className="rounded-full border-gray-300 text-gray-700 hover:border-brand-blue-400 hover:text-brand-blue-600 transition-all duration-200 active:scale-95">Sign In</Button>
+              <Button variant="ghost" size="sm" className="transition-all active:scale-95">Sign In</Button>
             </Link>
             <Button
               size="sm"
               onClick={handleGetStartedClick}
-              className="gap-2 rounded-full bg-gradient-to-r from-brand-blue-600 to-brand-blue-700 text-white shadow-lg shadow-brand-blue-500/30 hover:from-brand-blue-500 hover:to-brand-blue-600 hover:shadow-xl hover:shadow-brand-blue-500/40 hover:scale-[1.04] transition-all duration-200 active:scale-95"
+              className="gap-2 shadow-lg shadow-brand-blue-500/20 bg-brand-blue-600 text-white hover:bg-brand-blue-700 transition-all active:scale-95 active:shadow-md"
             >
               Get Started <ArrowRight className="h-4 w-4" />
             </Button>
@@ -86,24 +140,93 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-40 bg-background/95 backdrop-blur-sm animate-in fade-in-0 duration-200">
-          <div className="flex flex-col items-center justify-center h-full gap-4 p-6 animate-in slide-in-from-top-4 duration-300">
-            {navLinks.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`text-2xl font-medium px-8 py-3 rounded-full transition-all duration-200 active:scale-95 ${
-                  isActive(href)
-                    ? 'text-white bg-brand-blue-600 font-bold shadow-lg shadow-brand-blue-500/30'
-                    : 'text-gray-700 hover:text-brand-blue-600 hover:bg-brand-blue-50'
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {label}
-              </Link>
-            ))}
-            <div className="w-16 h-px bg-gray-200 my-2" />
+          <div className="flex flex-col items-center justify-center h-full gap-8 p-6 animate-in slide-in-from-top-4 duration-300">
+            <Link
+              href="/features"
+              className={`text-2xl font-medium transition-all active:scale-95 relative ${
+                pathname === '/features'
+                  ? 'text-brand-blue-600 font-bold scale-105'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Features
+              {pathname === '/features' && (
+                <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
+              )}
+            </Link>
+            <Link
+              href="/how-it-works"
+              className={`text-2xl font-medium transition-all active:scale-95 relative ${
+                pathname === '/how-it-works'
+                  ? 'text-brand-blue-600 font-bold scale-105'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              How It Works
+              {pathname === '/how-it-works' && (
+                <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
+              )}
+            </Link>
+            <Link
+              href="/pricing"
+              className={`text-2xl font-medium transition-all active:scale-95 relative ${
+                pathname === '/pricing'
+                  ? 'text-brand-blue-600 font-bold scale-105'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Pricing
+              {pathname === '/pricing' && (
+                <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
+              )}
+            </Link>
+            <Link
+              href="/growth-map"
+              className={`text-2xl font-medium transition-all active:scale-95 relative ${
+                pathname === '/growth-map'
+                  ? 'text-brand-blue-600 font-bold scale-105'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Growth Map
+              {pathname === '/growth-map' && (
+                <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
+              )}
+            </Link>
+            <Link
+              href="/testimonials"
+              className={`text-2xl font-medium transition-all active:scale-95 relative ${
+                pathname === '/testimonials'
+                  ? 'text-brand-blue-600 font-bold scale-105'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Success Stories
+              {pathname === '/testimonials' && (
+                <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
+              )}
+            </Link>
+            <Link
+              href="/blog"
+              className={`text-2xl font-medium transition-all active:scale-95 relative ${
+                pathname === '/blog' || pathname?.startsWith('/blog/')
+                  ? 'text-brand-blue-600 font-bold scale-105'
+                  : 'hover:text-brand-blue-600 active:text-brand-blue-700'
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Blog
+              {(pathname === '/blog' || pathname?.startsWith('/blog/')) && (
+                <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-blue-600 rounded-full animate-pulse" />
+              )}
+            </Link>
             <Link href="/account/login" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="outline" size="lg" className="w-full rounded-full transition-all active:scale-95">Sign In</Button>
+              <Button variant="outline" size="lg" className="w-full transition-all active:scale-95">Sign In</Button>
             </Link>
             <Button
               size="lg"
@@ -111,7 +234,7 @@ export function SiteHeader({ onGetStarted }: SiteHeaderProps) {
                 handleGetStartedClick();
                 setMobileMenuOpen(false);
               }}
-              className="gap-2 rounded-full shadow-lg shadow-brand-blue-500/20 w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700 transition-all active:scale-95 active:shadow-md"
+              className="gap-2 shadow-lg shadow-brand-blue-500/20 w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700 transition-all active:scale-95 active:shadow-md"
             >
               Get Started <ArrowRight className="h-4 w-4" />
             </Button>

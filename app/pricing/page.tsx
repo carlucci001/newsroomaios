@@ -338,7 +338,7 @@ export default function PricingPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full mb-6 hover:bg-slate-50 border-brand-blue-300">
+                <Button variant="outline" className="w-full mb-6 hover:bg-brand-blue-50 border-brand-blue-300">
                   Contact Sales
                 </Button>
                 <ul className="space-y-4">
@@ -607,7 +607,7 @@ export default function PricingPage() {
                   <Button
                     size="lg"
                     variant="secondary"
-                    className="text-lg px-10 h-16 gap-3 bg-white !text-brand-blue-600 hover:bg-slate-50 shadow-xl"
+                    className="text-lg px-10 h-16 gap-3 bg-white text-brand-blue-600 hover:bg-brand-blue-50 shadow-xl"
                   >
                     Get Started <ArrowRight className="h-5 w-5" />
                   </Button>
