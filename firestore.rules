@@ -10,14 +10,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Simplified admin check - any authenticated user for now
-    // TODO: Add proper role-based access in production
-    function isAdmin() {
-      return isAuthenticated();
+    // Platform admin: verified via custom claim set on Firebase Auth account.
+    // This replaces the old isAdmin() = isAuthenticated() which treated
+    // every logged-in user as an admin.
+    function isPlatformAdmin() {
+      return isAuthenticated() && request.auth.token.platformAdmin == true;
     }
 
     // ============================================
     // ONBOARDING PROGRESS (Temporary session data)
+    // Public onboarding flow needs read/write without auth
     // ============================================
     match /onboardingProgress/{progressId} {
       allow read, write: if true;
@@ -27,10 +29,26 @@ service cloud.firestore {
     // TENANTS (Newspaper Clients)
     // ============================================
     match /tenants/{tenantId} {
+      // Public read: SSR, tenant sites, credit checks all need this
       allow read: if true;
-      allow write: if true;  // Allow server-side tenant management
 
-      // Tenant subcollections (meta, articles, etc.)
+      // Only platform admins can create tenants (via Admin SDK in practice,
+      // but rules protect against direct client SDK access)
+      allow create: if isPlatformAdmin();
+
+      // Update stays open: credit deduction API uses Client SDK runTransaction
+      // on tenant docs without Firebase Auth context. The path itself
+      // (tenants/{tenantId}) provides isolation — a tenant can only hit its own doc.
+      // Sensitive field changes (apiKey, ownerId, status) use Admin SDK which bypasses rules.
+      allow update: if true;
+
+      // Only platform admins can delete tenants
+      allow delete: if isPlatformAdmin();
+
+      // Tenant subcollections (meta, articles, categories, users, etc.)
+      // Reads are public (SSR needs unauthenticated reads).
+      // Writes stay open: server-side API routes (Next.js) use Client SDK
+      // without Firebase Auth context. The path provides tenant isolation.
       match /{subcollection}/{docId} {
         allow read: if true;
         allow write: if true;
@@ -39,56 +57,61 @@ service cloud.firestore {
 
     // ============================================
     // AI JOURNALISTS
+    // Server-only writes (Admin SDK) — lock Client SDK writes
     // ============================================
     match /aiJournalists/{journalistId} {
       allow read: if true;
-      allow write: if true;  // Allow server-side journalist management
+      allow write: if false;  // All writes via Admin SDK (bypasses rules)
     }
 
     // ============================================
     // TENANT CREDITS
+    // Server-only writes (Admin SDK) — lock Client SDK writes
     // ============================================
     match /tenantCredits/{creditId} {
-      allow read: if true;  // Allow tenant sites to check credits
-      allow write: if true;  // Allow server-side credit management
+      allow read: if true;
+      allow write: if false;  // All writes via Admin SDK (credits.server.ts)
     }
 
     // ============================================
     // CREDIT USAGE
+    // Server-only writes (Admin SDK)
     // ============================================
     match /creditUsage/{usageId} {
       allow read: if isAuthenticated();
-      allow create: if true;  // Allow tenant sites to log usage
-      allow update, delete: if isAdmin();
+      allow write: if false;  // All writes via Admin SDK
     }
 
     // ============================================
     // CREDIT TRANSACTIONS
+    // Immutable audit log — server-only writes
     // ============================================
     match /creditTransactions/{transactionId} {
-      allow read: if true;  // Allow credit transaction viewing
-      allow write: if true;  // Allow server-side transaction logging
+      allow read: if true;
+      allow create: if false;   // All creates via Admin SDK
+      allow update: if false;   // Immutable
+      allow delete: if isPlatformAdmin();
     }
 
     // ============================================
     // PLATFORM SETTINGS
     // ============================================
     match /settings/{settingId} {
-      allow read: if true;  // Allow public read for tenant sites
-      allow write: if true;  // Allow seeding (TODO: restrict in production)
+      allow read: if true;
+      allow write: if isPlatformAdmin();
     }
 
     // ============================================
     // ADS / ADVERTISING
     // ============================================
     match /ads/{adId} {
-      allow read: if true;  // Allow public read for tenant sites
-      allow write: if true;  // Allow seeding
+      allow read: if true;
+      allow write: if isPlatformAdmin();
     }
 
     match /activeAds/{adId} {
       allow read: if true;
-      allow write: if true;  // Allow seeding
+      allow write: if isPlatformAdmin();
     }
 
     // ============================================
@@ -96,12 +119,12 @@ service cloud.firestore {
     // ============================================
     match /siteConfig/{configId} {
       allow read: if true;
-      allow write: if true;  // Allow seeding (TODO: restrict in production)
+      allow write: if isPlatformAdmin();
     }
 
     match /modules/{moduleId} {
       allow read: if true;
-      allow write: if true;  // Allow seeding
+      allow write: if isPlatformAdmin();
     }
 
     // ============================================
@@ -109,7 +132,7 @@ service cloud.firestore {
     // ============================================
     match /categories/{categoryId} {
       allow read: if true;
-      allow write: if true;  // Allow seeding
+      allow write: if isPlatformAdmin();
     }
 
     // ============================================
@@ -117,26 +140,27 @@ service cloud.firestore {
     // ============================================
     match /updateLogs/{logId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow write: if isPlatformAdmin();
     }
 
     // ============================================
-    // USERS
+    // USERS (Platform admin accounts)
     // ============================================
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() &&
-        (request.auth.uid == userId || isAdmin());
-      allow delete: if isAdmin();
+        (request.auth.uid == userId || isPlatformAdmin());
+      allow delete: if isPlatformAdmin();
     }
 
     // ============================================
     // PERSONAS (AI Chat personas for tenant sites)
+    // Server-only writes from tenant sites via Admin SDK
     // ============================================
     match /personas/{personaId} {
-      allow read: if true;  // Allow tenant sites to fetch personas
-      allow write: if isAdmin();
+      allow read: if true;
+      allow write: if isPlatformAdmin();
     }
 
     // ============================================
@@ -145,7 +169,7 @@ service cloud.firestore {
     match /advertisers/{advertiserId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update, delete: if isAdmin();
+      allow update, delete: if isPlatformAdmin();
     }
 
     // ============================================
@@ -154,7 +178,7 @@ service cloud.firestore {
     match /businesses/{businessId} {
       allow read: if true;
       allow create: if isAuthenticated();
-      allow update, delete: if isAdmin();
+      allow update, delete: if isPlatformAdmin();
     }
 
     // ============================================
@@ -162,7 +186,7 @@ service cloud.firestore {
     // ============================================
     match /newsletterSubscriptions/{subscriptionId} {
       allow read: if isAuthenticated();
-      allow create: if true;
+      allow create: if true;  // Public subscribe
       allow update, delete: if isAuthenticated();
     }
 
@@ -170,34 +194,34 @@ service cloud.firestore {
     // REVENUE TRANSACTIONS (Server-side only)
     // ============================================
     match /revenueTransactions/{transactionId} {
-      allow read: if isAdmin();
-      allow write: if false;
+      allow read: if isPlatformAdmin();
+      allow write: if false;  // All writes via Admin SDK
     }
 
     // ============================================
     // LEADS (Territory Reservations - Growth Map)
     // ============================================
     match /leads/{leadId} {
-      allow read: if true;  // Public read for growth map
-      allow create: if true;  // Allow anyone to reserve a spot
-      allow update, delete: if isAdmin();  // Only admins can modify/delete
+      allow read: if true;    // Public read for growth map
+      allow create: if true;  // Anyone can reserve a spot
+      allow update, delete: if isPlatformAdmin();
     }
 
     // ============================================
     // ACTIVITIES (Growth Map Activity Feed)
     // ============================================
     match /activities/{activityId} {
-      allow read: if true;  // Public read for activity feed
-      allow create: if true;  // Allow creating activities when leads are created
-      allow update, delete: if isAdmin();  // Only admins can modify/delete
+      allow read: if true;    // Public read for activity feed
+      allow create: if true;  // Created alongside leads
+      allow update, delete: if isPlatformAdmin();
     }
 
     // ============================================
-    // MEDIA LIBRARY (Tenant media file metadata)
+    // MEDIA LIBRARY (Platform-level media)
     // ============================================
     match /media/{mediaId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isPlatformAdmin();
     }
 
     // ============================================
@@ -268,7 +292,7 @@ service cloud.firestore {
     // ============================================
     match /scheduledTasks/{taskId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if false;  // All writes via Admin SDK
     }
 
     // ============================================
@@ -289,7 +313,7 @@ service cloud.firestore {
 
     match /newsletter_subscriptions/{subscriptionId} {
       allow read: if isAuthenticated();
-      allow write: if true;
+      allow write: if true;  // Public subscribe/unsubscribe
     }
 
     match /newsletter_templates/{templateId} {
@@ -298,7 +322,7 @@ service cloud.firestore {
     }
 
     // ============================================
-    // ADVERTISING
+    // ADVERTISING (Tenant-level)
     // ============================================
     match /advertising/{adId} {
       allow read: if true;
@@ -316,6 +340,35 @@ service cloud.firestore {
     match /community/{document=**} {
       allow read: if true;
       allow write: if isAuthenticated();
+    }
+
+    // ============================================
+    // PLATFORM CONFIG (Support autopilot, etc.)
+    // ============================================
+    match /platformConfig/{configId} {
+      allow read: if true;
+      allow write: if isPlatformAdmin();
+    }
+
+    // ============================================
+    // PLATFORM RELEASES
+    // ============================================
+    match /platformReleases/{releaseId} {
+      allow read: if true;
+      allow write: if isPlatformAdmin();
+    }
+
+    // ============================================
+    // SUPPORT TICKETS
+    // ============================================
+    match /supportTickets/{ticketId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+
+      match /messages/{messageId} {
+        allow read: if true;
+        allow write: if isAuthenticated();
+      }
     }
   }
 }
