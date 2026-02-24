@@ -482,7 +482,7 @@ export default function FeaturesPage() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="text-lg px-10 h-16 border-2 border-white text-white hover:bg-white/10"
+                    className="text-lg px-10 h-16 border-2 border-white text-white bg-transparent hover:bg-white/10"
                   >
                     How It Works
                   </Button>

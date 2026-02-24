@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Newspaper, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function PrivacyPolicy() {
@@ -8,13 +8,8 @@ export default function PrivacyPolicy() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="p-2 rounded-lg bg-brand-blue-600 group-hover:bg-brand-blue-700 transition-colors">
-              <Newspaper className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-display font-bold">
-              Newsroom <span className="text-brand-blue-600">AIOS</span>
-            </span>
+          <Link href="/" className="flex items-center shrink-0">
+            <img src="/newsroom-logo.png" alt="Newsroom AIOS" width={200} height={67} className="h-[50px] w-auto object-contain" />
           </Link>
           <Link href="/">
             <Button variant="ghost" size="sm" className="gap-2">

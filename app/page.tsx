@@ -1168,7 +1168,7 @@ export default function Home() {
                   size="lg"
                   variant="outline"
                   onClick={() => setIsVideoModalOpen(true)}
-                  className="text-lg px-10 h-16 gap-3 border-2 border-white text-white hover:bg-white/10"
+                  className="text-lg px-10 h-16 gap-3 border-2 border-white text-white bg-transparent hover:bg-white/10"
                 >
                   <Play className="h-5 w-5" /> Watch Demo
                 </Button>
