@@ -57,20 +57,21 @@ service cloud.firestore {
 
     // ============================================
     // AI JOURNALISTS
-    // Server-only writes (Admin SDK) — lock Client SDK writes
+    // Tenant admin sites write via Client SDK (updateDoc/addDoc)
     // ============================================
     match /aiJournalists/{journalistId} {
       allow read: if true;
-      allow write: if false;  // All writes via Admin SDK (bypasses rules)
+      allow write: if isAuthenticated();
     }
 
     // ============================================
     // TENANT CREDITS
-    // Server-only writes (Admin SDK) — lock Client SDK writes
+    // Platform admin can update via Client SDK (plan changes in admin UI)
+    // Server-side writes use Admin SDK (bypasses rules)
     // ============================================
     match /tenantCredits/{creditId} {
       allow read: if true;
-      allow write: if false;  // All writes via Admin SDK (credits.server.ts)
+      allow write: if isPlatformAdmin();
     }
 
     // ============================================

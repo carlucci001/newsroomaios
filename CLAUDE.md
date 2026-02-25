@@ -8,12 +8,36 @@
 4. **Do not modify globals.css, tailwind.config.ts, or any shared UI components** (button.tsx, etc.) unless that is the specific task.
 5. **Before committing, review your staged files.** If any file is not directly required by the task, unstage it.
 
-## Git Rules
+## Git & Commit Policy — MANDATORY
 
+### The Golden Rule
+**Every commit must be SURGICAL. One task = one commit. If a file isn't directly required by the task, it does not get staged.**
+
+### Pre-Commit Checklist (run EVERY time before committing)
+1. `git diff --staged` — read every line of every staged file. If ANY change is unrelated to the task, unstage that file.
+2. `git status` — check for accidentally staged files. Compare the list against the task scope.
+3. Confirm with the user: "I'm about to commit these specific files for this specific reason: [list]. OK?"
+4. Never commit without showing the user exactly what's being committed.
+
+### Commit Rules
+- Always use `git add <specific-files>` — NEVER `git add .` or `git add -A`
 - Only commit files that are part of the current task
 - Do not commit unrelated changes that happen to be in the working directory
-- Always use `git add <specific-files>` never `git add .` or `git add -A`
 - Do not push without explicit user approval
+- One task = one commit. Do not bundle unrelated fixes into a single commit.
+- If working across both repos (newsroomaios + wnct-template), commit to each repo separately with separate messages.
+
+### What NEVER Gets Committed
+- `tmp_*.js`, `tmp_*.json`, `nul`, `*.backup-*` — temporary/scratch files
+- `scripts/` changes unless the task specifically involves scripts
+- `package.json` / `package-lock.json` unless adding/removing a dependency
+- `globals.css`, `tailwind.config.ts`, shared UI components (button.tsx, etc.) unless that IS the task
+- `.env*` files, service account files, credentials
+
+### After a Bad Commit
+- Do NOT use `git reset --hard` or `git checkout .` without explicit user approval
+- If a commit included wrong files, create a NEW revert commit targeting only the bad changes
+- Never amend published commits
 
 ## Code Changes
 

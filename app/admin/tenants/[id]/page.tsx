@@ -189,12 +189,17 @@ export default function TenantDetailPage() {
       const newPlanDef = DEFAULT_PLANS.find((p) => p.id === editForm.plan);
       if (credits && newPlanDef && editForm.plan !== oldPlan) {
         const creditsDelta = newPlanDef.monthlyCredits - (credits.monthlyAllocation || 0);
+        const newCreditsRemaining = Math.max(0, (credits.creditsRemaining || 0) + creditsDelta);
         await updateDoc(doc(db, 'tenantCredits', credits.id), {
           planId: editForm.plan,
           monthlyAllocation: newPlanDef.monthlyCredits,
-          creditsRemaining: Math.max(0, (credits.creditsRemaining || 0) + creditsDelta),
+          creditsRemaining: newCreditsRemaining,
           softLimit: editForm.softLimit || Math.floor(newPlanDef.monthlyCredits * 0.8),
           hardLimit: editForm.hardLimit,
+        });
+        // Also update subscriptionCredits on the tenant doc so the tenant billing page sees the change
+        await updateDoc(doc(db, 'tenants', tenantId), {
+          subscriptionCredits: newCreditsRemaining,
         });
         message.info(`Plan changed to ${newPlanDef.name} — ${newPlanDef.monthlyCredits} credits/month. Stripe will update at next billing cycle.`);
       } else if (credits) {
