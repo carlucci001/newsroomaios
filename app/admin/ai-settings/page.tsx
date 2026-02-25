@@ -38,6 +38,7 @@ import {
   ThunderboltOutlined,
   SoundOutlined,
   SyncOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -83,6 +84,18 @@ interface AIConfig {
     style: number;
     useSpeakerBoost: boolean;
   };
+  factCheck: {
+    temperature: number;
+    maxTokensQuick: number;
+    maxTokensDetailed: number;
+    defaultMode: 'quick' | 'detailed';
+    model: string;
+    usePerplexity: boolean;
+    perplexityModel: string;
+    perplexityMaxTokens: number;
+    perplexityTemperature: number;
+    perplexityRecencyFilter: string;
+  };
 }
 
 const defaultConfig: AIConfig = {
@@ -122,6 +135,18 @@ const defaultConfig: AIConfig = {
     similarityBoost: 0.75,
     style: 0,
     useSpeakerBoost: true,
+  },
+  factCheck: {
+    temperature: 0.0,
+    maxTokensQuick: 500,
+    maxTokensDetailed: 2000,
+    defaultMode: 'quick',
+    model: 'gemini-2.0-flash',
+    usePerplexity: true,
+    perplexityModel: 'sonar',
+    perplexityMaxTokens: 1500,
+    perplexityTemperature: 0.1,
+    perplexityRecencyFilter: 'week',
   },
 };
 
@@ -183,6 +208,7 @@ export default function AISettingsPage() {
           articleLength: { ...defaultConfig.articleLength, ...data.articleLength },
           seeding: { ...defaultConfig.seeding, ...data.seeding },
           tts: { ...defaultConfig.tts, ...data.tts },
+          factCheck: { ...defaultConfig.factCheck, ...data.factCheck },
         });
       }
     } catch (error) {
@@ -363,7 +389,15 @@ export default function AISettingsPage() {
     }));
   }
 
+  function updateFactCheck(field: string, value: unknown) {
+    setConfig(prev => ({
+      ...prev,
+      factCheck: { ...prev.factCheck, [field]: value },
+    }));
+  }
+
   const [pushingTts, setPushingTts] = useState(false);
+  const [pushingFactCheck, setPushingFactCheck] = useState(false);
 
   async function pushTtsToTenants() {
     setPushingTts(true);
@@ -396,6 +430,31 @@ export default function AISettingsPage() {
       message.error('Failed to push TTS settings to tenants');
     } finally {
       setPushingTts(false);
+    }
+  }
+
+  async function pushFactCheckToTenants() {
+    setPushingFactCheck(true);
+    try {
+      await saveConfig();
+
+      const res = await fetch('/api/admin/push-fact-check-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config.factCheck),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        message.success(`Fact-check settings pushed to ${data.updated} tenant(s).${data.skipped ? ` ${data.skipped} skipped (separate database).` : ''}`);
+      } else {
+        message.error(data.error || 'Failed to push fact-check settings');
+      }
+    } catch (error) {
+      console.error('Push fact-check error:', error);
+      message.error('Failed to push fact-check settings to tenants');
+    } finally {
+      setPushingFactCheck(false);
     }
   }
 
@@ -809,6 +868,252 @@ export default function AISettingsPage() {
               Save Tone Settings
             </Button>
           </div>
+        </Space>
+      ),
+    },
+    {
+      key: 'factcheck',
+      label: (
+        <span>
+          <SafetyCertificateOutlined style={{ marginRight: 8 }} />
+          Fact-Checking
+        </span>
+      ),
+      children: (
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <Alert
+            type="info"
+            showIcon
+            message="Controls how the AI fact-checker evaluates articles. Lower temperature = more deterministic and consistent scores."
+          />
+
+          <div>
+            <Text strong>Fact-Check Model</Text>
+            <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+              The AI model used for fact-checking analysis.
+            </Text>
+            <div style={{ marginTop: 8 }}>
+              <Select
+                value={config.factCheck.model}
+                onChange={(v) => updateFactCheck('model', v)}
+                options={GEMINI_MODELS}
+                style={{ width: '100%', maxWidth: 500 }}
+                size="large"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Text strong>Perplexity Web Verification</Text>
+            <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+              When enabled, fact-checks cross-reference article claims against live web sources via Perplexity before Gemini analyzes them.
+              This improves accuracy but uses additional API credits.
+            </Text>
+            <Radio.Group
+              value={config.factCheck.usePerplexity}
+              onChange={(e) => updateFactCheck('usePerplexity', e.target.value)}
+            >
+              <Radio value={true}>Enabled (Recommended)</Radio>
+              <Radio value={false}>Disabled (Gemini-only)</Radio>
+            </Radio.Group>
+          </div>
+
+          {config.factCheck.usePerplexity && (
+            <>
+              <Divider>Perplexity Web Verification Settings</Divider>
+
+              <div>
+                <Text strong>Perplexity Model</Text>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                  The search model used for live web cross-referencing.
+                </Text>
+                <div style={{ marginTop: 8 }}>
+                  <Select
+                    value={config.factCheck.perplexityModel}
+                    onChange={(v) => updateFactCheck('perplexityModel', v)}
+                    options={PERPLEXITY_MODELS}
+                    style={{ width: '100%', maxWidth: 400 }}
+                    size="large"
+                  />
+                </div>
+              </div>
+
+              <Row gutter={32}>
+                <Col span={12}>
+                  <Text strong>Perplexity Temperature</Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                    Controls how creative vs focused the web research is.
+                  </Text>
+                  <Row gutter={16} align="middle">
+                    <Col flex="auto">
+                      <Slider
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={config.factCheck.perplexityTemperature}
+                        onChange={(v) => updateFactCheck('perplexityTemperature', v)}
+                        marks={{ 0: 'Focused', 0.5: 'Balanced', 1: 'Broad' }}
+                      />
+                    </Col>
+                    <Col>
+                      <InputNumber
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={config.factCheck.perplexityTemperature}
+                        onChange={(v) => updateFactCheck('perplexityTemperature', v ?? 0.1)}
+                        style={{ width: 80 }}
+                      />
+                    </Col>
+                  </Row>
+                </Col>
+                <Col span={12}>
+                  <Text strong>Perplexity Max Tokens</Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                    Maximum length of web research response.
+                  </Text>
+                  <InputNumber
+                    min={500}
+                    max={4000}
+                    step={100}
+                    value={config.factCheck.perplexityMaxTokens}
+                    onChange={(v) => updateFactCheck('perplexityMaxTokens', v ?? 1500)}
+                    style={{ width: 200 }}
+                    addonAfter="tokens"
+                  />
+                </Col>
+              </Row>
+
+              <div>
+                <Text strong>Source Recency Filter</Text>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                  How recent should web sources be when verifying claims?
+                </Text>
+                <Radio.Group
+                  value={config.factCheck.perplexityRecencyFilter}
+                  onChange={(e) => updateFactCheck('perplexityRecencyFilter', e.target.value)}
+                >
+                  <Radio.Button value="day">Last 24 Hours</Radio.Button>
+                  <Radio.Button value="week">Last Week</Radio.Button>
+                  <Radio.Button value="month">Last Month</Radio.Button>
+                  <Radio.Button value="year">Last Year</Radio.Button>
+                </Radio.Group>
+              </div>
+            </>
+          )}
+
+          <Divider>Gemini Analysis Settings</Divider>
+
+          <div>
+            <Text strong>Temperature</Text>
+            <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+              Set to 0 for deterministic scoring (same article = same score every time).
+              Higher values introduce randomness — scores may vary between runs.
+            </Text>
+            <Row gutter={16} align="middle">
+              <Col flex="auto" style={{ maxWidth: 400 }}>
+                <Slider
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={config.factCheck.temperature}
+                  onChange={(v) => updateFactCheck('temperature', v)}
+                  marks={{ 0: 'Deterministic', 0.3: 'Low', 0.5: 'Moderate', 1: 'High' }}
+                />
+              </Col>
+              <Col>
+                <InputNumber
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={config.factCheck.temperature}
+                  onChange={(v) => updateFactCheck('temperature', v ?? 0)}
+                  style={{ width: 80 }}
+                />
+              </Col>
+            </Row>
+          </div>
+
+          <div>
+            <Text strong>Default Mode</Text>
+            <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+              Quick mode gives a summary score. Detailed mode extracts and evaluates individual claims.
+            </Text>
+            <Radio.Group
+              value={config.factCheck.defaultMode}
+              onChange={(e) => updateFactCheck('defaultMode', e.target.value)}
+              optionType="button"
+              buttonStyle="solid"
+              size="large"
+            >
+              <Radio.Button value="quick">Quick (Summary)</Radio.Button>
+              <Radio.Button value="detailed">Detailed (Claim-by-Claim)</Radio.Button>
+            </Radio.Group>
+          </div>
+
+          <Divider>Token Limits</Divider>
+
+          <Row gutter={32}>
+            <Col span={12}>
+              <Text strong>Quick Mode Max Tokens</Text>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                Maximum response length for quick fact-checks.
+              </Text>
+              <InputNumber
+                min={200}
+                max={2000}
+                step={100}
+                value={config.factCheck.maxTokensQuick}
+                onChange={(v) => updateFactCheck('maxTokensQuick', v ?? 500)}
+                style={{ width: 200 }}
+                addonAfter="tokens"
+              />
+            </Col>
+            <Col span={12}>
+              <Text strong>Detailed Mode Max Tokens</Text>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                Maximum response length for detailed claim analysis.
+              </Text>
+              <InputNumber
+                min={500}
+                max={8000}
+                step={100}
+                value={config.factCheck.maxTokensDetailed}
+                onChange={(v) => updateFactCheck('maxTokensDetailed', v ?? 2000)}
+                style={{ width: 200 }}
+                addonAfter="tokens"
+              />
+            </Col>
+          </Row>
+
+          <div style={{ marginTop: 16 }}>
+            <Button
+              type="primary"
+              icon={<SaveOutlined />}
+              onClick={saveConfig}
+              loading={saving}
+              size="large"
+            >
+              Save Fact-Check Settings
+            </Button>
+          </div>
+
+          <Divider>Push to Tenant Newspapers</Divider>
+
+          <Alert
+            type="warning"
+            showIcon
+            message="This will update fact-check settings for all active tenant newspapers. Changes take effect on the next fact-check run."
+          />
+
+          <Button
+            icon={<SyncOutlined />}
+            onClick={pushFactCheckToTenants}
+            loading={pushingFactCheck}
+            size="large"
+          >
+            Push Fact-Check Settings to All Tenants
+          </Button>
         </Space>
       ),
     },
