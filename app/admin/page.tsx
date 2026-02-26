@@ -49,6 +49,7 @@ interface DashboardStats {
   recentTenants: Tenant[];
   creditWarnings: TenantCredits[];
   recentUsage: CreditUsage[];
+  tenantNameMap: Record<string, string>;
 }
 
 export default function AdminDashboard() {
@@ -89,6 +90,12 @@ export default function AdminDashboard() {
           ...doc.data(),
         })) as TenantCredits[];
 
+        // Build tenantId → name lookup
+        const tenantNameMap: Record<string, string> = {};
+        tenants.forEach((t) => {
+          tenantNameMap[t.id] = t.businessName || t.slug || t.id;
+        });
+
         // Find tenants with credit warnings
         const creditWarnings = credits.filter(
           (c) => c.status === 'warning' || c.status === 'exhausted'
@@ -124,6 +131,7 @@ export default function AdminDashboard() {
           recentTenants,
           creditWarnings,
           recentUsage,
+          tenantNameMap,
         });
       } catch (error) {
         console.error('Failed to fetch dashboard stats:', error);
@@ -330,13 +338,20 @@ export default function AdminDashboard() {
                       >
                         <div style={{ width: '100%' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <Text strong>Tenant {credit.tenantId}</Text>
-                            <Tag color={credit.status === 'exhausted' ? 'error' : 'warning'}>
-                              {credit.status}
-                            </Tag>
+                            <Text strong>{stats.tenantNameMap[credit.tenantId] || credit.tenantId}</Text>
+                            <Space>
+                              <Tag color={credit.status === 'exhausted' ? 'error' : 'warning'}>
+                                {credit.status}
+                              </Tag>
+                              <Link href="/admin/credits">
+                                <Button type="link" size="small" icon={<DollarOutlined />}>
+                                  Top Off
+                                </Button>
+                              </Link>
+                            </Space>
                           </div>
                           <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '8px' }}>
-                            {credit.creditsRemaining} credits remaining
+                            {credit.creditsRemaining} of {credit.monthlyAllocation} credits remaining
                           </Text>
                           <Progress
                             percent={percentage}
