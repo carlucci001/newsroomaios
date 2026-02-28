@@ -13,6 +13,7 @@ export interface Lead {
   status: 'reserved' | 'contacted' | 'converted' | 'inactive';
   source: 'website_reservation' | 'direct' | 'referral' | 'other';
   siteUrl?: string;
+  category?: 'sold' | 'available' | 'pending';
   createdAt: Timestamp;
   updatedAt?: Timestamp;
   contactedAt?: Timestamp;

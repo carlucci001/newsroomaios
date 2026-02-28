@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { Lead } from '@/types/lead';
-import { MapPin, ExternalLink, Globe, Mail, Phone } from 'lucide-react';
+import { MapPin, ExternalLink, Globe, Mail, Phone, ArrowRight } from 'lucide-react';
 
 interface InteractiveMapProps {
   leads: Lead[];
@@ -75,8 +75,35 @@ function getSpreadOffset(indexInState: number, totalInState: number): { dx: numb
 
 // Build a screenshot thumbnail URL for a live site
 function getSiteThumbnailUrl(siteUrl: string): string {
-  // Use thum.io free screenshot service
   return `https://image.thum.io/get/width/600/${siteUrl}`;
+}
+
+// Pin color config per category
+const PIN_COLORS: Record<string, string> = {
+  sold: '#d97706',
+  available: '#16a34a',
+  pending: '#3b82f6',
+};
+
+// Z-index layering: SOLD on top, then Available, then Pending
+const PIN_Z: Record<string, number> = {
+  sold: 30,
+  available: 20,
+  pending: 10,
+};
+
+// SOLD yard sign SVG rendered next to a pin
+function SoldSign() {
+  return (
+    <svg width="20" height="24" viewBox="0 0 20 24" className="absolute -right-3 -top-1 drop-shadow-md">
+      {/* Post */}
+      <rect x="9" y="10" width="2" height="14" rx="0.5" fill="#92400e" />
+      {/* Sign */}
+      <rect x="1" y="1" width="18" height="11" rx="1.5" fill="#dc2626" stroke="#991b1b" strokeWidth="0.8" />
+      {/* SOLD text */}
+      <text x="10" y="9" textAnchor="middle" fill="white" fontSize="7" fontWeight="bold" fontFamily="Arial, sans-serif">SOLD</text>
+    </svg>
+  );
 }
 
 export function InteractiveMap({ leads }: InteractiveMapProps) {
@@ -116,7 +143,7 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
         const coords = stateCoordinates[lead.state];
         if (!coords) return null;
 
-        const isLive = lead.status === 'converted';
+        const category = lead.category || (lead.status === 'converted' ? 'available' : 'pending');
         const key = `${lead.id || ''}-${lead.city}-${lead.state}-${index}`;
         const group = stateGroups[lead.state];
         const indexInState = group.indexOf(index);
@@ -124,7 +151,7 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
 
         return {
           lead,
-          isLive,
+          category,
           key,
           x: coords.x + dx,
           y: coords.y + dy,
@@ -132,16 +159,16 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
       })
       .filter(Boolean) as Array<{
         lead: Lead;
-        isLive: boolean;
+        category: 'sold' | 'available' | 'pending';
         key: string;
         x: number;
         y: number;
       }>;
   }, [leads]);
 
-  // Render reserved (blue) pins first, then live (green) on top
+  // Render pending first (z-10), then available (z-20), then sold on top (z-30)
   const sortedPins = useMemo(() => {
-    return [...pins].sort((a, b) => (a.isLive ? 1 : 0) - (b.isLive ? 1 : 0));
+    return [...pins].sort((a, b) => (PIN_Z[a.category] || 0) - (PIN_Z[b.category] || 0));
   }, [pins]);
 
   return (
@@ -160,165 +187,237 @@ export function InteractiveMap({ leads }: InteractiveMapProps) {
 
         {/* Pins */}
         <div className="absolute inset-0">
-          {sortedPins.map(({ lead, isLive, key, x, y }) => (
-            <div
-              key={key}
-              className={`absolute ${
-                isLive ? 'z-20 cursor-pointer' : 'z-10 cursor-default'
-              }`}
-              style={{
-                left: `${x}%`,
-                top: `${y}%`,
-                transform: 'translate(-50%, -100%)',
-              }}
-              onMouseEnter={() => handleMouseEnter(lead)}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => {
-                if (isLive && lead.siteUrl) {
-                  window.open(lead.siteUrl, '_blank', 'noopener,noreferrer');
-                }
-              }}
-            >
-              <div className="relative transition-transform duration-150 hover:scale-125">
-                <svg
-                  width={isLive ? 22 : 18}
-                  height={isLive ? 30 : 24}
-                  viewBox="0 0 24 36"
-                  className="drop-shadow-lg"
-                >
-                  <path
-                    d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z"
-                    fill={isLive ? '#16a34a' : '#3b82f6'}
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                  <circle cx="12" cy="11" r="4.5" fill="white" />
-                </svg>
-                {isLive && (
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 border border-white" />
-                  </span>
-                )}
+          {sortedPins.map(({ lead, category, key, x, y }) => {
+            const pinColor = PIN_COLORS[category] || '#3b82f6';
+            const isSold = category === 'sold';
+            const isAvailable = category === 'available';
+            const isPending = category === 'pending';
+            const isClickable = isSold || isAvailable;
+            const pinSize = isPending ? { w: 18, h: 24 } : { w: 22, h: 30 };
+
+            return (
+              <div
+                key={key}
+                className={`absolute cursor-pointer`}
+                style={{
+                  left: `${x}%`,
+                  top: `${y}%`,
+                  transform: 'translate(-50%, -100%)',
+                  zIndex: PIN_Z[category] || 10,
+                }}
+                onMouseEnter={() => handleMouseEnter(lead)}
+                onMouseLeave={handleMouseLeave}
+                onClick={() => {
+                  if (isClickable && lead.siteUrl) {
+                    window.open(lead.siteUrl, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+              >
+                <div className="relative transition-transform duration-150 hover:scale-125">
+                  <svg
+                    width={pinSize.w}
+                    height={pinSize.h}
+                    viewBox="0 0 24 36"
+                    className="drop-shadow-lg"
+                  >
+                    <path
+                      d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z"
+                      fill={pinColor}
+                      stroke="white"
+                      strokeWidth="2"
+                    />
+                    <circle cx="12" cy="11" r="4.5" fill="white" />
+                  </svg>
+                  {isSold && <SoldSign />}
+                  {isAvailable && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 border border-white" />
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Legend */}
-        <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 bg-white/95 rounded-lg shadow-lg p-2 md:p-4 border-2 border-brand-blue-100">
-          {leads.some(l => l.status !== 'converted') && (
-            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+        <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 bg-white/95 rounded-lg shadow-lg p-2 md:p-3 border-2 border-brand-blue-100 space-y-1 md:space-y-1.5">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="relative" style={{ width: 28, height: 18 }}>
               <svg width="14" height="18" viewBox="0 0 24 36">
-                <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#3b82f6" stroke="white" strokeWidth="2" />
+                <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#d97706" stroke="white" strokeWidth="2" />
                 <circle cx="12" cy="11" r="4.5" fill="white" />
               </svg>
-              <span className="text-xs md:text-sm font-medium">Reserved</span>
+              <svg width="12" height="14" viewBox="0 0 20 24" className="absolute top-0" style={{ left: 14 }}>
+                <rect x="9" y="8" width="2" height="14" rx="0.5" fill="#92400e" />
+                <rect x="1" y="1" width="18" height="9" rx="1.5" fill="#dc2626" stroke="#991b1b" strokeWidth="0.8" />
+                <text x="10" y="8" textAnchor="middle" fill="white" fontSize="6" fontWeight="bold" fontFamily="Arial, sans-serif">SOLD</text>
+              </svg>
+            </div>
+            <span className="text-xs md:text-sm font-semibold text-amber-700">Sold</span>
+          </div>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div style={{ width: 28, height: 18 }}>
+              <svg width="14" height="18" viewBox="0 0 24 36">
+                <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#16a34a" stroke="white" strokeWidth="2" />
+                <circle cx="12" cy="11" r="4.5" fill="white" />
+              </svg>
+            </div>
+            <span className="text-xs md:text-sm font-semibold text-green-700">Available</span>
+          </div>
+          {leads.some(l => l.category === 'pending' || l.status !== 'converted') && (
+            <div className="flex items-center gap-2 md:gap-3">
+              <div style={{ width: 28, height: 18 }}>
+                <svg width="12" height="16" viewBox="0 0 24 36">
+                  <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#3b82f6" stroke="white" strokeWidth="2" />
+                  <circle cx="12" cy="11" r="4.5" fill="white" />
+                </svg>
+              </div>
+              <span className="text-xs md:text-sm font-semibold text-blue-700">Pending</span>
             </div>
           )}
-          <div className="flex items-center gap-2 md:gap-3">
-            <svg width="14" height="18" viewBox="0 0 24 36">
-              <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#16a34a" stroke="white" strokeWidth="2" />
-              <circle cx="12" cy="11" r="4.5" fill="white" />
-            </svg>
-            <span className="text-xs md:text-sm font-medium">Live Newspaper</span>
-          </div>
         </div>
       </div>
 
       {/* Hover card */}
-      {hoveredLead && (
-        <div
-          className="hidden md:block absolute top-4 right-4 bg-white rounded-xl shadow-2xl border border-gray-200 w-72 overflow-hidden z-50"
-          onMouseEnter={() => { if (hoverTimeout.current) clearTimeout(hoverTimeout.current); }}
-          onMouseLeave={handleMouseLeave}
-        >
-          {/* Thumbnail area */}
-          {hoveredLead.status === 'converted' && hoveredLead.siteUrl ? (
-            <a href={hoveredLead.siteUrl} target="_blank" rel="noopener noreferrer" className="block">
-              <div className="relative h-36 bg-gray-100 overflow-hidden group">
-                {!thumbError ? (
-                  <img
-                    src={getSiteThumbnailUrl(hoveredLead.siteUrl)}
-                    alt={hoveredLead.newspaperName || 'Newspaper preview'}
-                    className="w-full h-full object-cover object-top"
-                    onError={() => setThumbError(true)}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-500 to-emerald-600">
-                    <span className="text-5xl font-bold text-white/90">
-                      {(hoveredLead.newspaperName || hoveredLead.city || 'N')[0].toUpperCase()}
+      {hoveredLead && (() => {
+        const cat = hoveredLead.category || (hoveredLead.status === 'converted' ? 'available' : 'pending');
+        const isSold = cat === 'sold';
+        const isAvailable = cat === 'available';
+        const isPending = cat === 'pending';
+        const hasLiveSite = (isSold || isAvailable) && hoveredLead.siteUrl;
+
+        const badgeConfig = isSold
+          ? { text: 'SOLD', bg: 'bg-red-600', textColor: 'text-white' }
+          : isAvailable
+            ? { text: 'Available', bg: 'bg-green-600', textColor: 'text-white' }
+            : { text: 'Pending', bg: 'bg-blue-600', textColor: 'text-white' };
+
+        const fallbackGradient = isSold
+          ? 'from-amber-500 to-amber-700'
+          : isAvailable
+            ? 'from-green-500 to-emerald-600'
+            : 'from-blue-500 to-indigo-600';
+
+        return (
+          <div
+            className="hidden md:block absolute top-4 right-4 bg-white rounded-xl shadow-2xl border border-gray-200 w-72 overflow-hidden z-50"
+            onMouseEnter={() => { if (hoverTimeout.current) clearTimeout(hoverTimeout.current); }}
+            onMouseLeave={handleMouseLeave}
+          >
+            {/* Thumbnail area */}
+            {hasLiveSite ? (
+              <a href={hoveredLead.siteUrl} target="_blank" rel="noopener noreferrer" className="block">
+                <div className="relative h-36 bg-gray-100 overflow-hidden group">
+                  {!thumbError ? (
+                    <img
+                      src={getSiteThumbnailUrl(hoveredLead.siteUrl!)}
+                      alt={hoveredLead.newspaperName || 'Newspaper preview'}
+                      className="w-full h-full object-cover object-top"
+                      onError={() => setThumbError(true)}
+                    />
+                  ) : (
+                    <div className={`w-full h-full flex flex-col items-center justify-center bg-gradient-to-br ${fallbackGradient} p-4`}>
+                      <span className="text-2xl font-bold text-white text-center leading-tight">
+                        {hoveredLead.newspaperName || hoveredLead.city}
+                      </span>
+                      <span className="text-xs text-white/70 mt-1">
+                        {hoveredLead.city}, {hoveredLead.state}
+                      </span>
+                    </div>
+                  )}
+                  {isSold && (
+                    <div className="absolute top-2 left-2 px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold rounded shadow-md uppercase tracking-wider">
+                      SOLD
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold flex items-center gap-1">
+                      <ExternalLink className="h-4 w-4" /> Visit Site
                     </span>
                   </div>
-                )}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold flex items-center gap-1">
-                    <ExternalLink className="h-4 w-4" /> Visit Site
-                  </span>
                 </div>
-              </div>
-            </a>
-          ) : (
-            <div className="relative h-36 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-              <span className="text-5xl font-bold text-white/90">
-                {(hoveredLead.newspaperName || hoveredLead.city || 'N')[0].toUpperCase()}
-              </span>
-            </div>
-          )}
-
-          {/* Details */}
-          <div className="p-4">
-            <h4 className="font-bold text-base text-gray-900 leading-tight">
-              {hoveredLead.newspaperName || 'New Territory'}
-            </h4>
-            <p className="text-sm text-gray-500 mt-1">
-              {hoveredLead.city}, {hoveredLead.state}
-            </p>
-            {hoveredLead.county && (
-              <p className="text-xs text-gray-400">{hoveredLead.county}</p>
-            )}
-
-            {/* Contact info */}
-            {(hoveredLead.name || hoveredLead.email || hoveredLead.phone) && (
-              <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
-                {hoveredLead.name && (
-                  <p className="text-sm font-medium text-gray-700">{hoveredLead.name}</p>
-                )}
-                {hoveredLead.email && (
-                  <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                    <Mail className="h-3 w-3 text-gray-400" />
-                    {hoveredLead.email}
-                  </p>
-                )}
-                {hoveredLead.phone && (
-                  <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                    <Phone className="h-3 w-3 text-gray-400" />
-                    {hoveredLead.phone}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {hoveredLead.status === 'converted' && hoveredLead.siteUrl ? (
-              <a
-                href={hoveredLead.siteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 hover:bg-green-700 transition-colors text-white text-sm font-semibold rounded-lg"
-              >
-                <Globe className="h-4 w-4" />
-                Visit Site
-                <ExternalLink className="h-3 w-3" />
               </a>
             ) : (
-              <div className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg">
-                <MapPin className="h-4 w-4" />
-                Territory Reserved
+              <div className={`relative h-36 bg-gradient-to-br ${fallbackGradient} flex flex-col items-center justify-center p-4`}>
+                <span className="text-2xl font-bold text-white text-center leading-tight">
+                  {hoveredLead.newspaperName || hoveredLead.city || 'New Territory'}
+                </span>
+                <span className="text-xs text-white/70 mt-1">
+                  {hoveredLead.city}, {hoveredLead.state}
+                </span>
               </div>
             )}
+
+            {/* Category badge + Details */}
+            <div className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeConfig.bg} ${badgeConfig.textColor}`}>
+                  {badgeConfig.text}
+                </span>
+              </div>
+              <h4 className="font-bold text-base text-gray-900 leading-tight">
+                {hoveredLead.newspaperName || 'New Territory'}
+              </h4>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {hoveredLead.city}, {hoveredLead.state}
+              </p>
+              {hoveredLead.county && (
+                <p className="text-xs text-gray-400">{hoveredLead.county}</p>
+              )}
+
+              {/* Contact info for pending */}
+              {isPending && (hoveredLead.name || hoveredLead.email || hoveredLead.phone) && (
+                <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
+                  {hoveredLead.name && (
+                    <p className="text-sm font-medium text-gray-700">{hoveredLead.name}</p>
+                  )}
+                  {hoveredLead.email && (
+                    <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                      <Mail className="h-3 w-3 text-gray-400" />
+                      {hoveredLead.email}
+                    </p>
+                  )}
+                  {hoveredLead.phone && (
+                    <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                      <Phone className="h-3 w-3 text-gray-400" />
+                      {hoveredLead.phone}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Action button per category */}
+              {isSold && hoveredLead.siteUrl ? (
+                <a
+                  href={hoveredLead.siteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-amber-600 hover:bg-amber-700 transition-colors text-white text-sm font-semibold rounded-lg"
+                >
+                  <Globe className="h-4 w-4" />
+                  Visit Site
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              ) : isAvailable ? (
+                <a
+                  href="/?view=leadCapture"
+                  className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 hover:bg-green-700 transition-colors text-white text-sm font-semibold rounded-lg"
+                >
+                  Get Started
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              ) : (
+                <div className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg">
+                  <MapPin className="h-4 w-4" />
+                  Territory Reserved
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Empty state */}
       {leads.length === 0 && (

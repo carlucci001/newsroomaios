@@ -43,6 +43,9 @@ function normalizeState(state: string): string {
     .join(' ');
 }
 
+// The 6 beta tenants that have real owners — shown with SOLD signs
+const SOLD_SLUGS = ['wnct-times', 'hendo', 'oceanside-news', 'hardhatsports', 'atlanta-news-network', 'the42'];
+
 export default function GrowthMapPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [liveTenants, setLiveTenants] = useState<Lead[]>([]);
@@ -65,7 +68,8 @@ export default function GrowthMapPage() {
       console.log('[GrowthMap] Leads loaded:', snapshot.size);
       const leadsData = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
+        category: 'pending' as const,
       })) as Lead[];
       setLeads(leadsData);
 
@@ -109,6 +113,7 @@ export default function GrowthMapPage() {
               : tenant.siteUrl
                 || (tenant.subdomain ? `https://${tenant.subdomain}` : '')
                 || (tenant.domain && tenant.domain.includes('.') ? `https://${tenant.domain}` : ''),
+            category: (SOLD_SLUGS.includes(doc.id) || SOLD_SLUGS.includes(tenant.slug)) ? 'sold' as const : 'available' as const,
             createdAt: tenant.createdAt,
           });
         }
