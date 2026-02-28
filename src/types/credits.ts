@@ -16,6 +16,7 @@ export interface CreditPlan {
   pricePerCredit: number;          // For overage charges
   features: string[];              // Plan features for display
   maxAIJournalists: number;        // Concurrent AI journalists allowed
+  maxPersonas: number;             // Max AI personas (reporters) allowed
   maxArticlesPerDay: number;       // Daily limit
   supportLevel: 'community' | 'email' | 'priority' | 'dedicated';
 }
@@ -101,6 +102,7 @@ export const DEFAULT_PLANS: CreditPlan[] = [
       'Basic analytics',
     ],
     maxAIJournalists: 1,
+    maxPersonas: 1,
     maxArticlesPerDay: 10,
     supportLevel: 'email',
   },
@@ -119,6 +121,7 @@ export const DEFAULT_PLANS: CreditPlan[] = [
       'Custom branding',
     ],
     maxAIJournalists: 3,
+    maxPersonas: 3,
     maxArticlesPerDay: 50,
     supportLevel: 'priority',
   },
@@ -138,6 +141,7 @@ export const DEFAULT_PLANS: CreditPlan[] = [
       'AI banner generation',
     ],
     maxAIJournalists: 6,
+    maxPersonas: 6,
     maxArticlesPerDay: -1, // Unlimited
     supportLevel: 'dedicated',
   },

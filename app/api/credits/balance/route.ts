@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
         plan: planId,
         planLimits: {
           maxAIJournalists: planDef.maxAIJournalists,
+          maxPersonas: planDef.maxPersonas,
           maxArticlesPerDay: planDef.maxArticlesPerDay,
           monthlyCredits: planDef.monthlyCredits,
         },
