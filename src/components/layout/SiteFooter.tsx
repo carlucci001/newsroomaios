@@ -1,8 +1,19 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { doc, getDoc } from 'firebase/firestore';
+import { getDb } from '@/lib/firebase';
 
 export function SiteFooter() {
+  const [teamPagePublic, setTeamPagePublic] = useState(false);
+
+  useEffect(() => {
+    getDoc(doc(getDb(), 'settings', 'team'))
+      .then(snap => { if (snap.exists() && snap.data()?.isPublic) setTeamPagePublic(true); })
+      .catch(() => {});
+  }, []);
+
   return (
     <footer className="relative z-10 border-t border-border bg-gradient-to-b from-muted/50 to-muted/80 py-16">
       <div className="max-w-7xl mx-auto px-6">
@@ -22,6 +33,9 @@ export function SiteFooter() {
               <li><Link href="/features" className="hover:text-brand-blue-600 transition-colors">Features</Link></li>
               <li><Link href="/pricing" className="hover:text-brand-blue-600 transition-colors">Pricing</Link></li>
               <li><Link href="/testimonials" className="hover:text-brand-blue-600 transition-colors">Success Stories</Link></li>
+              {teamPagePublic && (
+                <li><Link href="/team" className="hover:text-brand-blue-600 transition-colors">Our Team</Link></li>
+              )}
               <li><a href="#" className="hover:text-brand-blue-600 transition-colors">Documentation</a></li>
             </ul>
           </div>

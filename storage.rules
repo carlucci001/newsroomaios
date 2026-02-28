@@ -29,5 +29,12 @@ service firebase.storage {
       // Users can upload their own
       allow write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Team member photos (admin-uploaded)
+    match /team-photos/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.token.platformAdmin == true;
+    }
   }
 }

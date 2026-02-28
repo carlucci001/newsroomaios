@@ -344,6 +344,14 @@ service cloud.firestore {
     }
 
     // ============================================
+    // TEAM MEMBERS (Public "Our Team" page)
+    // ============================================
+    match /teamMembers/{memberId} {
+      allow read: if true;
+      allow write: if isPlatformAdmin();
+    }
+
+    // ============================================
     // PLATFORM CONFIG (Support autopilot, etc.)
     // ============================================
     match /platformConfig/{configId} {
