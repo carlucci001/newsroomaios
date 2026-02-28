@@ -31,6 +31,34 @@ yarn-error.log*
 # vercel
 .vercel
 
+# scratch/debug scripts and temp files
+scripts/
+tmp/
+tmp_*
+nul
+
+# service account / credential dumps
+*_sa.json
+*_gpkey.txt
+
+# misc backups
+*.backup-*
+
+# docs (generated, not committed)
+docs/
+
+# claude code local config
+.claude/launch.json
+.claude/settings.local.json
+.claude/start-wnct.sh
+
+# nested repo checkouts / symlinks
+devwnct-template/
+
+# mangled path artifacts (Windows shell glitches)
+devnewsroomaios*
+c*devnewsroomaios*
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
