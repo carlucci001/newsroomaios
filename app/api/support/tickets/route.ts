@@ -3,6 +3,10 @@ import { getAdminDb } from '@/lib/firebaseAdmin';
 import { verifyPlatformSecret } from '@/lib/platformAuth';
 import { generateFirstResponse, generateAutopilotResponse } from '@/lib/supportAI';
 
+// AI Support Assistant identity — displayed on AI-generated messages
+const AI_ASSISTANT_NAME = 'Marge';
+const AI_ASSISTANT_PHOTO = 'https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0242565142.firebasestorage.app/o/avatars%2F5bacf02c-2f6d-4651-8cf0-5b23c0f01996%2F1767633685245_Screenshot_20251231_075714_Samsung%20Wallet.jpg?alt=media&token=c81d6723-8160-47fd-93cd-6d7b0eee7dbe';
+
 // CORS headers for tenant domains
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -247,35 +251,65 @@ export async function POST(request: NextRequest) {
       createdAt: now,
     });
 
-    // Generate AI first response (non-blocking)
-    const aiResponse = await generateFirstResponse(
+    // AI triage + first response
+    const { response: aiResponse, triage } = await generateFirstResponse(
       subject,
       description,
       category || 'general',
-      auth.tenantName || ''
+      auth.tenantName || '',
+      diagnostics || undefined
     );
 
     if (aiResponse) {
       await ticketRef.collection('messages').add({
         content: aiResponse,
         senderType: 'ai',
-        senderName: 'Support Assistant',
+        senderName: AI_ASSISTANT_NAME,
         senderEmail: '',
-        senderPhoto: '',
+        senderPhoto: AI_ASSISTANT_PHOTO,
         attachments: [],
         createdAt: new Date(),
       });
 
-      await ticketRef.update({
+      const triageUpdates: Record<string, any> = {
         messageCount: 2,
         lastMessageAt: new Date(),
-      });
+      };
+
+      // Apply triage results if high confidence
+      if (triage) {
+        triageUpdates.aiClassification = triage.classification;
+        triageUpdates.aiConfidence = triage.confidence;
+        triageUpdates.aiMatchedKnowledge = triage.matchedKnowledge;
+
+        // Auto-set status for high-confidence non-issues and how-to's
+        if (triage.confidence === 'high' && ['non_issue', 'how_to', 'known_issue'].includes(triage.classification)) {
+          triageUpdates.status = triage.suggestedStatus || 'waiting';
+        }
+
+        // Auto-set priority based on triage
+        if (triage.confidence !== 'low') {
+          triageUpdates.priority = triage.suggestedPriority;
+        }
+
+        // Flag for escalation
+        if (triage.escalate) {
+          triageUpdates.needsEscalation = true;
+        }
+      }
+
+      await ticketRef.update(triageUpdates);
     }
 
     return NextResponse.json({
       success: true,
       ticketId: ticketRef.id,
       aiResponse: aiResponse || null,
+      triage: triage ? {
+        classification: triage.classification,
+        confidence: triage.confidence,
+        escalate: triage.escalate,
+      } : null,
     }, { status: 201, headers: CORS_HEADERS });
 
   } catch (error: unknown) {
@@ -387,9 +421,9 @@ export async function PATCH(request: NextRequest) {
                 await ticketRef.collection('messages').add({
                   content: aiReply,
                   senderType: 'ai',
-                  senderName: 'Support Assistant',
+                  senderName: AI_ASSISTANT_NAME,
                   senderEmail: '',
-                  senderPhoto: '',
+                  senderPhoto: AI_ASSISTANT_PHOTO,
                   attachments: [],
                   createdAt: new Date(),
                 });

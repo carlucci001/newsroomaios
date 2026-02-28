@@ -883,7 +883,7 @@ export default function SupportDashboard() {
                             color: isAdmin ? '#fff' : undefined,
                           }}>
                             <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 2 }}>
-                              {isAI ? 'AI Assistant' : msg.senderName || msg.senderEmail || (isAdmin ? 'Support' : 'User')}
+                              {isAI ? (msg.senderName || 'Marge') : msg.senderName || msg.senderEmail || (isAdmin ? 'Support' : 'User')}
                             </div>
                             <div style={{ whiteSpace: 'pre-wrap', fontSize: 13 }}>{msg.content}</div>
                           </div>
