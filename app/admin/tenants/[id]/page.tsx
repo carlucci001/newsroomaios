@@ -27,6 +27,7 @@ import {
   Descriptions,
   Form,
   InputNumber,
+  Switch,
   message,
 } from 'antd';
 import {
@@ -44,6 +45,7 @@ import {
   SyncOutlined,
   UserOutlined,
   UserSwitchOutlined,
+  ToolOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -89,6 +91,7 @@ export default function TenantDetailPage() {
     plan: 'starter',
     softLimit: 0,
     hardLimit: 0,
+    maintenanceMode: false,
   });
 
   useEffect(() => {
@@ -117,6 +120,7 @@ export default function TenantDetailPage() {
         plan: (tenantData as any).plan || 'starter',
         softLimit: 0,
         hardLimit: 0,
+        maintenanceMode: (tenantData as any).maintenanceMode || false,
       });
 
       const creditsQuery = query(collection(db, 'tenantCredits'), where('tenantId', '==', tenantId));
@@ -177,6 +181,7 @@ export default function TenantDetailPage() {
         status: editForm.status,
         licensingStatus: editForm.licensingStatus,
         plan: editForm.plan,
+        maintenanceMode: editForm.maintenanceMode,
       };
       if (editForm.customDomain) {
         tenantUpdate.customDomain = editForm.customDomain;
@@ -781,6 +786,19 @@ export default function TenantDetailPage() {
                   />
                 </Form.Item>
               </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label="Maintenance Mode" help="Takes the public site offline. Admin panel stays accessible.">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Switch
+                      checked={editForm.maintenanceMode}
+                      onChange={(checked) => setEditForm({ ...editForm, maintenanceMode: checked })}
+                    />
+                    <Text type={editForm.maintenanceMode ? 'warning' : 'secondary'}>
+                      {editForm.maintenanceMode ? 'Site is offline' : 'Site is live'}
+                    </Text>
+                  </div>
+                </Form.Item>
+              </Col>
             </Row>
 
             {credits && (
@@ -852,6 +870,9 @@ export default function TenantDetailPage() {
               }>
                 {tenant.licensingStatus.toUpperCase()}
               </Tag>
+              {(tenant as any).maintenanceMode && (
+                <Tag color="orange" icon={<ToolOutlined />}>MAINTENANCE</Tag>
+              )}
             </Space>
           </div>
           {tenant.siteUrl && (
