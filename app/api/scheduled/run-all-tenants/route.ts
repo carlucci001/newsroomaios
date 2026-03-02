@@ -69,6 +69,43 @@ export async function GET(request: NextRequest) {
       };
 
       try {
+        // SPECIAL CASE: WNC Times uses a separate Firebase database.
+        // Its agents are stored in its own DB, not the platform's aiJournalists collection.
+        // Delegate to the WNC Times site's own /api/scheduled/run-agents endpoint.
+        if (tenant.id === 'wnct-times' && tenant.seededAt) {
+          try {
+            const wnctDomain = tenant.domain || 'wnctimes.com';
+            const wnctApiKey = tenant.apiKey;
+            console.log(`[WNC Times] Delegating agent run to https://${wnctDomain}/api/scheduled/run-agents`);
+
+            const wnctResponse = await fetch(`https://${wnctDomain}/api/scheduled/run-agents`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${wnctApiKey}`,
+              },
+              body: JSON.stringify({}),
+            });
+
+            if (wnctResponse.ok) {
+              const wnctResult = await wnctResponse.json();
+              tenantResult.journalistsRun = wnctResult.agentsProcessed || 0;
+              tenantResult.articlesGenerated = wnctResult.articlesGenerated || 0;
+              console.log(`[WNC Times] Result: ${tenantResult.articlesGenerated} articles from ${tenantResult.journalistsRun} agents`);
+            } else {
+              const errText = await wnctResponse.text().catch(() => 'unknown');
+              tenantResult.errors.push(`WNC Times API returned ${wnctResponse.status}: ${errText.substring(0, 200)}`);
+              console.error(`[WNC Times] API error: ${wnctResponse.status}`);
+            }
+          } catch (wnctError: any) {
+            tenantResult.errors.push(`WNC Times delegation failed: ${wnctError.message}`);
+            console.error(`[WNC Times] Delegation error:`, wnctError);
+          }
+
+          results.push(tenantResult);
+          continue;
+        }
+
         // SEEDING: New tenants get 36 seed articles (6 per category)
         // Check seededAt instead of status to handle race condition with deploy endpoint
         if (!tenant.seededAt) {
