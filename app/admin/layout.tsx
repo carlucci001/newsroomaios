@@ -25,6 +25,7 @@ import {
   Headset,
   Megaphone,
   UsersRound,
+  Mail,
 } from 'lucide-react';
 
 interface NavItem {
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
   { label: 'Updates', href: '/admin/updates', icon: Upload },
   { label: 'Releases', href: '/admin/releases', icon: Megaphone },
   { label: 'AI Config', href: '/admin/ai-settings', icon: Bot },
+  { label: 'Email Templates', href: '/admin/email-preview', icon: Mail },
   { label: 'Support', href: '/admin/support', icon: Headset },
   { label: 'Command Center', href: '/admin/command-center', icon: Radar },
   { label: 'Our Team', href: '/admin/team', icon: UsersRound },
