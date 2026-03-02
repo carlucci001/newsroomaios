@@ -172,7 +172,7 @@ export default function TenantsPage() {
         key: 'message',
         icon: <MessageOutlined />,
         label: 'Send Message',
-        onClick: () => router.push('/admin/analytics'),
+        onClick: () => router.push(`/admin/tenants/${tenant.id}/email`),
       },
       {
         type: 'divider',
