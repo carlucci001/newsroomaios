@@ -37,6 +37,18 @@ export interface AIJournalist {
   schedule: JournalistSchedule;
   articlesPerRun: number; // How many articles per scheduled run
 
+  // Task config (set via tenant ScheduleModal)
+  taskConfig?: {
+    autoPublish?: boolean;
+    maxArticlesPerRun?: number;
+    categoryId?: string;
+    isFeatured?: boolean;
+    isBreakingNews?: boolean;
+    autopilotMode?: boolean;
+    autopilotConfidenceThreshold?: number;
+    forceAIGeneration?: boolean;
+  };
+
   // Status
   status: 'active' | 'paused' | 'disabled';
   isActive?: boolean;

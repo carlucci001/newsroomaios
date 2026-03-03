@@ -309,6 +309,10 @@ export async function POST(request: NextRequest) {
         usedWebSearch: body.useWebSearch || false,
         imageMethod: imageResult.method,
       },
+      // Article flags from agent taskConfig
+      isFeatured: body.isFeatured ?? false,
+      isBreakingNews: body.isBreakingNews ?? false,
+      breakingNewsTimestamp: body.isBreakingNews ? new Date() : null,
     };
 
     const articleRef = await db

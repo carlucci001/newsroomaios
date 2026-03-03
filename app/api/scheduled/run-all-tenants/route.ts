@@ -482,9 +482,11 @@ async function generateArticleForTenant(
   db: FirebaseFirestore.Firestore
 ): Promise<{ id: string; title: string } | null> {
   try {
-    const category = tenant.categories.find((c) => c.id === journalist.categoryId);
+    // Use taskConfig.categoryId override if set, otherwise fall back to journalist's beat category
+    const effectiveCategoryId = journalist.taskConfig?.categoryId || journalist.categoryId;
+    const category = tenant.categories.find((c) => c.id === effectiveCategoryId);
     if (!category) {
-      console.warn(`[${tenant.businessName}] No category found for journalist ${journalist.name}`);
+      console.warn(`[${tenant.businessName}] No category found for journalist ${journalist.name} (categoryId: ${effectiveCategoryId})`);
       return null;
     }
 
@@ -512,6 +514,8 @@ async function generateArticleForTenant(
         journalistName: journalist.name,
         generateSEO: true,
         skipCredits: true,
+        isFeatured: journalist.taskConfig?.isFeatured ?? false,
+        isBreakingNews: journalist.taskConfig?.isBreakingNews ?? false,
       }),
     });
 
@@ -534,7 +538,8 @@ async function generateArticleForTenant(
     };
   } catch (error) {
     console.error(`[${tenant.businessName}] Article generation failed:`, error);
-    return generatePlaceholderArticle(tenant, journalist, tenant.categories.find(c => c.id === journalist.categoryId)!, db);
+    const fallbackCategoryId = journalist.taskConfig?.categoryId || journalist.categoryId;
+    return generatePlaceholderArticle(tenant, journalist, tenant.categories.find(c => c.id === fallbackCategoryId)!, db);
   }
 }
 

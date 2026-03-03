@@ -35,6 +35,10 @@ export interface GenerateArticleRequest {
   targetWordCount?: number;
   writingStyle?: 'formal' | 'conversational' | 'investigative';
 
+  // Article flags (from agent taskConfig)
+  isFeatured?: boolean;
+  isBreakingNews?: boolean;
+
   // Platform-only: skip credit check/deduct during initial seeding
   skipCredits?: boolean;
 
