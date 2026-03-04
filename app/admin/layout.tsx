@@ -63,6 +63,16 @@ function AdminLayoutContent({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
 
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
+
   useEffect(() => {
     const ALLOWED_ADMIN_EMAILS = [
       'carlfarring@gmail.com',
@@ -145,7 +155,7 @@ function AdminLayoutContent({
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-64 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 left-0 z-50 h-full w-64 flex flex-col ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -177,7 +187,7 @@ function AdminLayoutContent({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -187,6 +197,7 @@ function AdminLayoutContent({
                 key={item.href}
                 href={item.href}
                 prefetch={false}
+                onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-none active:scale-95 ${
                   isActive
                     ? isDark
@@ -205,7 +216,7 @@ function AdminLayoutContent({
         </nav>
 
         {/* Version + User Menu */}
-        <div className={`absolute bottom-0 left-0 right-0 p-3 border-t ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+        <div className={`shrink-0 p-3 border-t ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
           <div className={`px-3 pb-2 text-[11px] font-mono ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
             Platform v{process.env.NEXT_PUBLIC_PLATFORM_VERSION || '—'}
           </div>
@@ -239,6 +250,7 @@ function AdminLayoutContent({
 
               <Link
                 href="/"
+                onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-none active:scale-95 ${
                   isDark ? 'text-gray-300 hover:bg-gray-700 active:bg-gray-800' : 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
                 }`}

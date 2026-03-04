@@ -1191,7 +1191,7 @@ export default function Home() {
       <VideoModal
         isOpen={isVideoModalOpen}
         onClose={() => setIsVideoModalOpen(false)}
-        videoSrc="/hero-video2.mp4"
+        videoSrc="/Story1.mp4"
       />
 
       {/* Onboarding Choice Dialog */}
