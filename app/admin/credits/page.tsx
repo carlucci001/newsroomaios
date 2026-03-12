@@ -2,7 +2,7 @@
 
 import 'antd/dist/reset.css';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, doc, runTransaction } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { Tenant } from '@/types/tenant';
 import { useTheme } from '@/components/providers/AntdProvider';
@@ -128,55 +128,21 @@ export default function CreditsPage() {
   async function adjustCredits(values: any) {
     setAdjustLoading(true);
     try {
-      const db = getDb();
-      const amount = parseInt(values.amount);
-      const tenantId = values.tenant;
-      const adjustPool = values.pool;
-      const adjustReason = values.reason || '';
-
-      const tenant = tenants.find((t) => t.id === tenantId);
-      if (!tenant) {
-        Modal.error({ title: 'Error', content: 'Tenant not found' });
-        return;
-      }
-
-      const tenantRef = doc(db, 'tenants', tenantId);
-
-      await runTransaction(db, async (transaction) => {
-        const tenantSnap = await transaction.get(tenantRef);
-
-        if (!tenantSnap.exists()) {
-          throw new Error('Tenant not found');
-        }
-
-        const data = tenantSnap.data();
-        let subscriptionCredits = data.subscriptionCredits || 0;
-        let topOffCredits = data.topOffCredits || 0;
-
-        if (adjustPool === 'subscription') {
-          subscriptionCredits = Math.max(0, subscriptionCredits + amount);
-        } else {
-          topOffCredits = Math.max(0, topOffCredits + amount);
-        }
-
-        transaction.update(tenantRef, {
-          subscriptionCredits,
-          topOffCredits,
-          updatedAt: new Date(),
-        });
-
-        const transactionRef = doc(collection(db, 'creditTransactions'));
-        transaction.set(transactionRef, {
-          tenantId,
-          type: 'adjustment',
-          creditPool: adjustPool,
-          amount,
-          subscriptionBalance: subscriptionCredits,
-          topOffBalance: topOffCredits,
-          description: adjustReason || `Manual ${adjustPool} credit adjustment`,
-          createdAt: new Date(),
-        });
+      const res = await fetch('/api/credits/adjust', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId: values.tenant,
+          pool: values.pool,
+          amount: values.amount,
+          reason: values.reason || '',
+        }),
       });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to adjust credits');
+      }
 
       await fetchData();
       setShowAdjustModal(false);
